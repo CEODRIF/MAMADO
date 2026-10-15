@@ -22,7 +22,7 @@ namespace AusbildungsWegInterview.Speech;
 /// Everything runs locally. No audio, model, or transcript ever leaves the machine
 /// except the local subprocess invocation.
 /// </summary>
-public sealed class WhisperCliRecognizer : ISpeechRecognizer
+public sealed class WhisperCliRecognizer : ISpeechRecognizer, ISegmentTranslator
 {
     private readonly string _executable;
     private readonly string _modelPath;
@@ -102,7 +102,7 @@ public sealed class WhisperCliRecognizer : ISpeechRecognizer
         _lastInferSeconds = _audioSeconds;
         try
         {
-            _lastResult = await RunWhisperAsync(final: false, ct).ConfigureAwait(false);
+            _lastResult = await RunWhisperAsync(final: false, translate: false, ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -119,7 +119,28 @@ public sealed class WhisperCliRecognizer : ISpeechRecognizer
     {
         if (!IsReady)
             return Task.FromResult(TranscriptionResult.Empty);
-        return RunWhisperAsync(final: true, ct);
+        return RunWhisperAsync(final: true, translate: false, ct);
+    }
+
+    /// <summary>
+    /// whisper.cpp <c>-tr</c> mode: translates the buffered segment audio to
+    /// English (zero extra dependency — reuses the speech model). Returns null
+    /// when there is no buffered audio or the run failed; the caller decides
+    /// how to report that (never a fake translation).
+    /// </summary>
+    public async Task<string?> TranslateSegmentToEnglishAsync(CancellationToken ct = default)
+    {
+        if (!IsReady || _audio.Count == 0)
+            return null;
+        try
+        {
+            var r = await RunWhisperAsync(final: false, translate: true, ct).ConfigureAwait(false);
+            return string.IsNullOrWhiteSpace(r.Text) ? null : r.Text;
+        }
+        catch
+        {
+            return null; // non-fatal: the adapter reports "no translation produced"
+        }
     }
 
     public void Reset()
@@ -130,13 +151,13 @@ public sealed class WhisperCliRecognizer : ISpeechRecognizer
         _lastResult = null;
     }
 
-    private async Task<TranscriptionResult> RunWhisperAsync(bool final, CancellationToken ct)
+    private async Task<TranscriptionResult> RunWhisperAsync(bool final, bool translate, CancellationToken ct)
     {
         if (_audio.Count == 0)
             return TranscriptionResult.Empty;
 
         string wavPath = Path.Combine(_workDir, "segment.wav");
-        string prefix = Path.Combine(_workDir, "segment");
+        string prefix = Path.Combine(_workDir, translate ? "segment-tr" : "segment");
         WavWriter.Write16BitMono(wavPath, _audio.ToArray(), _sampleRate);
 
         var psi = new ProcessStartInfo
@@ -153,6 +174,8 @@ public sealed class WhisperCliRecognizer : ISpeechRecognizer
         {
             psi.ArgumentList.Add("-l"); psi.ArgumentList.Add(Language);
         }
+        if (translate)
+            psi.ArgumentList.Add("-tr"); // translate mode: source (auto or -l) → English
         psi.ArgumentList.Add("-oj");
         psi.ArgumentList.Add("-of"); psi.ArgumentList.Add(prefix);
         psi.ArgumentList.Add("-t"); psi.ArgumentList.Add(_threads.ToString());

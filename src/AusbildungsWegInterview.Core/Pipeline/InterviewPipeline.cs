@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using AusbildungsWegInterview.Core.Answers;
 using AusbildungsWegInterview.Core.Audio;
+using AusbildungsWegInterview.Core.Common;
 using AusbildungsWegInterview.Core.Config;
 using AusbildungsWegInterview.Core.Domain;
 using AusbildungsWegInterview.Core.Logging;
@@ -120,6 +121,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
         _silentSeconds = 0;
         _answeredInRound = false;
         _lastTranslationKey = string.Empty;
+        _lastTranslation = null;
         _recentTurns.Clear();
         _chunker.Reset();
         LastError = null;
@@ -143,6 +145,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
         // 2) Start audio capture.
         _capture.FrameCaptured += OnFrameCaptured;
         _capture.Error += OnCaptureError;
+        _capture.DeviceChanged += OnCaptureDeviceChanged;
         try
         {
             await _capture.StartAsync(_config.OutputDeviceId, ct).ConfigureAwait(false);
@@ -241,6 +244,15 @@ public sealed class InterviewPipeline : IAsyncDisposable
         }
     }
 
+    // Device changes are handled by the capture itself (re-open on a new default,
+    // fatal error when the device is lost). The pipeline only observes + logs so
+    // the operator has an audit trail; a lost device already raised Error above.
+    private void OnCaptureDeviceChanged(object? sender, AudioDeviceEventArgs e)
+    {
+        _logger.Log(LogLevel.Warning, "audio",
+            "device change -> " + (e.Device?.Id ?? "(none)"));
+    }
+
     private async Task TryRestartCaptureAsync()
     {
         var cts = _runCts;
@@ -249,6 +261,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
 
         _capture.FrameCaptured -= OnFrameCaptured;
         _capture.Error -= OnCaptureError;
+        _capture.DeviceChanged -= OnCaptureDeviceChanged;
         try { await _capture.StopAsync(cts.Token).ConfigureAwait(false); }
         catch { /* ignore */ }
 
@@ -256,6 +269,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
         {
             _capture.FrameCaptured += OnFrameCaptured;
             _capture.Error += OnCaptureError;
+            _capture.DeviceChanged += OnCaptureDeviceChanged;
             await _capture.StartAsync(_config.OutputDeviceId, cts.Token).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -268,6 +282,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
     {
         _capture.FrameCaptured -= OnFrameCaptured;
         _capture.Error -= OnCaptureError;
+        _capture.DeviceChanged -= OnCaptureDeviceChanged;
         try { await _capture.StopAsync().ConfigureAwait(false); }
         catch { /* ignore */ }
     }
@@ -341,6 +356,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
             _silentSeconds = 0;
             _answeredInRound = false;
             _lastTranslationKey = string.Empty;
+            _lastTranslation = null;
             _speech.Reset();
         }
 
@@ -426,6 +442,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
         _silentSeconds = 0;
         _answeredInRound = false;
         _lastTranslationKey = string.Empty;
+        _lastTranslation = null;
         _speech.Reset();
     }
 
@@ -434,6 +451,11 @@ public sealed class InterviewPipeline : IAsyncDisposable
 
     private async Task TranslateIncrementallyAsync(TranscriptionResult result, CancellationToken ct)
     {
+        // whisper (-tr) translates the segment AUDIO: expensive and only meaningful
+        // once the segment is final. Partials stay untranslated on that provider.
+        if (_config.TranslationProvider == TranslationProvider.WhisperTranslate && !result.IsFinal)
+            return;
+
         if (!string.IsNullOrWhiteSpace(result.Text) && result.Text == _lastTranslationKey)
             return; // dedup: unchanged text
         if (!string.IsNullOrWhiteSpace(result.Text))
@@ -446,7 +468,13 @@ public sealed class InterviewPipeline : IAsyncDisposable
             // Emit when there is real text OR an honest status to display
             // (e.g. "Ollama unavailable - original shown").
             if (tr is not null && (tr.HasText || tr.StatusMessage is not null))
+            {
+                // Remember only GENUINE translations for the answer prompt
+                // (pass-through / unchanged / failure are not translations).
+                if (tr.IsTranslated)
+                    _lastTranslation = tr.TargetText;
                 TranslationUpdated?.Invoke(this, new TranslationUpdatedEventArgs(tr));
+            }
         }
         catch (OperationCanceledException)
         {
@@ -457,6 +485,9 @@ public sealed class InterviewPipeline : IAsyncDisposable
             ReportError(ex, isFatal: false);
         }
     }
+
+    /// <summary>Latest real translation of the current segment (null unless one was produced).</summary>
+    private string? _lastTranslation;
 
     private async Task MaybeAnswerAsync(TranscriptionResult result, CancellationToken ct)
     {
@@ -480,7 +511,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
             var recent = SnapshotRecentTurns();
             var request = new AnswerRequest(
                 result.Text,
-                null,
+                _lastTranslation,
                 Context,
                 _config.AnswerLength,
                 _config.AnswerLanguage,

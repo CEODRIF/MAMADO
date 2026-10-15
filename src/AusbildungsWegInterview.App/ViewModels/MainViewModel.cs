@@ -76,6 +76,40 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    public ObservableCollection<string> TranslationEngineOptions { get; } = new()
+        { "Ollama (local LLM)", "whisper.cpp (→ English only)", "External CLI (opus-mt)" };
+
+    private string _selectedTranslationEngine = "Ollama (local LLM)";
+    public string SelectedTranslationEngine
+    {
+        get => _selectedTranslationEngine;
+        set
+        {
+            if (!Set(ref _selectedTranslationEngine, value)) return;
+            _services.Config.TranslationProvider = value switch
+            {
+                "whisper.cpp (→ English only)" => TranslationProvider.WhisperTranslate,
+                "External CLI (opus-mt)" => TranslationProvider.ExternalCli,
+                _ => TranslationProvider.Ollama
+            };
+            ApplySpeechSettings();
+        }
+    }
+
+    private string _translatorCliPath = string.Empty;
+    public string TranslatorCliPath
+    {
+        get => _translatorCliPath;
+        set { if (Set(ref _translatorCliPath, value)) { _services.Config.TranslatorCliPath = string.IsNullOrWhiteSpace(value) ? null : value.Trim(); SaveConfig(); ApplySpeechSettings(); } }
+    }
+
+    private string _translatorCliArgs = string.Empty;
+    public string TranslatorCliArgs
+    {
+        get => _translatorCliArgs;
+        set { if (Set(ref _translatorCliArgs, value)) { _services.Config.TranslatorCliArgsTemplate = string.IsNullOrWhiteSpace(value) ? null : value.Trim(); SaveConfig(); ApplySpeechSettings(); } }
+    }
+
     private string _selectedAnswerLanguage = "de";
     public string SelectedAnswerLanguage
     {
@@ -223,6 +257,10 @@ public sealed class MainViewModel : ObservableObject
         SuggestedOllamaModel = SafeSuggest(AusbildungsWegInterview.Infrastructure.SystemInfo.RecommendOllamaModel);
         SuggestedWhisperModel = SafeSuggest(AusbildungsWegInterview.Infrastructure.SystemInfo.RecommendWhisperModel);
 
+        // OS-level device changes (default moved / device lost) are handled by the
+        // capture; here we keep the device list + selection in sync and notify the user.
+        _services.Audio.DeviceChanged += OnCaptureDeviceChanged;
+
         WirePipeline();
         RefreshDevices();
         ApplyConfigToUi();
@@ -277,6 +315,14 @@ public sealed class MainViewModel : ObservableObject
         p.Error += _hError;
         _wiredPipeline = p;
     }
+
+    private void OnCaptureDeviceChanged(object? sender, AudioDeviceEventArgs e)
+        => Post(() =>
+        {
+            RefreshDevices();
+            if (IsListening && e.Device is not null)
+                StatusText = "Output device changed - capture re-opened on the new device";
+        });
 
     private void Post(Action action)
     {
@@ -546,6 +592,14 @@ public sealed class MainViewModel : ObservableObject
         _selectedWhisperModel = c.WhisperModel;
         _whisperExecutablePath = c.WhisperExecutablePath ?? string.Empty;
         _whisperModelPath = c.WhisperModelPath ?? string.Empty;
+        _selectedTranslationEngine = c.TranslationProvider switch
+        {
+            TranslationProvider.WhisperTranslate => "whisper.cpp (→ English only)",
+            TranslationProvider.ExternalCli => "External CLI (opus-mt)",
+            _ => "Ollama (local LLM)"
+        };
+        _translatorCliPath = c.TranslatorCliPath ?? string.Empty;
+        _translatorCliArgs = c.TranslatorCliArgsTemplate ?? string.Empty;
         _translationEnabled = c.TranslationEnabled;
         _alwaysOnTop = c.AlwaysOnTop;
     }

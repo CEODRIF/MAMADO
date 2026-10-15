@@ -2,6 +2,7 @@ using System.Text;
 using AusbildungsWegInterview.Core.Audio;
 using AusbildungsWegInterview.Core.Speech;
 using AusbildungsWegInterview.Speech;
+using AusbildungsWegInterview.Tests.Fakes;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -282,6 +283,41 @@ public class WhisperCliRecognizerTests
 
         Assert.NotNull(lastPartial); // at least one real partial transcription happened
         _output.WriteLine("Partial: " + lastPartial!.Text);
+    }
+
+    [Fact]
+    public async Task RealWhisper_TranslateMode_ProducesEnglish()
+    {
+        var loc = LocalWhisperAssets.Find();
+        if (loc is null)
+        {
+            _output.WriteLine("SKIPPED: no local whisper.cpp build found.");
+            return;
+        }
+
+        byte[] pcm = LocalWhisperAssets.ReadPcm16MonoWav(loc.JfkWav, out int rate);
+
+        await using var rec = new WhisperCliRecognizer(
+            loc.Bin, loc.Model, threads: Math.Min(2, Environment.ProcessorCount),
+            partialIntervalSeconds: 999.0, maxSegmentSeconds: 60.0, timeoutMs: 120000,
+            workDir: Path.Combine(Path.GetTempPath(), "awg-tr-" + Guid.NewGuid().ToString("N")));
+        await rec.PrepareAsync("tiny", null);
+
+        int chunkSamples = 8000;
+        for (int offset = 0; offset < pcm.Length; offset += chunkSamples * 2)
+        {
+            int len = Math.Min(chunkSamples * 2, pcm.Length - offset);
+            var chunk = new byte[len];
+            Buffer.BlockCopy(pcm, offset, chunk, 0, len);
+            await rec.ProcessAudioAsync(new AudioFrame(chunk, rate));
+        }
+
+        // JFK audio is English: -tr must (nearly) echo it — proves the -tr flag path + JSON parse.
+        string? en = await rec.TranslateSegmentToEnglishAsync();
+
+        Assert.False(string.IsNullOrWhiteSpace(en), "whisper -tr produced no text.");
+        Assert.Contains("Americans", en!, StringComparison.OrdinalIgnoreCase);
+        _output.WriteLine("-tr output: " + en);
     }
 
     [Fact]

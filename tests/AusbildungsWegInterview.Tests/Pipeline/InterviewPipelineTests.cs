@@ -392,6 +392,9 @@ internal sealed class ScriptedCapture : IAudioCapture
     public void RaiseFatal(Exception ex)
         => Error?.Invoke(this, new CaptureErrorEventArgs(ex, true));
 
+    public void RaiseDeviceChanged(AudioDeviceEventArgs e)
+        => DeviceChanged?.Invoke(this, e);
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 

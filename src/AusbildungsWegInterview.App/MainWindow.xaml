@@ -136,6 +136,10 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Grid.Column="0" Text="Source language" Margin="0,0,8,6"/>
@@ -146,41 +150,61 @@
             <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,6"
                       ItemsSource="{Binding TargetLanguages}" SelectedItem="{Binding SelectedTargetLanguage}"/>
 
-            <CheckBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,6" Foreground="#f3f4f8" VerticalAlignment="Center"
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Translation engine" Margin="0,0,8,6"/>
+            <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,6"
+                      ItemsSource="{Binding TranslationEngineOptions}" SelectedItem="{Binding SelectedTranslationEngine}"/>
+
+            <CheckBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,6" Foreground="#f3f4f8" VerticalAlignment="Center"
                       Content="Enable translation (off = show original, clearly labeled)"
                       IsChecked="{Binding TranslationEnabled}"/>
 
-            <TextBlock Grid.Row="3" Grid.Column="0" Text="Answer language" Margin="0,0,8,6"/>
-            <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,6"
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="External CLI" Margin="0,0,8,6" VerticalAlignment="Center"
+                       ToolTip="Only used when the engine is 'External CLI'. Text goes via stdin; first stdout line is the translation."/>
+            <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,0,6"
+                     Text="{Binding TranslatorCliPath, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="e.g. C:\tools\mariannet.exe"/>
+
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="External CLI args" Margin="0,0,8,6" VerticalAlignment="Center"
+                       ToolTip="Template with {source} and {target} placeholders."/>
+            <TextBox Grid.Row="5" Grid.Column="1" Margin="0,0,0,6"
+                     Text="{Binding TranslatorCliArgs, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="e.g. &quot;mariannet -m C:\models\opus-mt-de-en.bin -s {source} -t {target} -i - -o -&quot;"/>
+
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="Answer language" Margin="0,0,8,6"/>
+            <ComboBox Grid.Row="6" Grid.Column="1" Margin="0,0,0,6"
                       ItemsSource="{Binding AnswerLanguages}" SelectedItem="{Binding SelectedAnswerLanguage}"/>
 
-            <TextBlock Grid.Row="4" Grid.Column="0" Text="Answer length" Margin="0,0,8,6"/>
-            <ComboBox Grid.Row="4" Grid.Column="1" Margin="0,0,0,6"
+            <TextBlock Grid.Row="7" Grid.Column="0" Text="Answer length" Margin="0,0,8,6"/>
+            <ComboBox Grid.Row="7" Grid.Column="1" Margin="0,0,0,6"
                       ItemsSource="{Binding AnswerLengthOptions}" SelectedItem="{Binding SelectedAnswerLength}"/>
 
-            <TextBlock Grid.Row="5" Grid.Column="0" Text="Answer style" Margin="0,0,8,6"/>
-            <ComboBox Grid.Row="5" Grid.Column="1" Margin="0,0,0,6"
+            <TextBlock Grid.Row="8" Grid.Column="0" Text="Answer style" Margin="0,0,8,6"/>
+            <ComboBox Grid.Row="8" Grid.Column="1" Margin="0,0,0,6"
                       ItemsSource="{Binding AnswerStyleOptions}" SelectedItem="{Binding SelectedAnswerStyle}"/>
 
-            <TextBlock Grid.Row="6" Grid.Column="0" Text="Speech model" Margin="0,0,8,6"/>
-            <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal">
+            <TextBlock Grid.Row="9" Grid.Column="0" Text="Speech model" Margin="0,0,8,6"/>
+            <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal">
                 <ComboBox Width="120" ItemsSource="{Binding WhisperModelOptions}" SelectedItem="{Binding SelectedWhisperModel}"/>
                 <Button Content="Download" Command="{Binding DownloadModelCommand}" Margin="8,0,0,0"/>
             </StackPanel>
 
-            <TextBlock Grid.Row="7" Grid.Column="0" Text="Whisper CLI path" Margin="0,0,8,6" VerticalAlignment="Center" ToolTip="Path to whisper-cli (or main). Leave empty to use the built-in native library adapter."/>
-            <TextBox Grid.Row="7" Grid.Column="1" Margin="0,0,0,6"
+            <TextBlock Grid.Row="10" Grid.Column="0" Text="Whisper CLI path" Margin="0,0,8,6" VerticalAlignment="Center" ToolTip="Path to whisper-cli (or main). Leave empty to use the built-in native library adapter."/>
+            <TextBox Grid.Row="10" Grid.Column="1" Margin="0,0,0,6"
                      Text="{Binding WhisperExecutablePath, UpdateSourceTrigger=PropertyChanged}"
                      ToolTip="e.g. C:\tools\whisper.cpp\build\bin\whisper-cli.exe  (applied when not listening)"/>
 
-            <TextBlock Grid.Row="8" Grid.Column="0" Text="Model path" Margin="0,0,8,6" VerticalAlignment="Center" ToolTip="Explicit path to a ggml model file. Leave empty to use the app's model folder."/>
-            <TextBox Grid.Row="8" Grid.Column="1" Margin="0,0,0,6"
+            <TextBlock Grid.Row="11" Grid.Column="0" Text="Model path" Margin="0,0,8,6" VerticalAlignment="Center" ToolTip="Explicit path to a ggml model file. Leave empty to use the app's model folder."/>
+            <TextBox Grid.Row="11" Grid.Column="1" Margin="0,0,0,6"
                      Text="{Binding WhisperModelPath, UpdateSourceTrigger=PropertyChanged}"
                      ToolTip="e.g. C:\tools\whisper.cpp\models\ggml-small.bin  (applied when not listening)"/>
 
-            <TextBlock Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,0"
+            <TextBlock Grid.Row="12" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,0"
                        Foreground="#6b7089" FontSize="10" TextWrapping="Wrap"
-                       Text="Speech settings apply after Stop. Only the selected output device is captured (system audio, loopback) - the microphone is never used."/>
+                       Text="Engine settings apply after Stop. whisper (→EN) reuses the speech model; External CLI needs a user-installed binary + models (never downloaded by the app)."/>
+
+            <TextBlock Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,0"
+                       Foreground="#6b7089" FontSize="10" TextWrapping="Wrap"
+                       Text="Only the selected output device is captured (system audio, loopback) - the microphone is never used."/>
         </Grid>
 
         <!-- Candidate context -->

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>AusbildungsWegInterview.Benchmarks</RootNamespace>
+    <Description>Reproducible local performance benchmarks (CPU). Not shipped with the app.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Speech\AusbildungsWegInterview.Speech.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Answers\AusbildungsWegInterview.Answers.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Translation\AusbildungsWegInterview.Translation.csproj" />
+    <ProjectReference Include="..\..\tests\AusbildungsWegInterview.Tests\AusbildungsWegInterview.Tests.csproj" />
+  </ItemGroup>
+
+</Project>

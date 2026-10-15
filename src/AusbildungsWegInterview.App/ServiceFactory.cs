@@ -2,6 +2,7 @@ using AusbildungsWegInterview.Answers;
 using AusbildungsWegInterview.Audio;
 using AusbildungsWegInterview.Core.Answers;
 using AusbildungsWegInterview.Core.Audio;
+using AusbildungsWegInterview.Core.Common;
 using AusbildungsWegInterview.Core.Config;
 using AusbildungsWegInterview.Core.Pipeline;
 using AusbildungsWegInterview.Core.Speech;
@@ -90,6 +91,30 @@ public sealed class AppServices : IAsyncDisposable
         }
     }
 
+    private ITranslator CreateTranslator(AppConfiguration config, ISpeechRecognizer recognizer)
+    {
+        return config.TranslationProvider switch
+        {
+            TranslationProvider.WhisperTranslate =>
+                new WhisperTranslateAdapter(recognizer as Core.Speech.ISegmentTranslator),
+
+            TranslationProvider.ExternalCli when
+                !string.IsNullOrWhiteSpace(config.TranslatorCliPath) =>
+                new ExternalCliTranslator(
+                    config.TranslatorCliPath,
+                    config.TranslatorCliArgsTemplate,
+                    config.TranslatorSupportedPairs,
+                    config.TranslatorTimeoutSeconds),
+
+            // External CLI requested but no path configured: an Ollama fallback would
+            // silently hide the misconfiguration. Pass-through with an honest label.
+            TranslationProvider.ExternalCli =>
+                new PassThroughTranslator("external CLI (not configured)"),
+
+            _ => new OllamaTranslator(Ollama, config.OllamaModel)
+        };
+    }
+
     private void BuildSpeechAndPipeline()
     {
         var config = Config;
@@ -110,9 +135,9 @@ public sealed class AppServices : IAsyncDisposable
             recognizer = new WhisperCppRecognizer(modelPath, threads: Math.Max(1, config.WhisperThreads));
         }
 
-        // Translation: explicit pass-through when disabled (never falsely labeled).
+        // Translation provider selection (all local; none requires a cloud service).
         ITranslator translator = config.TranslationEnabled
-            ? new OllamaTranslator(Ollama, config.OllamaModel)
+            ? CreateTranslator(config, recognizer)
             : new PassThroughTranslator();
 
         var answers = new OllamaAnswerGenerator(Ollama, config.OllamaModel);

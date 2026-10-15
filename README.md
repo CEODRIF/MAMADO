@@ -16,6 +16,50 @@ suggestions** grounded in your CV and the job description with a local
 
 ---
 
+## Status — Phase 3 (Windows integration, performance, local translation & release packaging)
+
+**Measured on the build host** (Intel Xeon Platinum, 2 vCPU, 4 GB RAM, Linux x64, CPU-only —
+full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
+- whisper.cpp `tiny` transcribes an 11 s speech clip in **~3.6–4.4 s (RTF ≈ 0.40)** — faster
+  than real time on 2 cores, with headroom for the rest of the pipeline.
+- whisper `-tr` translation (any language → English, reuses the speech model): **~2.3 s** for 11 s.
+- Question detection: **~650 ns/op** (negligible).
+- Full pipeline E2E (real ASR, mocked LLM): provisional answer **~4.3 s**, final transcript
+  **~7.4 s** after the audio ends being fed (2 s trailing silence included).
+- 10 minutes of simulated sustained audio: queue stays **≤ 128 (bounded)**, peak process RSS
+  **≈ 77 MB** (incl. runtime baseline).
+- Argos/opus-mt DE→EN probe (evaluation): **0.16–0.36 s warm** per sentence, ~100 MB per pair.
+
+**Verified by the automated suite (175 tests, cross-platform):**
+- **Real end-to-end run**: actual JFK speech audio through the complete pipeline
+  (real whisper.cpp → question detection → translation → answer), asserting the
+  real transcript, a real generated answer, and honest stop semantics.
+- Device-change decision logic (explicit selection kept; default-follow re-opens on the
+  new default; lost device → fatal error → bounded pipeline restart).
+- Answer quality regressions: question-specific prompts, language/length respect, bounded
+  material, genuine-translation hand-off (pass-through is never treated as a translation),
+  bounded recent-conversation context (a question is never in its own context).
+- Translation providers: whisper `-tr` (real subprocess, English-only honesty), external CLI
+  (real subprocess stdin/stdout, unsupported-pair / timeout / echo honesty).
+- Plus all Phase 1/2 coverage (pipeline, cancellation, backpressure, Ollama failure modes,
+  redacting logger, config, WAV writer).
+
+**Requires a Windows machine (Windows 10/11 x64) — NOT verifiable on the Linux build host
+and therefore NOT claimed as verified:**
+- WASAPI loopback capture on a real output device, live device plug/unplug, default-device
+  switching on real hardware, and the WPF window/ViewModel at runtime. The published
+  `win-x64` build was produced cross-platform and its file layout verified, but it has
+  **not been launched on Windows** in this milestone.
+
+On Windows, verify with:
+```powershell
+dotnet build AusbildungsWegInterview.sln -c Release
+dotnet test -c Release
+.\scripts\publish.ps1 -Zip     # then run publish\AusbildungsWegInterview-windows-x64\AusbildungsWegInterview.exe
+```
+
+---
+
 ## Status — Phase 2 (local AI interview engine & real-time speech)
 
 **Verified in this repository (automated, cross-platform test host = Linux):**
@@ -207,25 +251,51 @@ run.
 
 ---
 
-## Translation
+## Translation (three local engines + pass-through)
 
-- **Provider:** the local Ollama model (optional). With Ollama unavailable the
-  app still transcribes; the translation panel shows
-  **"Ollama unavailable – original text shown (not translated)"** instead of
-  falsely labeling the original as translated.
-- **Pass-through mode:** uncheck **Enable translation** in Settings — the
-  original is shown and clearly labeled *"Translation disabled (pass-through)"*.
-- **Honest labeling:** if the model returns the text unchanged (e.g. source and
-  target language are the same), the panel says so — unchanged text is never
-  labeled "translated".
-- The **complete question** is translated (segment finalization), not isolated
-  words; unchanged segment text is not re-translated (dedup).
-- **Offline alternatives** were evaluated for the future: a dedicated local
-  translation model (e.g. `opus-mt` via a local runtime, ~200–500 MB, strong
-  for common language pairs but heavy to integrate on CPU and limited for AR),
-  and LLM-based translation (current approach, already present when Ollama is
-  installed — no extra dependency, good quality with a ≥3B model). The
-  `ITranslator` interface allows plugging a dedicated engine in later.
+Pick the **Translation engine** in Settings. All options are local and offline;
+none needs a cloud service or API key.
+
+| Engine | Coverage | Extra dependency | Measured latency* | Notes |
+|---|---|---|---|---|
+| **Ollama (local LLM)** — default | All pairs (DE↔EN, DE↔FR, DE↔AR, …) with a ≥3B model | Ollama + pulled model | not measured here (no Ollama on build host; expect seconds/sentence on CPU) | Best quality & coverage; the LLM you already use for answers |
+| **whisper.cpp (→ English only)** | Any source → **EN** | **none** (reuses the speech model) | ~2.3 s per 11 s segment (tiny) | Zero-setup offline path; other targets report "use Ollama", never fake |
+| **External CLI (opus-mt class)** | Pairs you download (e.g. DE↔EN, DE↔FR, EN↔AR) | Standalone MT binary + per-pair model (user-managed) | ~0.2 s warm/sentence (Argos probe, DE→EN) | See setup below |
+| **Off** (uncheck Enable translation) | — | — | — | Original shown, clearly labeled "pass-through" |
+
+\* Measured on the build host (2 vCPU / 4 GB, CPU-only) — see [benchmarks/RESULTS.md](benchmarks/RESULTS.md).
+
+**Honest labeling is enforced by design:** un-translated text is never labeled
+"translated". Each engine reports its real status — Ollama unavailable, CLI
+missing, pair not covered, source not pinned, model echoed the input, timeout —
+and the UI shows that status. The complete question is translated (segment
+finalization), not isolated words, and unchanged text is not re-translated
+(dedup).
+
+### External CLI setup (e.g. opus-mt via mariannet)
+
+1. Obtain a standalone MT CLI. Example: build [mariannmt](https://github.com/marian-nmt/mariannmt)
+   (Apache-2.0) or use an Argos wrapper; the app only needs a binary that reads
+   text on **stdin** and writes the translation on **stdout (first line)**.
+2. Download a model explicitly (the app never downloads models). Example
+   (opus-mt DE→EN, ~260 MB, from the official Marian/Opus releases — check the
+   license before redistribution):
+   ```powershell
+   # mariannet example
+   & .\mariannet.exe -m C:\models\opus-mt-de-en.bin -s de -t en -i question.txt -o answer.txt
+   ```
+3. In Settings → **External CLI**: binary path, args template with `{source}` /
+   `{target}` placeholders (e.g. `mariannet -m C:\models\opus-mt-de-en.bin -s {source} -t {target} -i - -o -`),
+   and the supported pairs (e.g. `de-en,en-de`).
+
+**Evaluation evidence (Phase 3):** Argos Translate (opus-mt) was installed and
+measured on the build host — DE→EN quality good, 0.16–0.36 s warm, ~100 MB per
+pair, but its package index covers only `de↔en` and `en↔ar` (no `de↔fr`), and
+it is a Python package (extra runtime on Windows). NLLB-200/M2M100 cover all
+pairs but need ~2–3 GB models (impractical on modest machines). whisper `-tr`
+covers →EN with zero extra dependency. The opus-mt/mariannet CLI is the most
+practical small-model route for dedicated pairs, which is what the External CLI
+provider standardizes. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
@@ -247,6 +317,35 @@ run.
   `ollama pull <model>` command) instead of a fake answer.
 
 ---
+
+## Windows Release (packaging)
+
+Reproducible publishing (run on Windows, no admin rights, nothing installed):
+
+```powershell
+.\scripts\publish.ps1 -Zip
+```
+
+| Option | Result |
+|---|---|
+| default (framework-dependent) | ~1 MB folder; target machine needs the **.NET 8 Desktop Runtime (x64)** |
+| `-SelfContained` | ~70–90 MB folder; **no** .NET needed on the target |
+
+- Output: `publish\AusbildungsWegInterview-windows-x64\AusbildungsWegInterview.exe`
+  (+ optional `.zip`). The `win-x64` artifact was produced and file-verified in
+  this milestone (cross-published from the Linux build host); **launching it on
+  Windows is your verification step** (see Status above).
+- **AI models are not bundled.** After launch: set the whisper CLI path /
+  download the speech model in Settings; pull the Ollama model; download any
+  external-CLI MT models — all explicitly, all local.
+- **Launch:** double-click `AusbildungsWegInterview.exe`.
+- **Remove/uninstall:** delete the publish folder (or the ZIP). User settings
+  and logs live under `%APPDATA%\AusbildungsWegInterview\` — delete that folder
+  too for a full removal. No registry entries, no services, no background
+  processes.
+- The ZIP is reproducible: `scripts/publish.ps1 -Zip` (the build host's ZIP is a
+  gitignored artifact, not committed — publish on your own machine to avoid any
+  doubt about provenance).
 
 ## Models (downloads: explicit, local)
 
@@ -294,10 +393,14 @@ weights (check each model's license, e.g. Llama 3.1 community license).
 dotnet test -c Release
 ```
 
-141 tests run anywhere with the .NET 8 SDK (verified on Linux). The
-whisper.cpp *real transcription* tests additionally require a local whisper.cpp
-build + `ggml-tiny.bin` + `jfk.wav` and self-report "SKIPPED" in the test
-output when those are absent; all error-path tests run regardless.
+175 tests run anywhere with the .NET 8 SDK (verified on Linux). The
+whisper.cpp *real* tests (transcription, `-tr` translation, full-pipeline
+end-to-end, corrupt model) additionally require a local whisper.cpp build +
+`ggml-tiny.bin` + `jfk.wav` and self-report "SKIPPED" in the test output when
+those are absent; all error-path tests run regardless.
+
+Performance: `dotnet run --project benchmarks/AusbildungsWegInterview.Benchmarks`
+(reproducible; results in [benchmarks/RESULTS.md](benchmarks/RESULTS.md)).
 
 **Not executable on the Linux build host (Windows-only):** WASAPI loopback
 capture of a real device, the WPF window/ViewModel at runtime, and live
@@ -333,12 +436,26 @@ rebuilds the speech pipeline automatically (your CV/JD context is preserved).
 | "Local AI (Ollama): not running" | Start Ollama; answers/LLM-translation are optional. Transcription unaffected. |
 | "model '…' MISSING – run: ollama pull …" | Run the shown `ollama pull` command, or pick a smaller model in Ollama. |
 | "Text returned unchanged by the model" | Source and target language are the same, or the model echoed input — expected, not an error. |
+| "whisper translation supports English only" | You picked the whisper (→EN) engine with a non-English target — switch the engine to Ollama or External CLI. |
+| "Pair de→fr is not covered by the configured model(s)" | The external CLI models don't include that pair — download the model for the pair (or use Ollama). |
+| "External CLI needs a pinned source language" | Set the recognition language (Settings → Source language) when using the External CLI engine. |
+| "Audio output device was disconnected" | The selected device was unplugged — reconnect it (or select another) and Start again. The pipeline auto-restarts once, then stops with this error. |
 | Transcription is quiet/empty | The device may be muted or silent — loopback captures whatever is *playing*. |
 | Restarting whisper settings has no effect | Stop listening first — the window blocks changes while capture runs. |
 
 ---
 
-## Known limitations (Phase 2)
+## Known limitations
+
+- **Windows runtime not verified on the build host.** WASAPI capture, WPF UI at
+  runtime, live device plug/unplug and the published win-x64 launch all require a
+  Windows machine (see Status). Everything else — including the real whisper.cpp
+  end-to-end pipeline — is verified in the automated suite.
+- **Ollama latency not measured** on the build host (no Ollama installed); the
+  README/benchmark docs label Ollama timings as estimates.
+- Translation engine coverage is pair-dependent and reported honestly: whisper
+  (→EN) covers any→EN; Argos/opus-mt covers the pairs you download; Ollama covers
+  all pairs with a capable model. Unsupported pairs never pretend to translate.
 
 - Transcription is **segment-based**, not token-streaming: partials refresh on
   a configurable cadence (default 1.0 s of new audio) and final results arrive

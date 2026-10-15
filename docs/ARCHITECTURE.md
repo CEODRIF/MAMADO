@@ -257,3 +257,95 @@ settings are read live by the pipeline and need no rebuild.
   removal surfaced as a capture error + bounded auto-restart).
 - Hardware benchmarking (CPU/RAM/VRAM, latency) on representative Windows boxes.
 - Packaging (MSIX/installer) with models kept separate from the installer.
+
+---
+
+# Phase 3 additions
+
+## Device-change handling (WASAPI)
+
+Windows exposes no simple managed "device changed" event for WASAPI
+(`SystemEvents` has no DeviceChange; the Win32 path needs a hidden message
+window). `LoopbackAudioCapture` therefore **polls device state every 2 s while
+capturing** (endpoint enumeration is cheap):
+
+- `Core.Audio.DeviceChangeMonitor` — pure, unit-tested decision logic:
+  explicit selection lost → `DeviceLost` (fatal error → pipeline's bounded
+  restart); default-follow mode + default moved → `RestartOnNewDefault`
+  (capture re-opens internally, `DeviceChanged` raised); otherwise `None`.
+- The pipeline logs device changes; the UI refreshes the device list and shows
+  a status note while listening.
+- Worst-case detection latency for a removed/changed device: ~2 s.
+
+## Translation providers (Phase 3)
+
+`ITranslator` implementations:
+
+- `OllamaTranslator` — LLM translation, all pairs, optional (Phase 2).
+- `WhisperTranslateAdapter` — wraps the recognizer's optional
+  `ISpeechRecognizer`+`ISegmentTranslator` capability: whisper.cpp `-tr`
+  translates the **segment audio** to **English only** (zero extra dependency,
+  reuses the speech model). The pipeline runs it for **final** segments only
+  (partials stay untranslated on this provider). Non-English targets and
+  non-capable recognizers produce honest status, never a fake translation.
+- `ExternalCliTranslator` — generic subprocess MT engine (opus-mt/mariannet
+  class): text on stdin, first stdout line = translation; argument template
+  with `{source}`/`{target}`; configured pair allow-list; timeouts; missing
+  executable / unsupported pair / echo / timeout all reported honestly.
+- `PassThroughTranslator` — explicit "off" mode, clearly labeled.
+
+Provider selection: `AppConfiguration.TranslationProvider` (Ollama /
+WhisperTranslate / ExternalCli / Off via the TranslationEnabled toggle) in the
+composition root (`AppServices.CreateTranslator`), applied through
+`RebuildPipeline()` when not listening.
+
+### Translation evaluation evidence (Phase 3)
+
+Measured on the build host (2 vCPU / 4 GB, CPU-only):
+- whisper `-tr`: ~2.3 s per 11 s segment (tiny) — →EN only.
+- Argos Translate (opus-mt DE→EN): 5.95 s cold, **0.16–0.36 s warm** per
+  sentence; good quality; package index covers `de↔en`, `en↔ar` only (no
+  `de↔fr`); Python runtime required on Windows → not bundled, only documented.
+- NLLB-200 / M2M100: all pairs but ~2–3 GB models → impractical on modest
+  hardware (documented, not integrated).
+- Ollama LLM: all pairs with a ≥3B model, no new dependency for users who
+  already run Ollama for answers (default engine).
+
+## Answer-stage translation hand-off
+
+The pipeline remembers the latest **genuine** translation of the current
+segment (`IsTranslated` only — pass-through/unchanged/failure never qualify)
+and passes it as `AnswerRequest.QuestionTranslated`, so the answer model sees
+both the original and the translated question. The value is reset per segment
+and per session.
+
+## Orchestration & end-to-end tests
+
+`Pipeline.FullPipelineOrchestrationTests` adds:
+- Stop semantics: frames enqueued after Stop are **not** processed; capture
+  stops match starts; final state is Stopped.
+- State sequence well-formedness (Idle → … → Stopped).
+- Device-change notification does not break a running pipeline.
+- 1-minute sustained simulated audio: bounded, stable, clean stop.
+- **REAL end-to-end** (gated on a local whisper.cpp build): actual JFK audio
+  through the complete pipeline (real ASR + real question detection + mocked
+  LLM stages) asserting the real transcript, a generated answer (final), and
+  translation — clearly separate from the mocked deterministic tests.
+
+## Performance benchmarks
+
+`benchmarks/AusbildungsWegInterview.Benchmarks` (console, dev-only, not
+shipped) measures on the running host: whisper transcription RTF, whisper `-tr`
+latency, question-detection ns/op (median of 5), full-pipeline E2E timing
+(provisional/final), and sustained-audio queue depth + peak RSS. Results with
+host details: `benchmarks/RESULTS.md`. Windows/WPF/Ollama/GPU measurements are
+explicitly marked as not runnable on the Linux build host.
+
+## Release packaging
+
+`scripts/publish.ps1` publishes `src/AusbildungsWegInterview.App` for `win-x64`
+(Release). Framework-dependent (default, ~1 MB, needs .NET 8 Desktop Runtime)
+or self-contained (`-SelfContained`, ~70–90 MB, no prerequisites). Optional
+`-Zip`. No admin rights, no installer, no system changes; models excluded;
+config in `%APPDATA%\AusbildungsWegInterview`. Removal = delete the publish
+folder (+ optional appdata folder).

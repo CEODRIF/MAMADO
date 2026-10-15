@@ -19,6 +19,25 @@ public sealed class AppConfiguration
     /// <summary>When false, translation is disabled and the original is shown (clearly labeled as pass-through).</summary>
     public bool TranslationEnabled { get; set; } = true;
 
+    /// <summary>Which local engine performs translation (see <see cref="TranslationProvider"/>).</summary>
+    public TranslationProvider TranslationProvider { get; set; } = TranslationProvider.Ollama;
+
+    // --- external CLI translation engine (e.g. opus-mt / mariannet) ---
+    /// <summary>Path to a standalone translation CLI. Text goes via stdin; first stdout line is the translation.</summary>
+    public string? TranslatorCliPath { get; set; }
+
+    /// <summary>
+    /// Argument template for the external CLI. Placeholders: {source}, {target}.
+    /// Example (mariannet/opus-mt): "mariannet -m C:\models\opus-mt-de-en.bin -s {source} -t {target} -i - -o -"
+    /// </summary>
+    public string? TranslatorCliArgsTemplate { get; set; }
+
+    /// <summary>Comma-separated supported pairs, e.g. "de-en,en-de,de-fr,en-ar". Unsupported pairs are reported, not faked.</summary>
+    public string TranslatorSupportedPairs { get; set; } = "de-en,en-de";
+
+    /// <summary>Per-translation timeout for the external CLI (seconds).</summary>
+    public int TranslatorTimeoutSeconds { get; set; } = 30;
+
     /// <summary>Language generated answers are written in.</summary>
     public string AnswerLanguage { get; set; } = "de";
 
