@@ -85,6 +85,16 @@ public sealed class AppConfiguration
 
     public bool AlwaysOnTop { get; set; }
 
+    // --- UI preferences ---
+    /// <summary>
+    /// UI language code ("en", "de", "fr", "ar"). Independent of the interview /
+    /// translation / answer languages above.
+    /// </summary>
+    public string UiLanguage { get; set; } = "en";
+
+    /// <summary>UI theme: "light" or "dark".</summary>
+    public string Theme { get; set; } = "light";
+
     // --- pipeline tuning ---
     public double ChunkSeconds { get; set; } = 0.5;
     public int TargetSampleRate { get; set; } = 16000;

@@ -2,14 +2,17 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:AusbildungsWegInterview.App.ViewModels"
-        Title="AusbildungsWeg Interview"
+        Title="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TitleApp}"
         Width="640" Height="840" MinWidth="560" MinHeight="620"
         ResizeMode="CanResize" WindowStartupLocation="CenterScreen"
+        FlowDirection="{Binding IsRtl, Converter={StaticResource BoolToFlowDirection}}"
         Topmost="{Binding AlwaysOnTop}">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:InverseBoolToVisConverter x:Key="InverseBoolToVis"/>
+        <local:BoolToFlowDirectionConverter x:Key="BoolToFlowDirection"/>
+        <local:LocKeyConverter x:Key="LocKey"/>
         <Style x:Key="AwChipText" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -18,7 +21,7 @@
         <Style x:Key="AwMiniLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="{StaticResource AwMutedBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AwMutedBrush}"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
     </Window.Resources>
@@ -26,8 +29,8 @@
     <DockPanel>
 
         <!-- ================= header ================= -->
-        <Border DockPanel.Dock="Top" Background="{StaticResource AwSurfaceBrush}"
-                BorderBrush="{StaticResource AwLineBrush}" BorderThickness="0,0,0,1" Padding="16,12">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AwSurfaceBrush}"
+                BorderBrush="{DynamicResource AwLineBrush}" BorderThickness="0,0,0,1" Padding="16,12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -36,46 +39,57 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- logo mark (brand gradient tile, like the site's rounded gradient icons) -->
-                <Border Width="38" Height="38" CornerRadius="11" Background="{StaticResource AwGradientNeon}"
+                <Border Width="38" Height="38" CornerRadius="11" Background="{DynamicResource AwGradientNeon}"
                         VerticalAlignment="Center">
                     <TextBlock Text="AW" Foreground="White" FontWeight="Bold" FontSize="13"
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
 
                 <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="AusbildungsWeg Interview" FontSize="15" FontWeight="SemiBold"
-                               Foreground="{StaticResource AwInkBrush}"/>
-                    <TextBlock Text="Local interview companion - nothing leaves your PC"
-                               FontSize="11" Foreground="{StaticResource AwMutedBrush}"/>
+                    <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TitleApp}" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AwInkBrush}"/>
+                    <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Subtitle}"
+                               FontSize="11" Foreground="{DynamicResource AwMutedBrush}" TextWrapping="Wrap"/>
                 </StackPanel>
 
-                <!-- compact live status chip -->
-                <Border Grid.Column="2" Style="{StaticResource AwChip}" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal">
-                        <Ellipse Width="9" Height="9" Fill="{Binding StatusBrush}" VerticalAlignment="Center" Margin="0,0,7,0"/>
-                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource AwChipText}"
-                                   Foreground="{StaticResource AwInkSoftBrush}"/>
-                        <Button Content="&#x21BB;" Style="{StaticResource AwButtonGhost}" Margin="8,0,0,0"
-                                Padding="6,0" FontSize="13" Command="{Binding RefreshStatusCommand}"
-                                ToolTip="Refresh Ollama / model status"/>
-                    </StackPanel>
-                </Border>
+                <!-- UI language + theme + compact live status -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ComboBox Style="{DynamicResource AwComboBox}" Width="86" Height="30" Margin="0,0,6,0"
+                              ItemsSource="{Binding UiLanguageOptions}"
+                              SelectedItem="{Binding SelectedUiLanguage}" DisplayMemberPath="Display"
+                              ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=UiLanguageTip}"/>
+                    <Button Style="{DynamicResource AwButtonGhost}" Width="34" Margin="0,0,6,0" FontSize="14"
+                            Content="{Binding ThemeIcon}"
+                            Command="{Binding ToggleThemeCommand}"
+                            ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ThemeToggleTip}"/>
+                    <Border Style="{DynamicResource AwChip}">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="9" Height="9" Fill="{Binding StatusBrush}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource AwChipText}"
+                                       Foreground="{DynamicResource AwInkSoftBrush}"/>
+                            <Button Content="&#x21BB;" Style="{DynamicResource AwButtonGhost}" Margin="8,0,0,0"
+                                    Padding="6,0" FontSize="13" Command="{Binding RefreshStatusCommand}"
+                                    ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=RefreshStatusTip}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
         </Border>
 
         <!-- ================= error banner ================= -->
-        <Border DockPanel.Dock="Bottom" Background="{StaticResource AwDangerSoftBrush}"
-                BorderBrush="#33D9535D" BorderThickness="0,1,0,0" Padding="14,10"
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AwDangerSoftBrush}"
+                BorderBrush="{DynamicResource AwDangerBrush}" BorderThickness="0,1,0,0" Padding="14,10"
                 Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding ErrorText}" Foreground="{StaticResource AwDangerBrush}"
+                <TextBlock Grid.Column="0" Text="{Binding ErrorText}" Foreground="{DynamicResource AwDangerBrush}"
                            TextWrapping="Wrap" VerticalAlignment="Center" FontSize="12"/>
-                <Button Grid.Column="1" Content="OK" Style="{StaticResource AwButtonSecondary}" Height="30"
-                        Margin="10,0,0,0" MinWidth="56" Command="{Binding ClearErrorCommand}"/>
+                <Button Grid.Column="1" Style="{DynamicResource AwButtonSecondary}" Height="30"
+                        Margin="10,0,0,0" MinWidth="56" Command="{Binding ClearErrorCommand}"
+                        Content="OK"/>
             </Grid>
         </Border>
 
@@ -84,18 +98,17 @@
             <StackPanel Margin="16">
 
                 <!-- explicit capture indicator: system audio only, never the microphone -->
-                <Border Background="{StaticResource AwSuccessSoftBrush}" CornerRadius="12" Padding="12,8"
+                <Border Background="{DynamicResource AwSuccessSoftBrush}" CornerRadius="12" Padding="12,8"
                         Margin="0,0,0,12"
                         Visibility="{Binding IsCapturingSystemAudio, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Foreground="{StaticResource AwSuccessBrush}" FontSize="11.5" FontWeight="SemiBold"
-                               TextWrapping="Wrap"
-                               Text="System audio is being captured (loopback of the selected output device). The microphone is NOT used."/>
+                    <TextBlock Foreground="{DynamicResource AwSuccessBrush}" FontSize="11.5" FontWeight="SemiBold"
+                               TextWrapping="Wrap" Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=CapturingNotice}"/>
                 </Border>
 
                 <!-- ============ 1) interview setup ============ -->
-                <Border Style="{StaticResource AwCard}" Margin="0,0,0,12">
+                <Border Style="{DynamicResource AwCard}" Margin="0,0,0,12">
                     <StackPanel>
-                        <TextBlock Text="Set up your interview" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,10"/>
+                        <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=SetupHeading}" Style="{DynamicResource AwSectionLabel}" Margin="0,0,0,10"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -109,29 +122,29 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Grid.Row="0" Grid.Column="0">
-                                <TextBlock Text="Interview language" Style="{StaticResource AwFieldLabel}"/>
-                                <ComboBox Style="{StaticResource AwComboBox}"
+                                <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=InterviewLanguage}" Style="{DynamicResource AwFieldLabel}"/>
+                                <ComboBox Style="{DynamicResource AwComboBox}"
                                           ItemsSource="{Binding SourceLanguages}"
                                           SelectedItem="{Binding SelectedSourceLanguage}"/>
                             </StackPanel>
 
                             <StackPanel Grid.Row="0" Grid.Column="2">
-                                <TextBlock Text="Translation language" Style="{StaticResource AwFieldLabel}"/>
-                                <ComboBox Style="{StaticResource AwComboBox}"
+                                <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranslationLanguage}" Style="{DynamicResource AwFieldLabel}"/>
+                                <ComboBox Style="{DynamicResource AwComboBox}"
                                           ItemsSource="{Binding TargetLanguages}"
                                           SelectedItem="{Binding SelectedTargetLanguage}"/>
                             </StackPanel>
 
                             <StackPanel Grid.Row="2" Grid.Column="0">
-                                <TextBlock Text="Suggested answer language" Style="{StaticResource AwFieldLabel}"/>
-                                <ComboBox Style="{StaticResource AwComboBox}"
+                                <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerLanguage}" Style="{DynamicResource AwFieldLabel}"/>
+                                <ComboBox Style="{DynamicResource AwComboBox}"
                                           ItemsSource="{Binding AnswerLanguages}"
                                           SelectedItem="{Binding SelectedAnswerLanguage}"/>
                             </StackPanel>
 
                             <StackPanel Grid.Row="2" Grid.Column="2">
-                                <TextBlock Text="Answer level (CEFR)" Style="{StaticResource AwFieldLabel}"/>
-                                <ComboBox Style="{StaticResource AwComboBox}"
+                                <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerLevel}" Style="{DynamicResource AwFieldLabel}"/>
+                                <ComboBox Style="{DynamicResource AwComboBox}"
                                           ItemsSource="{Binding CefrLevelOptions}"
                                           SelectedItem="{Binding SelectedCefrLevel}"/>
                             </StackPanel>
@@ -140,85 +153,85 @@
                 </Border>
 
                 <!-- ============ 2) transport ============ -->
-                <Border Style="{StaticResource AwCard}" Margin="0,0,0,12">
+                <Border Style="{DynamicResource AwCard}" Margin="0,0,0,12">
                     <StackPanel>
-                        <Button Style="{StaticResource AwButtonPrimary}" Command="{Binding StartCommand}"
-                                Content="Start listening"/>
+                        <Button Style="{DynamicResource AwButtonPrimary}" Command="{Binding StartCommand}"
+                                Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=StartListening}"/>
                         <Grid Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Button Grid.Column="0" Style="{StaticResource AwButtonDanger}"
-                                    Command="{Binding StopCommand}" Content="Stop" MinWidth="104"/>
-                            <CheckBox Grid.Column="2" Style="{StaticResource AwCheckBox}" VerticalAlignment="Center"
-                                      Content="Always on top" IsChecked="{Binding AlwaysOnTop}" FontSize="12"/>
+                            <Button Grid.Column="0" Style="{DynamicResource AwButtonDanger}"
+                                    Command="{Binding StopCommand}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Stop}" MinWidth="104"/>
+                            <CheckBox Grid.Column="2" Style="{DynamicResource AwCheckBox}" VerticalAlignment="Center"
+                                      Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AlwaysOnTop}" IsChecked="{Binding AlwaysOnTop}" FontSize="12"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <!-- ============ 3) live results ============ -->
-                <Border Style="{StaticResource AwCard}" Margin="0,0,0,12">
+                <Border Style="{DynamicResource AwCard}" Margin="0,0,0,12">
                     <StackPanel>
-                        <TextBlock Text="Live" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,10"/>
+                        <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=LiveHeading}" Style="{DynamicResource AwSectionLabel}" Margin="0,0,0,10"/>
 
                         <!-- original transcript -->
-                        <TextBlock Text="Original transcript" Style="{StaticResource AwMiniLabel}"/>
-                        <Border Style="{StaticResource AwPanel}">
+                        <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranscriptLabel}" Style="{DynamicResource AwMiniLabel}"/>
+                        <Border Style="{DynamicResource AwPanel}">
                             <StackPanel>
                                 <TextBlock Text="{Binding TranscriptText}" TextWrapping="Wrap" FontSize="13.5"
-                                           Foreground="{StaticResource AwInkBrush}" MinHeight="18"/>
-                                <Border Background="{StaticResource AwWarningSoftBrush}" CornerRadius="999"
+                                           Foreground="{DynamicResource AwInkBrush}" MinHeight="18"/>
+                                <Border Background="{DynamicResource AwWarningSoftBrush}" CornerRadius="999"
                                         Padding="8,2" HorizontalAlignment="Left" Margin="0,6,0,0"
                                         Visibility="{Binding IsTranscriptProvisional, Converter={StaticResource BoolToVis}}">
-                                    <TextBlock Text="provisional" FontSize="10.5" FontWeight="SemiBold"
-                                               Foreground="{StaticResource AwWarningBrush}"/>
+                                    <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Provisional}" FontSize="10.5" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AwWarningBrush}"/>
                                 </Border>
                             </StackPanel>
                         </Border>
 
                         <!-- detected question -->
-                        <TextBlock Text="Detected question" Style="{StaticResource AwMiniLabel}" Margin="0,10,0,4"/>
-                        <Border Style="{StaticResource AwPanel}" Background="{StaticResource AwAccentSoftBrush}">
+                        <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=QuestionLabel}" Style="{DynamicResource AwMiniLabel}" Margin="0,10,0,4"/>
+                        <Border Style="{DynamicResource AwPanel}" Background="{DynamicResource AwAccentSoftBrush}">
                             <Grid>
                                 <TextBlock Text="{Binding DetectedQuestionText}" TextWrapping="Wrap" FontSize="13.5"
-                                           FontWeight="SemiBold" Foreground="{StaticResource AwInkBrush}" MinHeight="18"
+                                           FontWeight="SemiBold" Foreground="{DynamicResource AwInkBrush}" MinHeight="18"
                                            Visibility="{Binding HasDetectedQuestion, Converter={StaticResource BoolToVis}}"/>
-                                <TextBlock Text="No complete question detected yet." TextWrapping="Wrap"
-                                           FontSize="12.5" Foreground="{StaticResource AwFaintBrush}" MinHeight="18"
+                                <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=NoQuestionYet}" TextWrapping="Wrap"
+                                           FontSize="12.5" Foreground="{DynamicResource AwFaintBrush}" MinHeight="18"
                                            Visibility="{Binding HasDetectedQuestion, Converter={StaticResource InverseBoolToVis}}"/>
                             </Grid>
                         </Border>
 
                         <!-- translation -->
-                        <TextBlock Text="Translation" Style="{StaticResource AwMiniLabel}" Margin="0,10,0,4"/>
-                        <Border Style="{StaticResource AwPanel}">
+                        <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranslationLabel}" Style="{DynamicResource AwMiniLabel}" Margin="0,10,0,4"/>
+                        <Border Style="{DynamicResource AwPanel}">
                             <StackPanel>
                                 <TextBlock Text="{Binding TranslationText}" TextWrapping="Wrap" FontSize="13.5"
-                                           Foreground="{StaticResource AwInkSoftBrush}" MinHeight="18"/>
+                                           Foreground="{DynamicResource AwInkSoftBrush}" MinHeight="18"/>
                                 <TextBlock Text="{Binding TranslationStatusText}" TextWrapping="Wrap" FontSize="11"
-                                           Foreground="{StaticResource AwWarningBrush}" Margin="0,5,0,0"/>
+                                           Foreground="{DynamicResource AwWarningBrush}" Margin="0,5,0,0"/>
                             </StackPanel>
                         </Border>
 
                         <!-- suggested answer (prominent) -->
-                        <TextBlock Text="Suggested answer" Style="{StaticResource AwMiniLabel}" Margin="0,10,0,4"/>
-                        <Border Background="{StaticResource AwAccentSoftBrush}" CornerRadius="12" Padding="0">
+                        <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerLabel}" Style="{DynamicResource AwMiniLabel}" Margin="0,10,0,4"/>
+                        <Border Background="{DynamicResource AwAccentSoftBrush}" CornerRadius="12" Padding="0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="4"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" Background="{StaticResource AwGradientHeadline}" CornerRadius="2,0,0,2"/>
+                                <Border Grid.Column="0" Background="{DynamicResource AwGradientHeadline}" CornerRadius="2,0,0,2"/>
                                 <StackPanel Grid.Column="1" Margin="12,10">
                                     <TextBlock Text="{Binding AnswerText}" TextWrapping="Wrap" FontSize="14"
-                                               Foreground="{StaticResource AwInkBrush}" LineHeight="21"/>
-                                    <Border Background="{StaticResource AwWarningSoftBrush}" CornerRadius="999"
+                                               Foreground="{DynamicResource AwInkBrush}" LineHeight="21"/>
+                                    <Border Background="{DynamicResource AwWarningSoftBrush}" CornerRadius="999"
                                             Padding="8,2" HorizontalAlignment="Left" Margin="0,7,0,0"
                                             Visibility="{Binding IsAnswerProvisional, Converter={StaticResource BoolToVis}}">
-                                        <TextBlock Text="provisional - refining" FontSize="10.5" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource AwWarningBrush}"/>
+                                        <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ProvisionalRefining}" FontSize="10.5" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AwWarningBrush}"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
@@ -227,11 +240,11 @@
                 </Border>
 
                 <!-- ============ 4) advanced settings ============ -->
-                <Border Style="{StaticResource AwCard}" Padding="0" Margin="0,0,0,12">
-                    <Expander Style="{StaticResource AwExpander}" Padding="0">
+                <Border Style="{DynamicResource AwCard}" Padding="0" Margin="0,0,0,12">
+                    <Expander Style="{DynamicResource AwExpander}" Padding="0">
                         <Expander.Header>
-                            <TextBlock Text="Advanced settings" FontWeight="SemiBold" FontSize="12.5"
-                                       Foreground="{StaticResource AwInkSoftBrush}"/>
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AdvancedHeading}" FontWeight="SemiBold" FontSize="12.5"
+                                       Foreground="{DynamicResource AwInkSoftBrush}"/>
                         </Expander.Header>
                         <StackPanel Margin="0,4,0,0">
                             <Grid Margin="0,0,0,10">
@@ -243,66 +256,66 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Output audio device" Style="{StaticResource AwFieldLabel}"/>
-                                <ComboBox Grid.Row="1" Grid.Column="0" Style="{StaticResource AwComboBox}"
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OutputDevice}" Style="{DynamicResource AwFieldLabel}"/>
+                                <ComboBox Grid.Row="1" Grid.Column="0" Style="{DynamicResource AwComboBox}"
                                           ItemsSource="{Binding OutputDevices}"
                                           SelectedItem="{Binding SelectedOutputDevice}" DisplayMemberPath="Name"/>
-                                <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource AwButtonSecondary}"
-                                        Content="Refresh" MinWidth="76" Margin="8,0,0,0"
+                                <Button Grid.Row="1" Grid.Column="1" Style="{DynamicResource AwButtonSecondary}"
+                                        Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Refresh}" MinWidth="76" Margin="8,0,0,0"
                                         Command="{Binding RefreshDevicesCommand}"/>
                             </Grid>
 
-                            <TextBlock Text="Speech (whisper.cpp)" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=SpeechHeading}" Style="{DynamicResource AwSectionLabel}" Margin="0,0,0,6"/>
                             <Grid Margin="0,0,0,6">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <ComboBox Style="{StaticResource AwComboBox}"
+                                <ComboBox Style="{DynamicResource AwComboBox}"
                                           ItemsSource="{Binding WhisperModelOptions}"
                                           SelectedItem="{Binding SelectedWhisperModel}"/>
-                                <Button Grid.Column="1" Style="{StaticResource AwButtonSecondary}"
-                                        Content="Download" MinWidth="86" Margin="8,0,0,0"
+                                <Button Grid.Column="1" Style="{DynamicResource AwButtonSecondary}"
+                                        Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Download}" MinWidth="86" Margin="8,0,0,0"
                                         Command="{Binding DownloadModelCommand}"/>
                             </Grid>
-                            <TextBlock Text="{Binding SpeechSetupStatus}" Style="{StaticResource AwHint}" Margin="0,0,0,8"/>
-                            <TextBlock Text="Whisper CLI executable (optional)" Style="{StaticResource AwFieldLabel}"/>
-                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,8"
+                            <TextBlock Text="{Binding SpeechSetupStatus}" Style="{DynamicResource AwHint}" Margin="0,0,0,8"/>
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=WhisperCliPath}" Style="{DynamicResource AwFieldLabel}"/>
+                            <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,8"
                                      Text="{Binding WhisperExecutablePath, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Path to whisper-cli (or main). Leave empty to use the built-in native library adapter."/>
-                            <TextBlock Text="Model file path (optional override)" Style="{StaticResource AwFieldLabel}"/>
-                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,8"
+                                     ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=WhisperCliPathTip}"/>
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ModelPath}" Style="{DynamicResource AwFieldLabel}"/>
+                            <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,8"
                                      Text="{Binding WhisperModelPath, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Explicit path to a ggml model file. Leave empty to use the app's model folder."/>
-                            <TextBlock Style="{StaticResource AwHint}" Margin="0,0,0,10"
-                                       Text="Suggested local models for this machine: Ollama: {Binding SuggestedOllamaModel, Mode=OneWay} | Whisper: {Binding SuggestedWhisperModel, Mode=OneWay}"/>
+                                     ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ModelPathTip}"/>
+                            <TextBlock Style="{DynamicResource AwHint}" Margin="0,0,0,10"
+                                       Text="{Binding ModelSuggestedText}"/>
 
-                            <TextBlock Text="Translation engine" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
-                            <ComboBox Style="{StaticResource AwComboBox}" Margin="0,0,0,8"
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranslationHeading}" Style="{DynamicResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <ComboBox Style="{DynamicResource AwComboBox}" Margin="0,0,0,8"
                                       ItemsSource="{Binding TranslationEngineOptions}"
-                                      SelectedItem="{Binding SelectedTranslationEngine}"/>
-                            <CheckBox Style="{StaticResource AwCheckBox}" Margin="0,0,0,8" FontSize="12"
-                                      Content="Enable translation (off = show original, clearly labeled)"
+                                      SelectedItem="{Binding SelectedTranslationEngine}" DisplayMemberPath="Display"/>
+                            <CheckBox Style="{DynamicResource AwCheckBox}" Margin="0,0,0,8" FontSize="12"
+                                      Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=EnableTranslation}"
                                       IsChecked="{Binding TranslationEnabled}"/>
-                            <TextBlock Text="External CLI path (only for 'External CLI')" Style="{StaticResource AwFieldLabel}"/>
-                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,8"
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliPath}" Style="{DynamicResource AwFieldLabel}"/>
+                            <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,8"
                                      Text="{Binding TranslatorCliPath, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="e.g. C:\tools\mariannet.exe - text goes via stdin; first stdout line is the translation."/>
-                            <TextBlock Text="External CLI arguments" Style="{StaticResource AwFieldLabel}"/>
-                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,10"
+                                     ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliPathTip}"/>
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliArgs}" Style="{DynamicResource AwFieldLabel}"/>
+                            <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,10"
                                      Text="{Binding TranslatorCliArgs, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Template with {source} and {target} placeholders."/>
-                            <TextBlock Style="{StaticResource AwHint}" Margin="0,0,0,10"
-                                       Text="Engine settings apply after Stop. whisper (to English) reuses the speech model; External CLI needs a user-installed binary and models (never downloaded by the app)."/>
+                                     ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliArgsTip}"/>
+                            <TextBlock Style="{DynamicResource AwHint}" Margin="0,0,0,10"
+                                       Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=EngineHint}"/>
 
-                            <TextBlock Text="Local AI (Ollama, optional)" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
-                            <TextBlock Text="{Binding AiStatusText}" Style="{StaticResource AwHint}" Margin="0,0,0,8"/>
-                            <TextBlock Text="Ollama model" Style="{StaticResource AwFieldLabel}"/>
-                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,10"
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OllamaHeading}" Style="{DynamicResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <TextBlock Text="{Binding AiStatusText}" Style="{DynamicResource AwHint}" Margin="0,0,0,8"/>
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OllamaModel}" Style="{DynamicResource AwFieldLabel}"/>
+                            <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,10"
                                      Text="{Binding OllamaModel, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Model name pulled with: ollama pull &lt;name&gt;. Never downloaded by the app."/>
+                                     ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OllamaModelTip}"/>
 
-                            <TextBlock Text="Answer options" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerOptionsHeading}" Style="{DynamicResource AwSectionLabel}" Margin="0,0,0,6"/>
                             <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -310,36 +323,36 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Length" Style="{StaticResource AwFieldLabel}"/>
-                                    <ComboBox Style="{StaticResource AwComboBox}"
+                                    <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Length}" Style="{DynamicResource AwFieldLabel}"/>
+                                    <ComboBox Style="{DynamicResource AwComboBox}"
                                               ItemsSource="{Binding AnswerLengthOptions}"
-                                              SelectedItem="{Binding SelectedAnswerLength}"/>
+                                              SelectedItem="{Binding SelectedAnswerLength}" DisplayMemberPath="Display"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Style" Style="{StaticResource AwFieldLabel}"/>
-                                    <ComboBox Style="{StaticResource AwComboBox}"
+                                    <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Style}" Style="{DynamicResource AwFieldLabel}"/>
+                                    <ComboBox Style="{DynamicResource AwComboBox}"
                                               ItemsSource="{Binding AnswerStyleOptions}"
-                                              SelectedItem="{Binding SelectedAnswerStyle}"/>
+                                              SelectedItem="{Binding SelectedAnswerStyle}" DisplayMemberPath="Display"/>
                                 </StackPanel>
                             </Grid>
 
-                            <TextBlock Text="Candidate context (local only)" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ContextHeading}" Style="{DynamicResource AwSectionLabel}" Margin="0,0,0,6"/>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button Style="{StaticResource AwButtonSecondary}" Content="Load CV"
+                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=LoadCv}"
                                         MinWidth="92" Command="{Binding LoadCvCommand}"/>
-                                <Button Style="{StaticResource AwButtonSecondary}" Content="Load job description"
+                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=LoadJd}"
                                         MinWidth="150" Margin="8,0,0,0" Command="{Binding LoadJobCommand}"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding ContextStatus}" Style="{StaticResource AwHint}"/>
+                            <TextBlock Text="{Binding ContextStatus}" Style="{DynamicResource AwHint}"/>
                         </StackPanel>
                     </Expander>
                 </Border>
 
                 <!-- footer: privacy + disclosure reminder -->
-                <TextBlock Style="{StaticResource AwHint}" Margin="2,0,2,8"
-                           Text="Only the selected output device is captured (system audio, loopback) - the microphone is never used. Audio and transcripts are not recorded or stored."/>
-                <TextBlock Style="{StaticResource AwHint}" Margin="2,0,2,4"
-                           Text="Reminder: follow your interview's rules - disclose the use of assistance where required."/>
+                <TextBlock Style="{DynamicResource AwHint}" Margin="2,0,2,8"
+                           Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=PrivacyNote}"/>
+                <TextBlock Style="{DynamicResource AwHint}" Margin="2,0,2,4"
+                           Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DisclosureNote}"/>
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

@@ -178,6 +178,14 @@ for the token map extracted from the site's CSS.
   Ollama status + model, answer length/style, CV/job-description loading.
 - The CEFR level is passed to the answer generator per request (persisted in the
   existing config); it changes vocabulary/grammar complexity, not the pipeline.
+- **UI language & theme**: the header offers an interface-language selector
+  (English, Deutsch, Français, العربية) and a light/dark toggle. Every UI string
+  comes from static resource catalogs (`AusbildungsWegInterview.Localization`,
+  one resx per language) - no runtime machine translation. The Arabic UI uses
+  right-to-left layout (WPF FlowDirection). Both preferences persist in the
+  existing config file, and the UI language stays independent of the interview /
+  translation / answer languages. The dark theme reuses the brand palette with
+  dark surfaces (see `Themes/AwTheme.Light.xaml` / `AwTheme.Dark.xaml`).
 
 ### First-run setup (in the app)
 

@@ -10,8 +10,18 @@ using AusbildungsWegInterview.Core.Config;
 using AusbildungsWegInterview.Core.Pipeline;
 using AusbildungsWegInterview.Core.Speech;
 using AusbildungsWegInterview.Core.Translation;
+using AusbildungsWegInterview.Localization;
 
 namespace AusbildungsWegInterview.App.ViewModels;
+
+/// <summary>Combo-box option with a language-independent value + a localized display.</summary>
+public sealed class PickerOption
+{
+    public PickerOption(string value, string display) { Value = value; Display = display; }
+    public string Value { get; }
+    public string Display { get; }
+    public override string ToString() => Display;
+}
 
 /// <summary>
 /// Main floating-window view model. Binds to the InterviewPipeline and exposes
@@ -38,8 +48,13 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<string> SourceLanguages { get; } = new() { "auto", "de", "en", "fr", "ar", "es", "it", "nl", "tr" };
     public ObservableCollection<string> TargetLanguages { get; } = new() { "en", "de", "fr", "ar", "es", "it", "nl", "tr" };
     public ObservableCollection<string> AnswerLanguages { get; } = new() { "de", "en", "fr", "ar" };
-    public ObservableCollection<string> AnswerLengthOptions { get; } = new() { "Concise", "Normal", "Detailed" };
-    public ObservableCollection<string> AnswerStyleOptions { get; } = new() { "Concise", "Natural", "Professional" };
+    // Localized picker options (display rebuilt on UI-language change; values are enum names).
+    public ObservableCollection<PickerOption> AnswerLengthOptions { get; } = new();
+    public ObservableCollection<PickerOption> AnswerStyleOptions { get; } = new();
+    public ObservableCollection<PickerOption> TranslationEngineOptions { get; } = new();
+
+    /// <summary>UI interface language (independent of interview/translation/answer languages). Native names.</summary>
+    public ObservableCollection<PickerOption> UiLanguageOptions { get; } = new();
     public ObservableCollection<string> CefrLevelOptions { get; } = new() { "A1", "A2", "B1", "B2", "C1", "C2" };
     public ObservableCollection<string> WhisperModelOptions { get; } = new() { "tiny", "base", "small", "medium" };
 
@@ -77,20 +92,17 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public ObservableCollection<string> TranslationEngineOptions { get; } = new()
-        { "Ollama (local LLM)", "whisper.cpp (→ English only)", "External CLI (opus-mt)" };
-
-    private string _selectedTranslationEngine = "Ollama (local LLM)";
-    public string SelectedTranslationEngine
+    private PickerOption? _selectedTranslationEngine;
+    public PickerOption? SelectedTranslationEngine
     {
         get => _selectedTranslationEngine;
         set
         {
             if (!Set(ref _selectedTranslationEngine, value)) return;
-            _services.Config.TranslationProvider = value switch
+            _services.Config.TranslationProvider = value?.Value switch
             {
-                "whisper.cpp (→ English only)" => TranslationProvider.WhisperTranslate,
-                "External CLI (opus-mt)" => TranslationProvider.ExternalCli,
+                "WhisperTranslate" => TranslationProvider.WhisperTranslate,
+                "ExternalCli" => TranslationProvider.ExternalCli,
                 _ => TranslationProvider.Ollama
             };
             ApplySpeechSettings();
@@ -118,19 +130,75 @@ public sealed class MainViewModel : ObservableObject
         set { if (Set(ref _selectedAnswerLanguage, value)) { _services.Config.AnswerLanguage = value; SaveConfig(); } }
     }
 
-    private string _selectedAnswerLength = "Normal";
-    public string SelectedAnswerLength
+    private PickerOption? _selectedAnswerLength;
+    public PickerOption? SelectedAnswerLength
     {
         get => _selectedAnswerLength;
-        set { if (Set(ref _selectedAnswerLength, value)) { _services.Config.AnswerLength = value switch { "Concise" => AnswerLength.Concise, "Detailed" => AnswerLength.Detailed, _ => AnswerLength.Normal }; SaveConfig(); } }
+        set { if (Set(ref _selectedAnswerLength, value)) { _services.Config.AnswerLength = value?.Value switch { "Concise" => AnswerLength.Concise, "Detailed" => AnswerLength.Detailed, _ => AnswerLength.Normal }; SaveConfig(); } }
     }
 
-    private string _selectedAnswerStyle = "Natural";
-    public string SelectedAnswerStyle
+    private PickerOption? _selectedAnswerStyle;
+    public PickerOption? SelectedAnswerStyle
     {
         get => _selectedAnswerStyle;
-        set { if (Set(ref _selectedAnswerStyle, value)) { _services.Config.AnswerStyle = value switch { "Concise" => AnswerStyle.Concise, "Professional" => AnswerStyle.Professional, _ => AnswerStyle.Natural }; SaveConfig(); } }
+        set { if (Set(ref _selectedAnswerStyle, value)) { _services.Config.AnswerStyle = value?.Value switch { "Concise" => AnswerStyle.Concise, "Professional" => AnswerStyle.Professional, _ => AnswerStyle.Natural }; SaveConfig(); } }
     }
+
+    // ---- UI language + theme (independent of the interview/translation/answer languages) ----
+    private PickerOption? _selectedUiLanguage;
+    public PickerOption? SelectedUiLanguage
+    {
+        get => _selectedUiLanguage;
+        set
+        {
+            if (!Set(ref _selectedUiLanguage, value)) return;
+            if (value is null || !UiLanguages.IsValid(value.Value)) return;
+            _services.Config.UiLanguage = value.Value;
+            SaveConfig();
+            Loc.SetCulture(value.Value);
+            OnLanguageChanged();
+        }
+    }
+
+    private PickerOption? _selectedTheme;
+    public PickerOption? SelectedTheme
+    {
+        get => _selectedTheme;
+        set
+        {
+            if (!Set(ref _selectedTheme, value)) return;
+            if (value is null) return;
+            _services.Config.Theme = value.Value;
+            SaveConfig();
+            ThemeApplier.Apply(value.Value);
+            OnPropertyChanged(nameof(ThemeIcon));
+        }
+    }
+
+    /// <summary>Header glyph: shows what the toggle will switch TO (moon = to dark, sun = to light).</summary>
+    public string ThemeIcon => SelectedTheme?.Value == ThemeApplier.Dark ? "\u2600" : "\u263E";
+
+    private string _modelSuggestedText = string.Empty;
+    /// <summary>Localized, pre-formatted model suggestion line (Advanced section).</summary>
+    public string ModelSuggestedText { get => _modelSuggestedText; private set => Set(ref _modelSuggestedText, value); }
+
+    /// <summary>Toggles between light and dark theme (accessible header control).</summary>
+    public void ToggleTheme()
+    {
+        var next = SelectedTheme?.Value == ThemeApplier.Dark ? ThemeApplier.Light : ThemeApplier.Dark;
+        SelectedTheme = ThemeOptions.FirstOrDefault(o => o.Value == next);
+    }
+
+    /// <summary>Localized theme names (rebuilt on UI-language change).</summary>
+    public ObservableCollection<PickerOption> ThemeOptions { get; } = new();
+
+    public bool IsRtl { get; private set; }
+
+    /// <summary>String indexer for XAML: {Binding T['Key']} - re-evaluates when the UI language changes.</summary>
+    public LocalizationManager T => Loc;
+
+    /// <summary>Runtime UI language manager (static catalogs, no machine translation).</summary>
+    public LocalizationManager Loc { get; }
 
     /// <summary>CEFR level (A1–C2) for suggested answers. Applied per request; no pipeline rebuild needed.</summary>
     private string _selectedCefrLevel = "B1";
@@ -191,7 +259,8 @@ public sealed class MainViewModel : ObservableObject
     }
 
     // ---- display state (private set + auto-notify) ----
-    private string _statusText = "Ready";
+    // (initial values are localized in the constructor via ApplyLocalizedInitialStrings)
+    private string _statusText = string.Empty;
     public string StatusText { get => _statusText; private set => Set(ref _statusText, value); }
 
     private bool _isListening;
@@ -234,13 +303,13 @@ public sealed class MainViewModel : ObservableObject
     }
     public bool HasError => !string.IsNullOrEmpty(ErrorText);
 
-    private string _aiStatusText = "Local AI (Ollama): checking…";
+    private string _aiStatusText = string.Empty;
     public string AiStatusText { get => _aiStatusText; private set => Set(ref _aiStatusText, value); }
 
-    private string _speechSetupStatus = "Speech engine: checking…";
+    private string _speechSetupStatus = string.Empty;
     public string SpeechSetupStatus { get => _speechSetupStatus; private set => Set(ref _speechSetupStatus, value); }
 
-    private string _contextStatus = "No CV / job description loaded.";
+    private string _contextStatus = string.Empty;
     public string ContextStatus { get => _contextStatus; private set => Set(ref _contextStatus, value); }
 
     // Conservative, RAM-based model suggestions (informational; nothing is downloaded automatically).
@@ -271,6 +340,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand LoadJobCommand { get; }
     public RelayCommand ClearErrorCommand { get; }
     public RelayCommand RefreshStatusCommand { get; }
+    public RelayCommand ToggleThemeCommand { get; }
 
     // ---- pipeline event wiring (unsubscribed on rebuild) ----
     private EventHandler<TranscriptUpdatedEventArgs>? _hTranscript;
@@ -285,6 +355,18 @@ public sealed class MainViewModel : ObservableObject
         _services = services;
         _dispatcher = dispatcher;
 
+        // UI language + theme are restored from the persisted configuration.
+        Loc = new LocalizationManager(_services.Config.UiLanguage);
+        Loc.LanguageChanged += (_, _) => OnLanguageChanged();
+        IsRtl = Loc.IsRtl;
+
+        foreach (var l in UiLanguages.All)
+            UiLanguageOptions.Add(new PickerOption(l.Code, l.NativeName));
+        BuildThemeOptions();
+        BuildLocalizedPickerOptions();
+        _selectedUiLanguage = UiLanguageOptions.FirstOrDefault(o => o.Value == _services.Config.UiLanguage);
+        _selectedTheme = ThemeOptions.FirstOrDefault(o => o.Value == _services.Config.Theme);
+
         StartCommand = new RelayCommand(_ => _ = StartAsync(), _ => !IsListening && !IsBusy);
         StopCommand = new RelayCommand(_ => _ = StopAsync(), _ => IsListening && !IsBusy);
         RefreshDevicesCommand = new RelayCommand(_ => RefreshDevices(), _ => !IsBusy);
@@ -293,6 +375,7 @@ public sealed class MainViewModel : ObservableObject
         LoadJobCommand = new RelayCommand(_ => _ = LoadJobAsync());
         ClearErrorCommand = new RelayCommand(_ => ErrorText = string.Empty);
         RefreshStatusCommand = new RelayCommand(_ => _ = RefreshStatusAsync(), _ => !IsBusy);
+        ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
 
         SuggestedOllamaModel = SafeSuggest(AusbildungsWegInterview.Infrastructure.SystemInfo.RecommendOllamaModel);
         SuggestedWhisperModel = SafeSuggest(AusbildungsWegInterview.Infrastructure.SystemInfo.RecommendWhisperModel);
@@ -304,8 +387,81 @@ public sealed class MainViewModel : ObservableObject
         WirePipeline();
         RefreshDevices();
         ApplyConfigToUi();
-        UpdateSpeechSetupStatus();
+        ApplyLocalizedInitialStrings();
         _ = RefreshStatusAsync();
+    }
+
+    /// <summary>Re-localizes the static parts of the UI without a restart (chrome re-binds via T, dynamic strings are recomputed).</summary>
+    private void OnLanguageChanged()
+    {
+        IsRtl = Loc.IsRtl;
+        OnPropertyChanged(nameof(IsRtl));
+
+        // Rebuild picker displays; keep the current selections (by value).
+        var engineValue = SelectedTranslationEngine?.Value;
+        var lengthValue = SelectedAnswerLength?.Value;
+        var styleValue = SelectedAnswerStyle?.Value;
+        BuildLocalizedPickerOptions();
+        _selectedTranslationEngine = TranslationEngineOptions.FirstOrDefault(o => o.Value == engineValue);
+        _selectedAnswerLength = AnswerLengthOptions.FirstOrDefault(o => o.Value == lengthValue);
+        _selectedAnswerStyle = AnswerStyleOptions.FirstOrDefault(o => o.Value == styleValue);
+        BuildThemeOptions();
+        _selectedTheme = ThemeOptions.FirstOrDefault(o => o.Value == _services.Config.Theme);
+
+        // Re-localize dynamic strings.
+        UpdateStatus(_services.Pipeline.State);
+        UpdateSpeechSetupStatus();
+        RecomputeContextStatus();
+        ModelSuggestedText = T.F("ModelSuggested", SuggestedOllamaModel, SuggestedWhisperModel);
+        _ = RefreshStatusAsync();
+
+        // Force every {Binding T['...']} to re-evaluate.
+        OnPropertyChanged(nameof(T));
+    }
+
+    private void ApplyLocalizedInitialStrings()
+    {
+        StatusText = T["StatusReady"];
+        AiStatusText = T["AiChecking"];
+        UpdateSpeechSetupStatus();
+        RecomputeContextStatus();
+        ModelSuggestedText = T.F("ModelSuggested", SuggestedOllamaModel, SuggestedWhisperModel);
+    }
+
+    private void BuildThemeOptions()
+    {
+        ThemeOptions.Clear();
+        ThemeOptions.Add(new PickerOption(ThemeApplier.Light, T["ThemeLight"]));
+        ThemeOptions.Add(new PickerOption(ThemeApplier.Dark, T["ThemeDark"]));
+    }
+
+    private void BuildLocalizedPickerOptions()
+    {
+        TranslationEngineOptions.Clear();
+        TranslationEngineOptions.Add(new PickerOption("Ollama", T["EngineOllama"]));
+        TranslationEngineOptions.Add(new PickerOption("WhisperTranslate", T["EngineWhisper"]));
+        TranslationEngineOptions.Add(new PickerOption("ExternalCli", T["EngineExternal"]));
+
+        AnswerLengthOptions.Clear();
+        AnswerLengthOptions.Add(new PickerOption("Concise", T["LengthConcise"]));
+        AnswerLengthOptions.Add(new PickerOption("Normal", T["LengthNormal"]));
+        AnswerLengthOptions.Add(new PickerOption("Detailed", T["LengthDetailed"]));
+
+        AnswerStyleOptions.Clear();
+        AnswerStyleOptions.Add(new PickerOption("Concise", T["StyleConcise"]));
+        AnswerStyleOptions.Add(new PickerOption("Natural", T["StyleNatural"]));
+        AnswerStyleOptions.Add(new PickerOption("Professional", T["StyleProfessional"]));
+    }
+
+    private void RecomputeContextStatus()
+    {
+        var ctx = _services.Pipeline.Context;
+        bool hasCv = !string.IsNullOrWhiteSpace(ctx.CvText);
+        bool hasJd = !string.IsNullOrWhiteSpace(ctx.JobDescription);
+        ContextStatus = !hasCv && !hasJd ? T["ContextNone"]
+            : hasCv && hasJd ? T["ContextBothLoaded"]
+            : hasCv ? T["ContextCvLoaded"]
+            : T["ContextJdLoaded"];
     }
 
     private static string SafeSuggest(Func<string> suggest)
@@ -361,7 +517,7 @@ public sealed class MainViewModel : ObservableObject
         {
             RefreshDevices();
             if (IsListening && e.Device is not null)
-                StatusText = "Output device changed - capture re-opened on the new device";
+                StatusText = T["StatusDeviceChanged"];
         });
 
     private void Post(Action action)
@@ -386,12 +542,12 @@ public sealed class MainViewModel : ObservableObject
         IsListening = state is PipelineState.Listening or PipelineState.Processing;
         StatusText = state switch
         {
-            PipelineState.Preparing => "Preparing models…",
-            PipelineState.Listening => "Listening",
-            PipelineState.Processing => "Processing speech…",
-            PipelineState.Stopping => "Stopping…",
-            PipelineState.Faulted => "Error - see below",
-            _ => "Stopped"
+            PipelineState.Preparing => T["StatusPreparing"],
+            PipelineState.Listening => T["StatusListening"],
+            PipelineState.Processing => T["StatusProcessing"],
+            PipelineState.Stopping => T["StatusStopping"],
+            PipelineState.Faulted => T["StatusFaulted"],
+            _ => T["StatusStopped"]
         };
         StatusBrush = state switch
         {
@@ -416,7 +572,7 @@ public sealed class MainViewModel : ObservableObject
         {
             IsListening = false; // never claim "listening" after a failed start
             ErrorText = ex.Message;
-            StatusText = "Error - see below";
+            StatusText = T["StatusFaulted"];
             StatusBrush = StatusFaultBrush;
         }
         finally
@@ -451,7 +607,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (_services.Pipeline.IsRunning)
         {
-            ErrorText = "Stop listening before changing the speech engine or translation settings.";
+            ErrorText = T["ErrorStopBeforeSettings"];
             return;
         }
         try
@@ -463,7 +619,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorText = "Could not apply the speech settings: " + ex.Message;
+            ErrorText = T.F("ErrorCouldNotApplySpeech", ex.Message);
         }
     }
 
@@ -472,23 +628,23 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             var c = _services.Config;
+            // Adapter shown by name only (no local paths in the UI).
             string engine = !string.IsNullOrWhiteSpace(c.WhisperExecutablePath)
                 ? (System.IO.File.Exists(c.WhisperExecutablePath!)
-                    ? "whisper.cpp CLI"
-                    : "whisper.cpp CLI (executable not found)")
-                : "whisper.cpp native library";
+                    ? T["SpeechEngineCli"]
+                    : T["SpeechEngineCliMissing"])
+                : T["SpeechEngineNative"];
 
             string modelPath = !string.IsNullOrWhiteSpace(c.WhisperModelPath)
                 ? c.WhisperModelPath!
                 : _services.Models.ResolvePath(c.WhisperModel);
             bool modelOk = System.IO.File.Exists(modelPath);
 
-            SpeechSetupStatus = engine + " | model '" + c.WhisperModel + "': " +
-                (modelOk ? "ready" : "MISSING - download it or set the model path");
+            SpeechSetupStatus = T.F("SpeechSetupLine", engine, c.WhisperModel, modelOk ? T["SpeechModelReady"] : T["SpeechModelMissing"]);
         }
         catch
         {
-            SpeechSetupStatus = "Speech engine: status unknown";
+            SpeechSetupStatus = T["SpeechStatusUnknown"];
         }
     }
 
@@ -509,7 +665,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorText = "Could not enumerate audio devices: " + ex.Message;
+            ErrorText = T.F("ErrorCouldNotEnumerateDevices", ex.Message);
             return;
         }
 
@@ -519,7 +675,7 @@ public sealed class MainViewModel : ObservableObject
             ?? OutputDevices.FirstOrDefault();
 
         if (OutputDevices.Count == 0)
-            ErrorText = "No active audio output device found. Connect speakers/headphones and press Refresh.";
+            ErrorText = T["ErrorNoOutputDevice"];
     }
 
     private async Task RefreshStatusAsync()
@@ -530,19 +686,19 @@ public sealed class MainViewModel : ObservableObject
             bool available = await _services.Ollama.IsAvailableAsync();
             if (!available)
             {
-                AiStatusText = "Local AI (Ollama): not running - answer suggestions disabled (transcription still works)";
+                AiStatusText = T["AiUnavailable"];
             }
             else
             {
                 bool modelOk = await _services.Ollama.ModelAvailableAsync(_services.Config.OllamaModel);
                 AiStatusText = modelOk
-                    ? "Local AI (Ollama): running, model '" + _services.Config.OllamaModel + "' ready"
-                    : "Local AI (Ollama): running, model '" + _services.Config.OllamaModel + "' MISSING - run: ollama pull " + _services.Config.OllamaModel;
+                    ? T.F("AiModelReady", _services.Config.OllamaModel)
+                    : T.F("AiModelMissing", _services.Config.OllamaModel);
             }
         }
         catch
         {
-            AiStatusText = "Local AI (Ollama): status unknown";
+            AiStatusText = T["AiStatusUnknown"];
         }
         finally
         {
@@ -560,7 +716,7 @@ public sealed class MainViewModel : ObservableObject
     {
         ErrorText = string.Empty;
         IsBusy = true;
-        SpeechSetupStatus = "Downloading model '" + _services.Config.WhisperModel + "'…";
+        SpeechSetupStatus = T.F("DownloadingModel", _services.Config.WhisperModel);
         try
         {
             await _services.Models.DownloadAsync(_services.Config.WhisperModel);
@@ -568,7 +724,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorText = "Model download failed: " + ex.Message;
+            ErrorText = T.F("ErrorModelDownload", ex.Message);
             UpdateSpeechSetupStatus();
         }
         finally
@@ -581,8 +737,8 @@ public sealed class MainViewModel : ObservableObject
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Select CV (text file)",
-            Filter = "Text files (*.txt;*.md)|*.txt;*.md|All files (*.*)|*.*"
+            Title = T["LoadCvTitle"],
+            Filter = T.F("FileFilter", T["FileFilterText"], T["FileFilterAll"])
         };
         if (dlg.ShowDialog() == true)
         {
@@ -590,11 +746,11 @@ public sealed class MainViewModel : ObservableObject
             {
                 var text = await System.IO.File.ReadAllTextAsync(dlg.FileName);
                 _services.Pipeline.Context = _services.Pipeline.Context.WithCv(text);
-                ContextStatus = "CV loaded (kept local only).";
+                RecomputeContextStatus();
             }
             catch (Exception ex)
             {
-                ErrorText = "Could not read CV: " + ex.Message;
+                ErrorText = T.F("ErrorCouldNotReadCv", ex.Message);
             }
         }
     }
@@ -603,8 +759,8 @@ public sealed class MainViewModel : ObservableObject
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Select job description (text file)",
-            Filter = "Text files (*.txt;*.md)|*.txt;*.md|All files (*.*)|*.*"
+            Title = T["LoadJdTitle"],
+            Filter = T.F("FileFilter", T["FileFilterText"], T["FileFilterAll"])
         };
         if (dlg.ShowDialog() == true)
         {
@@ -612,11 +768,11 @@ public sealed class MainViewModel : ObservableObject
             {
                 var text = await System.IO.File.ReadAllTextAsync(dlg.FileName);
                 _services.Pipeline.Context = _services.Pipeline.Context.WithJobDescription(text);
-                ContextStatus = "Job description loaded (kept local only).";
+                RecomputeContextStatus();
             }
             catch (Exception ex)
             {
-                ErrorText = "Could not read job description: " + ex.Message;
+                ErrorText = T.F("ErrorCouldNotReadJd", ex.Message);
             }
         }
     }
@@ -627,19 +783,14 @@ public sealed class MainViewModel : ObservableObject
         _selectedSourceLanguage = c.SourceLanguage ?? "auto";
         _selectedTargetLanguage = c.TranslationLanguage;
         _selectedAnswerLanguage = c.AnswerLanguage;
-        _selectedAnswerLength = c.AnswerLength.ToString();
-        _selectedAnswerStyle = c.AnswerStyle.ToString();
+        _selectedAnswerLength = AnswerLengthOptions.FirstOrDefault(o => o.Value == c.AnswerLength.ToString());
+        _selectedAnswerStyle = AnswerStyleOptions.FirstOrDefault(o => o.Value == c.AnswerStyle.ToString());
         _selectedCefrLevel = c.AnswerLevel.ToString();
         _ollamaModel = c.OllamaModel;
         _selectedWhisperModel = c.WhisperModel;
         _whisperExecutablePath = c.WhisperExecutablePath ?? string.Empty;
         _whisperModelPath = c.WhisperModelPath ?? string.Empty;
-        _selectedTranslationEngine = c.TranslationProvider switch
-        {
-            TranslationProvider.WhisperTranslate => "whisper.cpp (→ English only)",
-            TranslationProvider.ExternalCli => "External CLI (opus-mt)",
-            _ => "Ollama (local LLM)"
-        };
+        _selectedTranslationEngine = TranslationEngineOptions.FirstOrDefault(o => o.Value == c.TranslationProvider.ToString());
         _translatorCliPath = c.TranslatorCliPath ?? string.Empty;
         _translatorCliArgs = c.TranslatorCliArgsTemplate ?? string.Empty;
         _translationEnabled = c.TranslationEnabled;

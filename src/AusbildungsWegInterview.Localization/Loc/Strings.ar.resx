@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="TitleApp" xml:space="preserve"><value>AusbildungsWeg Interview</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>مساعد مقابلات محلي - لا يغادر أي شيء جهازك</value></data>
+
+  <data name="StatusReady" xml:space="preserve"><value>جاهز</value></data>
+  <data name="StatusPreparing" xml:space="preserve"><value>جارٍ تحميل النماذج…</value></data>
+  <data name="StatusListening" xml:space="preserve"><value>يستمع</value></data>
+  <data name="StatusProcessing" xml:space="preserve"><value>جارٍ معالجة الصوت…</value></data>
+  <data name="StatusStopping" xml:space="preserve"><value>جارٍ الإيقاف…</value></data>
+  <data name="StatusStopped" xml:space="preserve"><value>متوقف</value></data>
+  <data name="StatusFaulted" xml:space="preserve"><value>خطأ - راجع الأسفل</value></data>
+  <data name="StatusDeviceChanged" xml:space="preserve"><value>تغيّر جهاز الإخراج - أُعيد فتح الالتقاط على الجهاز الجديد</value></data>
+
+  <data name="CapturingNotice" xml:space="preserve"><value>يتم التقاط صوت النظام (loopback من جهاز الإخراج المحدد). لا يُستخدم الميكروفون إطلاقاً.</value></data>
+
+  <data name="SetupHeading" xml:space="preserve"><value>إعداد مقابلك</value></data>
+  <data name="InterviewLanguage" xml:space="preserve"><value>لغة المقابلة</value></data>
+  <data name="TranslationLanguage" xml:space="preserve"><value>لغة الترجمة</value></data>
+  <data name="AnswerLanguage" xml:space="preserve"><value>لغة الإجابة المقترحة</value></data>
+  <data name="AnswerLevel" xml:space="preserve"><value>مستوى الإجابة (CEFR)</value></data>
+
+  <data name="StartListening" xml:space="preserve"><value>ابدأ الاستماع</value></data>
+  <data name="Stop" xml:space="preserve"><value>إيقاف</value></data>
+  <data name="AlwaysOnTop" xml:space="preserve"><value>دائماً في المقدمة</value></data>
+
+  <data name="LiveHeading" xml:space="preserve"><value>مباشر</value></data>
+  <data name="TranscriptLabel" xml:space="preserve"><value>النص الأصلي</value></data>
+  <data name="Provisional" xml:space="preserve"><value>مبدئي</value></data>
+  <data name="ProvisionalRefining" xml:space="preserve"><value>مبدئي - جارٍ التحسين</value></data>
+  <data name="QuestionLabel" xml:space="preserve"><value>السؤال المكتشف</value></data>
+  <data name="NoQuestionYet" xml:space="preserve"><value>لم يُكتشف سؤال كامل بعد.</value></data>
+  <data name="TranslationLabel" xml:space="preserve"><value>الترجمة</value></data>
+  <data name="AnswerLabel" xml:space="preserve"><value>الإجابة المقترحة</value></data>
+
+  <data name="AdvancedHeading" xml:space="preserve"><value>إعدادات متقدمة</value></data>
+  <data name="OutputDevice" xml:space="preserve"><value>جهاز إخراج الصوت</value></data>
+  <data name="Refresh" xml:space="preserve"><value>تحديث</value></data>
+  <data name="RefreshStatusTip" xml:space="preserve"><value>تحديث حالة Ollama / النماذج</value></data>
+  <data name="ThemeToggleTip" xml:space="preserve"><value>تبديل الوضع الفاتح / الداكن</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>فاتح</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>داكن</value></data>
+  <data name="UiLanguageTip" xml:space="preserve"><value>لغة الواجهة</value></data>
+
+  <data name="SpeechHeading" xml:space="preserve"><value>التعرف على الكلام (whisper.cpp)</value></data>
+  <data name="Download" xml:space="preserve"><value>تنزيل</value></data>
+  <data name="WhisperCliPath" xml:space="preserve"><value>ملف whisper-cli (اختياري)</value></data>
+  <data name="WhisperCliPathTip" xml:space="preserve"><value>مسار whisper-cli (أو main). اتركه فارغاً لاستخدام مكتبة النظام المدمجة.</value></data>
+  <data name="ModelPath" xml:space="preserve"><value>مسار ملف النموذج (اختياري)</value></data>
+  <data name="ModelPathTip" xml:space="preserve"><value>مسار صريح إلى ملف نموذج ggml. اتركه فارغاً لاستخدام مجلد نماذج التطبيق.</value></data>
+  <data name="ModelSuggested" xml:space="preserve"><value>نماذج محلية مقترحة لهذا الجهاز: Ollama: {0} | Whisper: {1}</value></data>
+
+  <data name="TranslationHeading" xml:space="preserve"><value>محرك الترجمة</value></data>
+  <data name="EnableTranslation" xml:space="preserve"><value>تفعيل الترجمة (غير مفعّلة = عرض الأصل مع توضيح ذلك)</value></data>
+  <data name="ExternalCliPath" xml:space="preserve"><value>مسار الأداة الخارجية (فقط لـ«الأداة الخارجية»)</value></data>
+  <data name="ExternalCliPathTip" xml:space="preserve"><value>مثال: C:\tools\mariannet.exe - يمر النص عبر stdin؛ أول سطر في stdout هو الترجمة.</value></data>
+  <data name="ExternalCliArgs" xml:space="preserve"><value>معاملات الأداة الخارجية</value></data>
+  <data name="ExternalCliArgsTip" xml:space="preserve"><value>قالب بمحدّدي {source} و {target}.</value></data>
+  <data name="EngineHint" xml:space="preserve"><value>تسري إعدادات المحرك بعد الإيقاف. يستعيد whisper (إلى الإنجليزية) نموذج الكلام؛ الأداة الخارجية تحتاج إلى ملف ونماذج مثبّتة من المستخدم (لا ينزّلها التطبيق أبداً).</value></data>
+
+  <data name="OllamaHeading" xml:space="preserve"><value>ذكاء اصطناعي محلي (Ollama، اختياري)</value></data>
+  <data name="OllamaModel" xml:space="preserve"><value>نموذج Ollama</value></data>
+  <data name="OllamaModelTip" xml:space="preserve"><value>اسم النموذج الذي يُسحب عبر: ollama pull &lt;name&gt;. لا ينزّله التطبيق أبداً.</value></data>
+
+  <data name="AnswerOptionsHeading" xml:space="preserve"><value>خيارات الإجابة</value></data>
+  <data name="Length" xml:space="preserve"><value>الطول</value></data>
+  <data name="Style" xml:space="preserve"><value>النمط</value></data>
+
+  <data name="ContextHeading" xml:space="preserve"><value>سياق المرشح (محلي فقط)</value></data>
+  <data name="LoadCv" xml:space="preserve"><value>تحميل السيرة الذاتية</value></data>
+  <data name="LoadJd" xml:space="preserve"><value>تحميل وصف الوظيفة</value></data>
+  <data name="ContextNone" xml:space="preserve"><value>لم تُحمَّل سيرة ذاتية أو وصف وظيفة.</value></data>
+  <data name="ContextCvLoaded" xml:space="preserve"><value>تم تحميل السيرة الذاتية (محلي فقط).</value></data>
+  <data name="ContextJdLoaded" xml:space="preserve"><value>تم تحميل وصف الوظيفة (محلي فقط).</value></data>
+  <data name="ContextBothLoaded" xml:space="preserve"><value>تم تحميل السيرة الذاتية ووصف الوظيفة (محلي فقط).</value></data>
+
+  <data name="PrivacyNote" xml:space="preserve"><value>يُلتقط جهاز الإخراج المحدد فقط (صوت النظام، loopback) - لا يُستخدم الميكروفون أبداً. لا يُسجَّل الصوت ولا تُخزَّن النصوص.</value></data>
+  <data name="DisclosureNote" xml:space="preserve"><value>تذكير: التزم بقواعد مقابلك - أشر إلى استخدام المساعدة حيثما كان ذلك مطلوباً.</value></data>
+
+  <data name="ErrorStopBeforeSettings" xml:space="preserve"><value>أوقف الاستماع قبل تغيير إعدادات التعرف على الكلام أو الترجمة.</value></data>
+  <data name="ErrorCouldNotApplySpeech" xml:space="preserve"><value>تعذّر تطبيق إعدادات الكلام: {0}</value></data>
+  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>تعذّر عرض أجهزة الصوت: {0}</value></data>
+  <data name="ErrorNoOutputDevice" xml:space="preserve"><value>لم يُعثر على جهاز إخراج صوت نشط. وصّل مكبر صوت/سماعات واضغط تحديث.</value></data>
+  <data name="ErrorModelDownload" xml:space="preserve"><value>فشل تنزيل النموذج: {0}</value></data>
+  <data name="ErrorCouldNotReadCv" xml:space="preserve"><value>تعذّرت قراءة السيرة الذاتية: {0}</value></data>
+  <data name="ErrorCouldNotReadJd" xml:space="preserve"><value>تعذّرت قراءة وصف الوظيفة: {0}</value></data>
+  <data name="DownloadingModel" xml:space="preserve"><value>جارٍ تنزيل النموذج «{0}»…</value></data>
+  <data name="LoadCvTitle" xml:space="preserve"><value>اختر السيرة الذاتية (ملف نصي)</value></data>
+  <data name="LoadJdTitle" xml:space="preserve"><value>اختر وصف الوظيفة (ملف نصي)</value></data>
+  <data name="FileFilterText" xml:space="preserve"><value>ملفات نصية (*.txt;*.md)</value></data>
+  <data name="FileFilter" xml:space="preserve"><value>{0}|*.txt;*.md|{1}|*.*</value></data>
+  <data name="FileFilterAll" xml:space="preserve"><value>كل الملفات (*.*)</value></data>
+
+  <data name="AiChecking" xml:space="preserve"><value>ذكاء اصطناعي محلي (Ollama): جارٍ التحقق…</value></data>
+  <data name="AiUnavailable" xml:space="preserve"><value>ذكاء اصطناعي محلي (Ollama): غير يعمل - اقتراحات الإجابات معطّلة (يبقى التعرف على الكلام يعمل)</value></data>
+  <data name="AiModelReady" xml:space="preserve"><value>ذكاء اصطناعي محلي (Ollama): يعمل، النموذج «{0}» جاهز</value></data>
+  <data name="AiModelMissing" xml:space="preserve"><value>ذكاء اصطناعي محلي (Ollama): يعمل، النموذج «{0}» مفقود - نفّذ: ollama pull {0}</value></data>
+  <data name="AiStatusUnknown" xml:space="preserve"><value>ذكاء اصطناعي محلي (Ollama): الحالة مجهولة</value></data>
+
+  <data name="SpeechEngineCli" xml:space="preserve"><value>أمر whisper.cpp</value></data>
+  <data name="SpeechEngineCliMissing" xml:space="preserve"><value>أمر whisper.cpp (الملف غير موجود)</value></data>
+  <data name="SpeechEngineNative" xml:space="preserve"><value>مكتبة whisper.cpp الأصلية</value></data>
+  <data name="SpeechModelReady" xml:space="preserve"><value>جاهز</value></data>
+  <data name="SpeechSetupLine" xml:space="preserve"><value>الكلام: {0} | النموذج «{1}»: {2}</value></data>
+  <data name="SpeechModelMissing" xml:space="preserve"><value>مفقود - نزّله أو اضبط مسار النموذج</value></data>
+  <data name="SpeechStatusUnknown" xml:space="preserve"><value>محرك الكلام: الحالة مجهولة</value></data>
+
+  <data name="EngineOllama" xml:space="preserve"><value>Ollama (نموذج محلي)</value></data>
+  <data name="EngineWhisper" xml:space="preserve"><value>whisper.cpp (إلى الإنجليزية فقط)</value></data>
+  <data name="EngineExternal" xml:space="preserve"><value>أداة سطر أوامر خارجية (opus-mt)</value></data>
+  <data name="LengthConcise" xml:space="preserve"><value>مختصرة</value></data>
+  <data name="LengthNormal" xml:space="preserve"><value>عادية</value></data>
+  <data name="LengthDetailed" xml:space="preserve"><value>مفصّلة</value></data>
+  <data name="StyleConcise" xml:space="preserve"><value>مختصر</value></data>
+  <data name="StyleNatural" xml:space="preserve"><value>طبيعي</value></data>
+  <data name="StyleProfessional" xml:space="preserve"><value>احترافي</value></data>
+</root>

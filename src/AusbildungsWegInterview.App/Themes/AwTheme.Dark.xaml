@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- ============================================================
-         AusbildungsWeg brand theme
+         AusbildungsWeg brand theme - DARK variant (same structure and key names as AwTheme.Light.xaml)
          Source of truth: https://ausbildungsweg.net (extracted from the
          site's live CSS design tokens, Oct 2026):
            background #f6f6fb   ink #17183a   muted #686b8c
@@ -15,44 +15,45 @@
          ============================================================ -->
 
     <!-- palette -->
-    <Color x:Key="AwBackgroundColor">#F6F6FB</Color>
-    <Color x:Key="AwInkColor">#17183A</Color>
+    <Color x:Key="AwBackgroundColor">#101120</Color>
+    <Color x:Key="AwInkColor">#F2F3FB</Color>
     <SolidColorBrush x:Key="AwBackgroundBrush" Color="{StaticResource AwBackgroundColor}"/>
-    <SolidColorBrush x:Key="AwSurfaceBrush" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="AwSurface2Brush" Color="#EFEFF7"/>
-    <SolidColorBrush x:Key="AwInkBrush" Color="#17183A"/>
-    <SolidColorBrush x:Key="AwInkSoftBrush" Color="#3D3F66"/>
-    <SolidColorBrush x:Key="AwMutedBrush" Color="#686B8C"/>
-    <SolidColorBrush x:Key="AwFaintBrush" Color="#9598B6"/>
-    <SolidColorBrush x:Key="AwLineBrush" Color="#E5E5F1"/>
-    <SolidColorBrush x:Key="AwLineStrongBrush" Color="#D3D4E6"/>
-    <SolidColorBrush x:Key="AwAccentBrush" Color="#6D5DF6"/>
-    <SolidColorBrush x:Key="AwAccentDeepBrush" Color="#5847E8"/>
-    <SolidColorBrush x:Key="AwAccentSoftBrush" Color="#176D5DF6"/>
-    <SolidColorBrush x:Key="AwCyanBrush" Color="#5A8DF8"/>
-    <SolidColorBrush x:Key="AwAiBrush" Color="#9B7BF7"/>
-    <SolidColorBrush x:Key="AwSuccessBrush" Color="#1F9D72"/>
-    <SolidColorBrush x:Key="AwSuccessSoftBrush" Color="#1C1F9D72"/>
-    <SolidColorBrush x:Key="AwWarningBrush" Color="#A3611C"/>
-    <SolidColorBrush x:Key="AwWarningSoftBrush" Color="#1CA3611C"/>
-    <SolidColorBrush x:Key="AwDangerBrush" Color="#D9535D"/>
-    <SolidColorBrush x:Key="AwDangerSoftBrush" Color="#1AD9535D"/>
+    <SolidColorBrush x:Key="AwSurfaceBrush" Color="#181A2C"/>
+    <SolidColorBrush x:Key="AwSurface2Brush" Color="#212438"/>
+    <SolidColorBrush x:Key="AwInkBrush" Color="#F2F3FB"/>
+    <SolidColorBrush x:Key="AwInkSoftBrush" Color="#C9CBE3"/>
+    <SolidColorBrush x:Key="AwMutedBrush" Color="#9CA0C4"/>
+    <SolidColorBrush x:Key="AwFaintBrush" Color="#6F7397"/>
+    <SolidColorBrush x:Key="AwLineBrush" Color="#262A45"/>
+    <SolidColorBrush x:Key="AwLineStrongBrush" Color="#363B61"/>
+    <SolidColorBrush x:Key="AwAccentBrush" Color="#8577F7"/>
+    <SolidColorBrush x:Key="AwAccentDeepBrush" Color="#6D5DF6"/>
+    <SolidColorBrush x:Key="AwAccentSoftBrush" Color="#2E6D5DF6"/>
+    <SolidColorBrush x:Key="AwCyanBrush" Color="#6F9BFA"/>
+    <SolidColorBrush x:Key="AwAiBrush" Color="#A98FF8"/>
+    <SolidColorBrush x:Key="AwSuccessBrush" Color="#3FCF9B"/>
+    <SolidColorBrush x:Key="AwSuccessSoftBrush" Color="#2A3FCF9B"/>
+    <SolidColorBrush x:Key="AwWarningBrush" Color="#E2A65E"/>
+    <SolidColorBrush x:Key="AwWarningSoftBrush" Color="#2AE2A65E"/>
+    <SolidColorBrush x:Key="AwDangerBrush" Color="#F07985"/>
+    <SolidColorBrush x:Key="AwDangerSoftBrush" Color="#2AF07985"/>
+    <SolidColorBrush x:Key="AwDangerHoverBrush" Color="#3AF07985"/>
 
     <!-- brand gradients (site neon / headline gradients, 120deg) -->
     <LinearGradientBrush x:Key="AwGradientNeon" StartPoint="0,0.15" EndPoint="1,0.85">
-        <GradientStop Color="#7B6CF6" Offset="0"/>
-        <GradientStop Color="#5A8DF8" Offset="0.55"/>
-        <GradientStop Color="#9B7BF7" Offset="1"/>
+        <GradientStop Color="#8B7EF8" Offset="0"/>
+        <GradientStop Color="#6F9BFA" Offset="0.55"/>
+        <GradientStop Color="#A98FF8" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="AwGradientNeonDeep" StartPoint="0,0.15" EndPoint="1,0.85">
-        <GradientStop Color="#6A5AE8" Offset="0"/>
-        <GradientStop Color="#4C7DE8" Offset="0.55"/>
-        <GradientStop Color="#8A6AE4" Offset="1"/>
+        <GradientStop Color="#7C6DF3" Offset="0"/>
+        <GradientStop Color="#5F8BE8" Offset="0.55"/>
+        <GradientStop Color="#9A7FEC" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="AwGradientHeadline" StartPoint="0,0.2" EndPoint="1,0.8">
-        <GradientStop Color="#4F3EE0" Offset="0"/>
-        <GradientStop Color="#6D5DF6" Offset="0.48"/>
-        <GradientStop Color="#9B7BF7" Offset="1"/>
+        <GradientStop Color="#6A5AE8" Offset="0"/>
+        <GradientStop Color="#8577F7" Offset="0.48"/>
+        <GradientStop Color="#A98FF8" Offset="1"/>
     </LinearGradientBrush>
 
     <!-- window defaults -->
@@ -172,7 +173,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#2AD9535D"/>
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource AwDangerHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Opacity" Value="0.45"/>
@@ -292,7 +293,8 @@
                                           IsHitTestVisible="False"/>
                         <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True"
                                StaysOpen="False" Focusable="False">
-                            <Border MinWidth="{TemplateBinding ActualWidth}" MaxHeight="240" Background="White"
+                            <Border MinWidth="{TemplateBinding ActualWidth}" MaxHeight="240"
+                                    Background="{StaticResource AwSurfaceBrush}"
                                     BorderBrush="{StaticResource AwLineBrush}" BorderThickness="1" CornerRadius="12"
                                     Margin="0,6,0,0" Padding="0,4">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">

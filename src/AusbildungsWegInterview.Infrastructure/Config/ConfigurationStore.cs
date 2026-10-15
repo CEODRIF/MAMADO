@@ -53,4 +53,7 @@ public sealed class ConfigurationStore
     public static string DefaultPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "AusbildungsWegInterview", "config.json");
+
+    /// <summary>Loads from the default path; never throws (falls back to defaults).</summary>
+    public static AppConfiguration SafeLoad() => new ConfigurationStore(DefaultPath).Load();
 }

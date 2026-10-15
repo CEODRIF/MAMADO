@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="TitleApp" xml:space="preserve"><value>AusbildungsWeg Interview</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Lokaler Interview-Begleiter - nichts verlässt Ihren PC</value></data>
+
+  <data name="StatusReady" xml:space="preserve"><value>Bereit</value></data>
+  <data name="StatusPreparing" xml:space="preserve"><value>Modelle werden geladen…</value></data>
+  <data name="StatusListening" xml:space="preserve"><value>Höre zu</value></data>
+  <data name="StatusProcessing" xml:space="preserve"><value>Sprache wird verarbeitet…</value></data>
+  <data name="StatusStopping" xml:space="preserve"><value>Wird gestoppt…</value></data>
+  <data name="StatusStopped" xml:space="preserve"><value>Gestoppt</value></data>
+  <data name="StatusFaulted" xml:space="preserve"><value>Fehler - siehe unten</value></data>
+  <data name="StatusDeviceChanged" xml:space="preserve"><value>Ausgabegerät geändert - Aufnahme auf dem neuen Gerät fortgesetzt</value></data>
+
+  <data name="CapturingNotice" xml:space="preserve"><value>Systemaudio wird aufgenommen (Loopback des gewählten Ausgabegeräts). Das Mikrofon wird NICHT verwendet.</value></data>
+
+  <data name="SetupHeading" xml:space="preserve"><value>Ihr Interview einstellen</value></data>
+  <data name="InterviewLanguage" xml:space="preserve"><value>Interviewsprache</value></data>
+  <data name="TranslationLanguage" xml:space="preserve"><value>Zielsprache der Übersetzung</value></data>
+  <data name="AnswerLanguage" xml:space="preserve"><value>Sprache der Antwortvorschläge</value></data>
+  <data name="AnswerLevel" xml:space="preserve"><value>Sprachniveau (GER)</value></data>
+
+  <data name="StartListening" xml:space="preserve"><value>Aufnahme starten</value></data>
+  <data name="Stop" xml:space="preserve"><value>Stopp</value></data>
+  <data name="AlwaysOnTop" xml:space="preserve"><value>Immer oben</value></data>
+
+  <data name="LiveHeading" xml:space="preserve"><value>Live</value></data>
+  <data name="TranscriptLabel" xml:space="preserve"><value>Originaltranskript</value></data>
+  <data name="Provisional" xml:space="preserve"><value>vorläufig</value></data>
+  <data name="ProvisionalRefining" xml:space="preserve"><value>vorläufig - wird verfeinert</value></data>
+  <data name="QuestionLabel" xml:space="preserve"><value>Erkannte Frage</value></data>
+  <data name="NoQuestionYet" xml:space="preserve"><value>Noch keine vollständige Frage erkannt.</value></data>
+  <data name="TranslationLabel" xml:space="preserve"><value>Übersetzung</value></data>
+  <data name="AnswerLabel" xml:space="preserve"><value>Vorgeschlagene Antwort</value></data>
+
+  <data name="AdvancedHeading" xml:space="preserve"><value>Erweiterte Einstellungen</value></data>
+  <data name="OutputDevice" xml:space="preserve"><value>Audio-Ausgabegerät</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Aktualisieren</value></data>
+  <data name="RefreshStatusTip" xml:space="preserve"><value>Ollama- / Modellstatus aktualisieren</value></data>
+  <data name="ThemeToggleTip" xml:space="preserve"><value>Hell / Dunkel umschalten</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>Hell</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>Dunkel</value></data>
+  <data name="UiLanguageTip" xml:space="preserve"><value>Sprache der Oberfläche</value></data>
+
+  <data name="SpeechHeading" xml:space="preserve"><value>Spracherkennung (whisper.cpp)</value></data>
+  <data name="Download" xml:space="preserve"><value>Herunterladen</value></data>
+  <data name="WhisperCliPath" xml:space="preserve"><value>Whisper-CLI-Datei (optional)</value></data>
+  <data name="WhisperCliPathTip" xml:space="preserve"><value>Pfad zu whisper-cli (oder main). Leer lassen für die eingebaute Native-Library-Integration.</value></data>
+  <data name="ModelPath" xml:space="preserve"><value>Modell-Pfad (optionale Überschreibung)</value></data>
+  <data name="ModelPathTip" xml:space="preserve"><value>Expliziter Pfad zu einer ggml-Modelldatei. Leer lassen für den Modellordner der App.</value></data>
+  <data name="ModelSuggested" xml:space="preserve"><value>Empfohlene lokale Modelle für diesen Rechner: Ollama: {0} | Whisper: {1}</value></data>
+
+  <data name="TranslationHeading" xml:space="preserve"><value>Übersetzungsmaschine</value></data>
+  <data name="EnableTranslation" xml:space="preserve"><value>Übersetzung aktivieren (aus = Original anzeigen, klar gekennzeichnet)</value></data>
+  <data name="ExternalCliPath" xml:space="preserve"><value>Pfad der externen CLI (nur bei „Externe CLI")</value></data>
+  <data name="ExternalCliPathTip" xml:space="preserve"><value>z. B. C:\tools\mariannet.exe - Text läuft über stdin; die erste stdout-Zeile ist die Übersetzung.</value></data>
+  <data name="ExternalCliArgs" xml:space="preserve"><value>Argumente der externen CLI</value></data>
+  <data name="ExternalCliArgsTip" xml:space="preserve"><value>Vorlage mit den Platzhaltern {source} und {target}.</value></data>
+  <data name="EngineHint" xml:space="preserve"><value>Die Einstellungen gelten nach Stopp. whisper (nach Englisch) nutzt das Spracherkennungsmodell; die externe CLI benötigt eine selbst installierte Datei und Modelle (nie automatisch heruntergeladen).</value></data>
+
+  <data name="OllamaHeading" xml:space="preserve"><value>Lokale KI (Ollama, optional)</value></data>
+  <data name="OllamaModel" xml:space="preserve"><value>Ollama-Modell</value></data>
+  <data name="OllamaModelTip" xml:space="preserve"><value>Modellname, geladen mit: ollama pull &lt;name&gt;. Wird nie automatisch heruntergeladen.</value></data>
+
+  <data name="AnswerOptionsHeading" xml:space="preserve"><value>Antwortoptionen</value></data>
+  <data name="Length" xml:space="preserve"><value>Länge</value></data>
+  <data name="Style" xml:space="preserve"><value>Stil</value></data>
+
+  <data name="ContextHeading" xml:space="preserve"><value>Bewerberkontext (nur lokal)</value></data>
+  <data name="LoadCv" xml:space="preserve"><value>CV laden</value></data>
+  <data name="LoadJd" xml:space="preserve"><value>Stellenanzeige laden</value></data>
+  <data name="ContextNone" xml:space="preserve"><value>Kein CV / keine Stellenanzeige geladen.</value></data>
+  <data name="ContextCvLoaded" xml:space="preserve"><value>CV geladen (nur lokal gespeichert).</value></data>
+  <data name="ContextJdLoaded" xml:space="preserve"><value>Stellenanzeige geladen (nur lokal gespeichert).</value></data>
+  <data name="ContextBothLoaded" xml:space="preserve"><value>CV und Stellenanzeige geladen (nur lokal gespeichert).</value></data>
+
+  <data name="PrivacyNote" xml:space="preserve"><value>Nur das gewählte Ausgabegerät wird aufgenommen (Systemaudio, Loopback) - das Mikrofon wird nie verwendet. Audio und Transkripte werden nicht aufgezeichnet oder gespeichert.</value></data>
+  <data name="DisclosureNote" xml:space="preserve"><value>Hinweis: Halten Sie sich an die Regeln Ihres Interviews - geben Sie die Nutzung einer Unterstützung an, wo erforderlich.</value></data>
+
+  <data name="ErrorStopBeforeSettings" xml:space="preserve"><value>Stopp drücken, bevor Sie die Spracherkennungs- oder Übersetzungseinstellungen ändern.</value></data>
+  <data name="ErrorCouldNotApplySpeech" xml:space="preserve"><value>Spracheinstellungen konnten nicht angewendet werden: {0}</value></data>
+  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>Audio-Geräte konnten nicht aufgelistet werden: {0}</value></data>
+  <data name="ErrorNoOutputDevice" xml:space="preserve"><value>Kein aktives Audio-Ausgabegerät gefunden. Lautsprecher/Headset anschließen und auf Aktualisieren drücken.</value></data>
+  <data name="ErrorModelDownload" xml:space="preserve"><value>Modell-Download fehlgeschlagen: {0}</value></data>
+  <data name="ErrorCouldNotReadCv" xml:space="preserve"><value>CV konnte nicht gelesen werden: {0}</value></data>
+  <data name="ErrorCouldNotReadJd" xml:space="preserve"><value>Stellenanzeige konnte nicht gelesen werden: {0}</value></data>
+  <data name="DownloadingModel" xml:space="preserve"><value>Modell '{0}' wird heruntergeladen…</value></data>
+  <data name="LoadCvTitle" xml:space="preserve"><value>CV auswählen (Textdatei)</value></data>
+  <data name="LoadJdTitle" xml:space="preserve"><value>Stellenanzeige auswählen (Textdatei)</value></data>
+  <data name="FileFilterText" xml:space="preserve"><value>Textdateien (*.txt;*.md)</value></data>
+  <data name="FileFilter" xml:space="preserve"><value>{0}|*.txt;*.md|{1}|*.*</value></data>
+  <data name="FileFilterAll" xml:space="preserve"><value>Alle Dateien (*.*)</value></data>
+
+  <data name="AiChecking" xml:space="preserve"><value>Lokale KI (Ollama): wird geprüft…</value></data>
+  <data name="AiUnavailable" xml:space="preserve"><value>Lokale KI (Ollama): läuft nicht - Antwortvorschläge deaktiviert (Transkription funktioniert weiter)</value></data>
+  <data name="AiModelReady" xml:space="preserve"><value>Lokale KI (Ollama): läuft, Modell '{0}' bereit</value></data>
+  <data name="AiModelMissing" xml:space="preserve"><value>Lokale KI (Ollama): läuft, Modell '{0}' FEHLT - ausführen: ollama pull {0}</value></data>
+  <data name="AiStatusUnknown" xml:space="preserve"><value>Lokale KI (Ollama): Status unbekannt</value></data>
+
+  <data name="SpeechEngineCli" xml:space="preserve"><value>whisper.cpp CLI</value></data>
+  <data name="SpeechEngineCliMissing" xml:space="preserve"><value>whisper.cpp CLI (Datei nicht gefunden)</value></data>
+  <data name="SpeechEngineNative" xml:space="preserve"><value>whisper.cpp Native-Bibliothek</value></data>
+  <data name="SpeechModelReady" xml:space="preserve"><value>bereit</value></data>
+  <data name="SpeechSetupLine" xml:space="preserve"><value>Sprache: {0} | Modell '{1}': {2}</value></data>
+  <data name="SpeechModelMissing" xml:space="preserve"><value>FEHLT - herunterladen oder Modell-Pfad setzen</value></data>
+  <data name="SpeechStatusUnknown" xml:space="preserve"><value>Sprachengine: Status unbekannt</value></data>
+
+  <data name="EngineOllama" xml:space="preserve"><value>Ollama (lokales LLM)</value></data>
+  <data name="EngineWhisper" xml:space="preserve"><value>whisper.cpp (nur nach Englisch)</value></data>
+  <data name="EngineExternal" xml:space="preserve"><value>Externe CLI (opus-mt)</value></data>
+  <data name="LengthConcise" xml:space="preserve"><value>Knapp</value></data>
+  <data name="LengthNormal" xml:space="preserve"><value>Normal</value></data>
+  <data name="LengthDetailed" xml:space="preserve"><value>Ausführlich</value></data>
+  <data name="StyleConcise" xml:space="preserve"><value>Knapp</value></data>
+  <data name="StyleNatural" xml:space="preserve"><value>Natürlich</value></data>
+  <data name="StyleProfessional" xml:space="preserve"><value>Professionell</value></data>
+</root>
