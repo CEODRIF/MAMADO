@@ -1,0 +1,78 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E8452868-33E9-425A-9540-DDF8DF2D0452}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AusbildungsWegInterview.Core", "src\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj", "{B4EB3BF0-3557-4771-A06E-229C36197F2D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AusbildungsWegInterview.Infrastructure", "src\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj", "{89C42984-9234-4E2F-9971-07A70932CBB4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AusbildungsWegInterview.Speech", "src\AusbildungsWegInterview.Speech\AusbildungsWegInterview.Speech.csproj", "{023C4820-F29E-4101-9B6C-5C5A98B6972B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AusbildungsWegInterview.Translation", "src\AusbildungsWegInterview.Translation\AusbildungsWegInterview.Translation.csproj", "{AD3BABCB-F7C4-47DE-A9DB-56E97D9A36E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AusbildungsWegInterview.Answers", "src\AusbildungsWegInterview.Answers\AusbildungsWegInterview.Answers.csproj", "{B26CADF3-3713-41C1-8C77-06B84AA5FD78}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AusbildungsWegInterview.Audio", "src\AusbildungsWegInterview.Audio\AusbildungsWegInterview.Audio.csproj", "{65D21942-9328-4AEB-BF05-EEFEF2240896}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AusbildungsWegInterview.App", "src\AusbildungsWegInterview.App\AusbildungsWegInterview.App.csproj", "{A816DABE-1FEA-4FD3-B2F3-CF81ED09B475}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E65E6DE4-9FAF-4637-875E-01D850B56DB7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AusbildungsWegInterview.Tests", "tests\AusbildungsWegInterview.Tests\AusbildungsWegInterview.Tests.csproj", "{63D459F3-ED1C-4E7B-8A28-994B5F9E1F6B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B4EB3BF0-3557-4771-A06E-229C36197F2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4EB3BF0-3557-4771-A06E-229C36197F2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4EB3BF0-3557-4771-A06E-229C36197F2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4EB3BF0-3557-4771-A06E-229C36197F2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89C42984-9234-4E2F-9971-07A70932CBB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89C42984-9234-4E2F-9971-07A70932CBB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89C42984-9234-4E2F-9971-07A70932CBB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89C42984-9234-4E2F-9971-07A70932CBB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{023C4820-F29E-4101-9B6C-5C5A98B6972B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{023C4820-F29E-4101-9B6C-5C5A98B6972B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{023C4820-F29E-4101-9B6C-5C5A98B6972B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{023C4820-F29E-4101-9B6C-5C5A98B6972B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD3BABCB-F7C4-47DE-A9DB-56E97D9A36E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD3BABCB-F7C4-47DE-A9DB-56E97D9A36E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD3BABCB-F7C4-47DE-A9DB-56E97D9A36E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD3BABCB-F7C4-47DE-A9DB-56E97D9A36E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B26CADF3-3713-41C1-8C77-06B84AA5FD78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B26CADF3-3713-41C1-8C77-06B84AA5FD78}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B26CADF3-3713-41C1-8C77-06B84AA5FD78}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B26CADF3-3713-41C1-8C77-06B84AA5FD78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65D21942-9328-4AEB-BF05-EEFEF2240896}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65D21942-9328-4AEB-BF05-EEFEF2240896}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65D21942-9328-4AEB-BF05-EEFEF2240896}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65D21942-9328-4AEB-BF05-EEFEF2240896}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A816DABE-1FEA-4FD3-B2F3-CF81ED09B475}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A816DABE-1FEA-4FD3-B2F3-CF81ED09B475}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A816DABE-1FEA-4FD3-B2F3-CF81ED09B475}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A816DABE-1FEA-4FD3-B2F3-CF81ED09B475}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63D459F3-ED1C-4E7B-8A28-994B5F9E1F6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63D459F3-ED1C-4E7B-8A28-994B5F9E1F6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63D459F3-ED1C-4E7B-8A28-994B5F9E1F6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63D459F3-ED1C-4E7B-8A28-994B5F9E1F6B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B4EB3BF0-3557-4771-A06E-229C36197F2D} = {E8452868-33E9-425A-9540-DDF8DF2D0452}
+		{89C42984-9234-4E2F-9971-07A70932CBB4} = {E8452868-33E9-425A-9540-DDF8DF2D0452}
+		{023C4820-F29E-4101-9B6C-5C5A98B6972B} = {E8452868-33E9-425A-9540-DDF8DF2D0452}
+		{AD3BABCB-F7C4-47DE-A9DB-56E97D9A36E9} = {E8452868-33E9-425A-9540-DDF8DF2D0452}
+		{B26CADF3-3713-41C1-8C77-06B84AA5FD78} = {E8452868-33E9-425A-9540-DDF8DF2D0452}
+		{65D21942-9328-4AEB-BF05-EEFEF2240896} = {E8452868-33E9-425A-9540-DDF8DF2D0452}
+		{A816DABE-1FEA-4FD3-B2F3-CF81ED09B475} = {E8452868-33E9-425A-9540-DDF8DF2D0452}
+		{63D459F3-ED1C-4E7B-8A28-994B5F9E1F6B} = {E65E6DE4-9FAF-4637-875E-01D850B56DB7}
+	EndGlobalSection
+EndGlobal

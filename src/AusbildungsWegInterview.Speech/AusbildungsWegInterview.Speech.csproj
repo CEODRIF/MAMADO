@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AusbildungsWegInterview.Speech</RootNamespace>
+    <Description>Speech transcription abstractions and the local whisper.cpp adapter. Local inference, no API keys. Native lib loaded at runtime and optional.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

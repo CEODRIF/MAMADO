@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>AusbildungsWegInterview.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="xunit" Version="2.8.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Reference only cross-platform projects so the suite runs on any OS. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Answers\AusbildungsWegInterview.Answers.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Translation\AusbildungsWegInterview.Translation.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Speech\AusbildungsWegInterview.Speech.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

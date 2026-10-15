@@ -1,0 +1,57 @@
+# ---------- .NET build artifacts ----------
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+*.swp
+*.binlog
+TestResults/
+*.trx
+coverage/
+
+# ---------- Local configuration & secrets (NEVER commit) ----------
+*.local.json
+appsettings.local.json
+secrets/
+.env
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+gh_hosts.yml
+*.token
+*.pat
+
+# ---------- AI model files (download at runtime, NEVER commit) ----------
+models/
+**/models/
+*.gguf
+*.bin
+*.pt
+*.pth
+*.onnx
+whisper.cpp/
+libwhisper*
+libggml*
+ggml*
+
+# ---------- Audio / transcript artifacts (privacy: no recordings or transcripts) ----------
+recordings/
+captures/
+transcripts/
+*.wav
+*.m4a
+*.mp3
+*.flac
+*.ogg
+*.transcript.jsonl
+
+# ---------- OS / editor ----------
+.DS_Store
+Thumbs.db
+desktop.ini

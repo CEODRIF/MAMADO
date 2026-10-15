@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AusbildungsWegInterview.Answers</RootNamespace>
+    <Description>Question detection, candidate-context management, and local (Ollama) answer generation. No API keys required.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

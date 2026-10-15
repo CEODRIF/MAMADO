@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AusbildungsWegInterview.Infrastructure</RootNamespace>
+    <Description>Local runtime integration (Ollama over localhost, local configuration, model management). No paid services, no cloud, no API keys.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />
+  </ItemGroup>
+
+</Project>

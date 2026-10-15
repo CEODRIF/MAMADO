@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Windows-only: WASAPI loopback requires the Windows Desktop runtime. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AusbildungsWegInterview.Audio</RootNamespace>
+    <UseWPF>false</UseWPF>
+    <!-- Allows the Windows-targeted project to COMPILE on non-Windows CI hosts
+         (it still produces a Windows-only binary; it cannot run off-Windows). -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Description>Windows Audio Loopback (WASAPI) capture of system output. Microphone capture is intentionally NOT used. Windows-only build.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />
+  </ItemGroup>
+
+</Project>

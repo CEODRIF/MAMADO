@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Windows-only WPF application (target: Windows 10 / 11). -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>AusbildungsWegInterview.App</RootNamespace>
+    <!-- Allows the WPF project to COMPILE on non-Windows CI hosts (still a
+         Windows-only binary; it cannot run off-Windows). -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>AusbildungsWegInterview</AssemblyName>
+    <Description>AusbildungsWeg Interview - local-first AI interview assistant (WPF). Windows-only build.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Audio\AusbildungsWegInterview.Audio.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Speech\AusbildungsWegInterview.Speech.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Translation\AusbildungsWegInterview.Translation.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Answers\AusbildungsWegInterview.Answers.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

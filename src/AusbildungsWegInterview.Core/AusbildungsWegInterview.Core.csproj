@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AusbildungsWegInterview.Core</RootNamespace>
+    <AssemblyName>AusbildungsWegInterview.Core</AssemblyName>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Description>
+      Platform-agnostic core of AusbildungsWeg Interview: domain models, provider
+      interfaces (audio, speech, translation, answers), configuration, and the
+      real-time interview pipeline. Builds on .NET 8 for all OSes.
+    </Description>
+  </PropertyGroup>
+
+</Project>
