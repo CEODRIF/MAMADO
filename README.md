@@ -431,10 +431,10 @@ Reproducible publishing (run on Windows, no admin rights, nothing installed):
 .\scripts\publish.ps1 -Zip
 ```
 
-| Option | Result |
+| Option | Result (measured, Phase 6) |
 |---|---|
-| default (framework-dependent) | ~1 MB folder; target machine needs the **.NET 8 Desktop Runtime (x64)** |
-| `-SelfContained` | ~70–90 MB folder; **no** .NET needed on the target |
+| default (framework-dependent) | **7.1 MB folder / 3.1 MB ZIP**; target machine needs the **.NET 8 Desktop Runtime (x64)** |
+| `-SelfContained` | **168 MB folder**; **no** .NET needed on the target |
 
 - Output: `publish\AusbildungsWegInterview-windows-x64\AusbildungsWegInterview.exe`
   (+ optional `.zip`). The `win-x64` artifact was produced and file-verified in
@@ -444,10 +444,16 @@ Reproducible publishing (run on Windows, no admin rights, nothing installed):
   download the speech model in Settings; pull the Ollama model; download any
   external-CLI MT models — all explicitly, all local.
 - **Launch:** double-click `AusbildungsWegInterview.exe`.
-- **Remove/uninstall:** delete the publish folder (or the ZIP). User settings
-  and logs live under `%APPDATA%\AusbildungsWegInterview\` — delete that folder
-  too for a full removal. No registry entries, no services, no background
-  processes.
+- **Remove/uninstall:** delete the publish folder (or the ZIP). Per-user data
+  lives in two places — delete both for a full removal:
+  - `%APPDATA%\AusbildungsWegInterview\` (settings + local log),
+  - `%LOCALAPPDATA%\AusbildungsWegInterview\models\` (explicitly downloaded
+    whisper weights).
+  No registry entries, no services, no background processes.
+- **Final Windows verification:** after packaging, work through
+  [`docs/Windows-Verification-Checklist.md`](docs/Windows-Verification-Checklist.md)
+  on a real Windows 10/11 machine (the cross-published package is file-verified
+  only; launch, WASAPI capture, and WPF rendering are Windows-only checks).
 - The ZIP is reproducible: `scripts/publish.ps1 -Zip` (the build host's ZIP is a
   gitignored artifact, not committed — publish on your own machine to avoid any
   doubt about provenance).
