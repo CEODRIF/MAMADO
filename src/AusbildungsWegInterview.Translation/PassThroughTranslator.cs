@@ -20,7 +20,11 @@ public sealed class PassThroughTranslator : ITranslator
         string text, string? sourceLanguage, string targetLanguage, CancellationToken ct = default)
     {
         var src = string.IsNullOrWhiteSpace(sourceLanguage) ? "auto" : sourceLanguage;
-        var result = new TranslationResult(text, text ?? string.Empty, src, targetLanguage, false, ProviderName);
+        // Explicit pass-through: the text is shown unchanged and clearly labeled
+        // as NOT translated.
+        var result = new TranslationResult(text, text ?? string.Empty, src, targetLanguage, false,
+            ProviderName, "Translation disabled - showing original (pass-through)",
+            TranslationStatus.PassThrough);
         return Task.FromResult(result);
     }
 

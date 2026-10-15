@@ -41,7 +41,9 @@ public sealed class OllamaTranslator : ITranslator
             return new TranslationResult(text ?? string.Empty, string.Empty, src, targetLanguage, true, ProviderName);
 
         if (!_available)
-            return new TranslationResult(text, string.Empty, src, targetLanguage, true, ProviderName);
+            return new TranslationResult(text, string.Empty, src, targetLanguage, false, ProviderName,
+                "Ollama unavailable - original text shown (not translated)",
+                TranslationStatus.ProviderUnavailable);
 
         var prompt =
             "Translate the following text. Output ONLY the translation, no explanations or quotes.\n" +
@@ -54,14 +56,33 @@ public sealed class OllamaTranslator : ITranslator
         {
             translated = await _client.GenerateAsync(_model, prompt, 0.0, ct).ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch
         {
-            return new TranslationResult(text, string.Empty, src, targetLanguage, true, ProviderName);
+            return new TranslationResult(text, string.Empty, src, targetLanguage, false, ProviderName,
+                "Translation failed - original text shown (not translated)",
+                TranslationStatus.ProviderFailed);
         }
 
         translated = (translated ?? string.Empty).Trim();
+        if (translated.Length == 0)
+            return new TranslationResult(text, string.Empty, src, targetLanguage, false, ProviderName,
+                "No translation produced - original text shown (not translated)",
+                TranslationStatus.NoOutput);
+
+        // Never falsely label unchanged text as translated (same language, model echo, ...).
+        if (string.Equals(translated, text.Trim(), StringComparison.Ordinal))
+            return new TranslationResult(text, translated, src, targetLanguage, false, ProviderName,
+                "Text returned unchanged by the model (not a translation)",
+                TranslationStatus.Echo);
+
         return new TranslationResult(text, translated, src, targetLanguage, false, ProviderName);
     }
 
-    public ValueTask DisposeAsync() => _client.DisposeAsync();
+    // The Ollama client is shared with the answer generator and owned by the
+    // composition root (AppServices); do NOT dispose it here.
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

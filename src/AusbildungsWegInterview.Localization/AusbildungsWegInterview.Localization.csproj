@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AusbildungsWegInterview.Localization</RootNamespace>
+    <Description>UI localization resources (en/de/fr/ar) and the runtime language manager. Plain .NET so it is testable on any OS; no runtime machine translation - all strings are static, human-maintained catalogs.</Description>
+  </PropertyGroup>
+
+</Project>

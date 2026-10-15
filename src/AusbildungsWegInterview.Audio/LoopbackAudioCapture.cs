@@ -12,8 +12,14 @@ namespace AusbildungsWegInterview.Audio;
 ///  * Captures SYSTEM output, never the microphone. No mic capture path exists.
 ///  * System-output capture may include sound from other applications.
 ///  * Frames are normalized to 16-bit PCM (from IEEE-float) before emission.
-///  * Device removal / capture failure is reported via <see cref="Error"/> and
-///    surfaced as a fatal state; the UI shows a clear message.
+///  * Device removal is detected via the OS device-change notification and
+///    reported via <see cref="Error"/> (fatal); the pipeline's bounded
+///    auto-restart then applies.
+///  * In "follow the system default" mode (no explicit device selected), a
+///    changed default device triggers an automatic capture re-open on the new
+///    default, announced via <see cref="DeviceChanged"/>.
+///  * Device disconnection / capture failure is surfaced as an error, never as
+///    a silent "still listening" state.
 /// </summary>
 public sealed class LoopbackAudioCapture : IAudioCapture
 {
@@ -23,13 +29,18 @@ public sealed class LoopbackAudioCapture : IAudioCapture
     private MMDevice? _device;
     private WaveFormat _format = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
 
+    private readonly DeviceChangeMonitor _monitor = new();
+    private readonly object _deviceCheckGate = new();
+    private System.Threading.Timer? _deviceCheckTimer;
+    private bool _deviceCheckRunning;
+    private bool _deviceCheckBusy;
+    private string? _requestedDeviceId;
+
     public AudioCaptureState State { get; private set; } = AudioCaptureState.Stopped;
     public string? CurrentDeviceId { get; private set; }
 
     public event EventHandler<AudioFrameEventArgs>? FrameCaptured;
-#pragma warning disable CS0067 // live device-change notification is a Step-4 refinement
     public event EventHandler<AudioDeviceEventArgs>? DeviceChanged;
-#pragma warning restore CS0067
     public event EventHandler<CaptureErrorEventArgs>? Error;
 
     public IReadOnlyList<AudioDevice> GetOutputDevices()
@@ -75,7 +86,10 @@ public sealed class LoopbackAudioCapture : IAudioCapture
             capture.StartRecording();
             _capture = capture;
             CurrentDeviceId = render.ID;
+            _requestedDeviceId = deviceId;
             State = AudioCaptureState.Running;
+
+            StartDeviceCheck();
             return Task.CompletedTask;
         }
         catch (Exception ex)
@@ -109,11 +123,134 @@ public sealed class LoopbackAudioCapture : IAudioCapture
         }
         finally
         {
+            StopDeviceCheck();
+            _requestedDeviceId = null;
             CurrentDeviceId = null;
             State = AudioCaptureState.Stopped;
         }
         return Task.CompletedTask;
     }
+
+    // ---------------- device-change handling ----------------
+
+    /// <summary>
+    /// Device state is polled while capturing (enumerating render endpoints is
+    /// cheap). Windows has no simple managed "device changed" event for WASAPI
+    /// (SystemEvents has no DeviceChange; the Win32 path needs a hidden message
+    /// window), so a short-interval poll is the robust, dependency-free choice.
+    /// Worst-case detection latency for a removed/changed device: ~2 s.
+    /// </summary>
+    private const int DeviceCheckIntervalMs = 2000;
+
+    private void StartDeviceCheck()
+    {
+        if (_deviceCheckRunning)
+            return;
+        _deviceCheckRunning = true;
+        _deviceCheckTimer = new System.Threading.Timer(_ =>
+        {
+            if (State != AudioCaptureState.Running)
+                return;
+            try { HandleDeviceChange(); }
+            catch { /* the capture error path is the safety net */ }
+        }, null, DeviceCheckIntervalMs, DeviceCheckIntervalMs);
+    }
+
+    private void StopDeviceCheck()
+    {
+        if (!_deviceCheckRunning)
+            return;
+        _deviceCheckRunning = false;
+        try { _deviceCheckTimer?.Dispose(); } catch { /* best effort */ }
+        _deviceCheckTimer = null;
+    }
+
+    private void HandleDeviceChange()
+    {
+        if (State != AudioCaptureState.Running)
+            return;
+
+        // Prevent overlapping checks (the restart path itself takes time).
+        lock (_deviceCheckGate)
+        {
+            if (_deviceCheckBusy)
+                return;
+            _deviceCheckBusy = true;
+        }
+        try
+        {
+            HandleDeviceChangeCore();
+        }
+        finally
+        {
+            lock (_deviceCheckGate) _deviceCheckBusy = false;
+        }
+    }
+
+    private void HandleDeviceChangeCore()
+    {
+
+        string current = CurrentDeviceId ?? string.Empty;
+        var activeIds = new List<string>();
+        string? newDefaultId = null;
+        try
+        {
+            using var enumerator = new MMDeviceEnumerator();
+            foreach (var device in enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
+                activeIds.Add(device.ID);
+            try { newDefaultId = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia).ID; }
+            catch { /* no default */ }
+        }
+        catch
+        {
+            return; // cannot probe; WASAPI will report the failure itself
+        }
+
+        var (action, newDeviceId, lostDeviceId) = _monitor.Evaluate(_requestedDeviceId, current, activeIds, newDefaultId);
+
+        switch (action)
+        {
+            case DeviceChangeAction.DeviceLost:
+                // The device we were capturing from disappeared. Announce and
+                // raise a fatal error: the pipeline's bounded restart applies
+                // (it will fail again if the device really is gone, and then
+                // stop cleanly with a visible error — never "still listening").
+                // Device is gone; pass null (no replacement device).
+                DeviceChanged?.Invoke(this, new AudioDeviceEventArgs(null));
+                State = AudioCaptureState.Faulted;
+                Error?.Invoke(this, new CaptureErrorEventArgs(
+                    new InvalidOperationException("Audio output device was disconnected: capture stopped."), true));
+                break;
+
+            case DeviceChangeAction.RestartOnNewDefault when newDeviceId is not null:
+                // Follow-default mode: silently re-open on the new default.
+                _ = RestartOnDeviceAsync(newDeviceId);
+                break;
+        }
+    }
+
+    private async Task RestartOnDeviceAsync(string deviceId)
+    {
+        if (State != AudioCaptureState.Running)
+            return;
+        try
+        {
+            await StopAsync().ConfigureAwait(false);
+            await StartAsync(_requestedDeviceId).ConfigureAwait(false); // re-resolve (default moved)
+            var device = GetOutputDevices().FirstOrDefault(d =>
+                d.Id.Equals(deviceId, StringComparison.OrdinalIgnoreCase))
+                ?? new AudioDevice(CurrentDeviceId ?? deviceId, deviceId, true);
+            DeviceChanged?.Invoke(this, new AudioDeviceEventArgs(device));
+        }
+        catch (Exception ex)
+        {
+            State = AudioCaptureState.Faulted;
+            Error?.Invoke(this, new CaptureErrorEventArgs(
+                new InvalidOperationException("Default audio device changed but capture could not be re-opened.", ex), true));
+        }
+    }
+
+    // ---------------- data path ----------------
 
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
     {

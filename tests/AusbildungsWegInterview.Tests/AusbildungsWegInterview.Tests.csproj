@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The benchmark harness reuses the deterministic test fakes. -->
+    <InternalsVisibleTo Include="AusbildungsWegInterview.Benchmarks" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageReference Include="xunit" Version="2.8.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1">
@@ -24,6 +26,8 @@
     <ProjectReference Include="..\..\src\AusbildungsWegInterview.Translation\AusbildungsWegInterview.Translation.csproj" />
     <ProjectReference Include="..\..\src\AusbildungsWegInterview.Speech\AusbildungsWegInterview.Speech.csproj" />
     <ProjectReference Include="..\..\src\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Composition\AusbildungsWegInterview.Composition.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Localization\AusbildungsWegInterview.Localization.csproj" />
   </ItemGroup>
 
 </Project>

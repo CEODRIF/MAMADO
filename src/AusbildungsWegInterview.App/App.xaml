@@ -1,6 +1,21 @@
 <Application x:Class="AusbildungsWegInterview.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:AusbildungsWegInterview.App.ViewModels">
+    <!--
+        Application-level converters. IMPORTANT: these must live here (not in a
+        Window's own resources) because window START-TAG attributes such as
+        Title="{Binding ..., Converter={StaticResource LocKey}}" are parsed
+        BEFORE the window's <Window.Resources> child is loaded - a StaticResource
+        declared there is invisible at that point and crashes InitializeComponent
+        with "Cannot find resource named 'LocKey'".
+        ThemeApplier.Apply() only manages MergedDictionaries (the theme slot),
+        so these direct entries survive theme switches.
+    -->
     <Application.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <local:InverseBoolToVisConverter x:Key="InverseBoolToVis"/>
+        <local:BoolToFlowDirectionConverter x:Key="BoolToFlowDirection"/>
+        <local:LocKeyConverter x:Key="LocKey"/>
     </Application.Resources>
 </Application>

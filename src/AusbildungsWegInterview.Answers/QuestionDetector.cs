@@ -3,26 +3,52 @@ using AusbildungsWegInterview.Core.Answers;
 namespace AusbildungsWegInterview.Answers;
 
 /// <summary>
-/// Heuristic question detector. It is intentionally conservative: a finalized
-/// segment that is long enough is treated as answerable, while a provisional
-/// segment must also look like a question (a "?" or a question word) so the app
-/// does not fire answers on fragments.
+/// Practical, multilingual question detector that works on INCOMPLETE transcript
+/// segments. It distinguishes a genuine interview question from an ordinary
+/// statement, filler, or an incomplete fragment:
+///  * A "?" (ASCII or Arabic "؟") is a question cue at any length.
+///  * A known question phrase (interrogative or imperative interview pattern)
+///    is a question cue in all four supported languages (DE/EN/FR/AR).
+///  * An interrogative word ("why/warum/pourquoi/لماذا", ...) is a cue for
+///    provisional text and, for finalized text, a second-level cue.
+///  * A finalized segment WITHOUT any interrogative cue is treated as a
+///    statement, NOT as a question: the transcript stays visible, translation
+///    keeps working, but no answer is generated (the interviewer's fillers and
+///    remarks must not trigger suggestions).
 ///
-/// This is a fast, deterministic pre-gate. A model-based detector can replace it
-/// later by implementing <see cref="IQuestionDetector"/>.
+/// Deterministic and fast; a model-based detector can replace it via IQuestionDetector.
 /// </summary>
 public sealed class QuestionDetector : IQuestionDetector
 {
-    private static readonly string[] Interrogatives =
+    private static readonly string[] Words =
     {
         // English
-        "who", "what", "why", "when", "where", "which", "whom", "whose", "how",
+        "why", "how", "what", "which", "who", "when", "where", "whom", "whose", "could", "can", "would",
         // German
-        "wer", "was", "warum", "wann", "wo", "wie", "welche", "welchen", "welches", "welcher",
+        "warum", "weshalb", "wie", "was", "welche", "welchen", "welches", "welcher", "wer", "wann", "wo",
         // French
-        "qui", "quoi", "pourquoi", "comment", "quand", "ou", "quelle", "quel", "combien",
+        "pourquoi", "comment", "quel", "quelle", "quels", "quelles", "quand", "qui", "combien",
         // Arabic
-        "مَن", "ماذا", "لماذا", "متى", "اين", "كيف", "ما"
+        "لماذا", "كيف", "ماذا", "متى", "من", "مَن", "ما", "هل"
+    };
+
+    private static readonly string[] Phrases =
+    {
+        // English
+        "could you", "can you", "would you", "tell me", "talk to me about", "talk about",
+        "walk me through", "describe", "explain", "give me", "where do you see", "what are you looking for",
+        "what do you", "why do you", "what would", "why should",
+        // German (incl. unaccented variants ASR commonly produces)
+        "koennen sie", "können sie", "erzaehlen sie", "erzählen sie", "sagen sie", "reden sie", "sprechen sie",
+        "beschreiben sie", "nennen sie", "erzaehl mir", "erzähl mir", "sagen sie mir", "wie ist es",
+        "wie sieht es", "wo stehen sie", "wo sehen sie", "was erwartet", "was ist", "warum wollen", "wie sind",
+        // French (incl. unaccented variants)
+        "qu'est-ce que", "qu est ce que", "pouvez-vous", "pouvez vous", "parlez-moi", "parlez de",
+        "parle-moi", "decrivez", "décrivez", "expliquez", "racontez", "est-ce que", "ou vous voyez",
+        "où vous voyez", "pourquoi avez",
+        // Arabic
+        "هل", "ما رأيك", "لماذا تريد", "حدثني", "أخبرني", "اخبرني", "اشرح لي", "صف لي", "عن نفسك",
+        "ما هو", "ما هي", "كيف ترى"
     };
 
     public bool IsSufficient(string transcript, int minChars, bool isFinal)
@@ -30,28 +56,37 @@ public sealed class QuestionDetector : IQuestionDetector
         if (string.IsNullOrWhiteSpace(transcript))
             return false;
 
-        var text = transcript.Trim();
+        var text = CollapseWhitespace(transcript);
         if (text.Length < minChars)
             return false;
 
-        if (text.Contains('?'))
+        // Strong cues: question mark or a known question phrase (any state).
+        if (text.Contains('?') || text.Contains('؟'))
+            return true;
+        if (HasPhrase(text))
             return true;
 
-        if (isFinal)
-            return true;
-
-        return HasInterrogative(text);
+        // Weaker cue: an interrogative word. Required for provisional text;
+        // for finalized text it is what separates a question from a plain
+        // statement/filler — no cue, no answer.
+        return HasWord(text);
     }
 
-    private static bool HasInterrogative(string text)
+    private static bool HasPhrase(string normalized)
+        => Phrases.Any(p => normalized.Contains(p, StringComparison.OrdinalIgnoreCase));
+
+    private static bool HasWord(string normalized)
     {
-        foreach (var token in Tokenize(text))
+        foreach (var token in Tokenize(normalized))
         {
-            if (Interrogatives.Contains(token, StringComparer.OrdinalIgnoreCase))
+            if (Words.Contains(token, StringComparer.OrdinalIgnoreCase))
                 return true;
         }
         return false;
     }
+
+    private static string CollapseWhitespace(string text)
+        => string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     private static IEnumerable<string> Tokenize(string text)
     {

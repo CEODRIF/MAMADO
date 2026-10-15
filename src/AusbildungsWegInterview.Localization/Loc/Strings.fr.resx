@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="TitleApp" xml:space="preserve"><value>AusbildungsWeg Interview</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Assistant d'entretien local - rien ne quitte votre PC</value></data>
+
+  <data name="StatusReady" xml:space="preserve"><value>Prêt</value></data>
+  <data name="StatusPreparing" xml:space="preserve"><value>Chargement des modèles…</value></data>
+  <data name="StatusListening" xml:space="preserve"><value>En écoute</value></data>
+  <data name="StatusProcessing" xml:space="preserve"><value>Traitement de la voix…</value></data>
+  <data name="StatusStopping" xml:space="preserve"><value>Arrêt en cours…</value></data>
+  <data name="StatusStopped" xml:space="preserve"><value>Arrêté</value></data>
+  <data name="StatusFaulted" xml:space="preserve"><value>Erreur - voir ci-dessous</value></data>
+  <data name="StatusDeviceChanged" xml:space="preserve"><value>Périphérique de sortie modifié - capturer a été rouvert sur le nouveau périphérique</value></data>
+
+  <data name="CapturingNotice" xml:space="preserve"><value>L'audio système est capturé (boucle du périphérique de sortie sélectionné). Le micro n'est PAS utilisé.</value></data>
+
+  <data name="SetupHeading" xml:space="preserve"><value>Configurer votre entretien</value></data>
+  <data name="InterviewLanguage" xml:space="preserve"><value>Langue de l'entretien</value></data>
+  <data name="TranslationLanguage" xml:space="preserve"><value>Langue de traduction</value></data>
+  <data name="AnswerLanguage" xml:space="preserve"><value>Langue des réponses suggérées</value></data>
+  <data name="AnswerLevel" xml:space="preserve"><value>Niveau de réponse (CECRL)</value></data>
+
+  <data name="StartListening" xml:space="preserve"><value>Démarrer l'écoute</value></data>
+  <data name="Stop" xml:space="preserve"><value>Arrêter</value></data>
+  <data name="AlwaysOnTop" xml:space="preserve"><value>Toujours au premier plan</value></data>
+
+  <data name="LiveHeading" xml:space="preserve"><value>En direct</value></data>
+  <data name="TranscriptLabel" xml:space="preserve"><value>Transcription originale</value></data>
+  <data name="Provisional" xml:space="preserve"><value>provisoire</value></data>
+  <data name="ProvisionalRefining" xml:space="preserve"><value>provisoire - en cours d'affinage</value></data>
+  <data name="QuestionLabel" xml:space="preserve"><value>Question détectée</value></data>
+  <data name="NoQuestionYet" xml:space="preserve"><value>Aucune question complète détectée pour l'instant.</value></data>
+  <data name="TranslationLabel" xml:space="preserve"><value>Traduction</value></data>
+  <data name="AnswerLabel" xml:space="preserve"><value>Réponse suggérée</value></data>
+
+  <data name="AdvancedHeading" xml:space="preserve"><value>Paramètres avancés</value></data>
+  <data name="OutputDevice" xml:space="preserve"><value>Périphérique de sortie audio</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Actualiser</value></data>
+  <data name="RefreshStatusTip" xml:space="preserve"><value>Actualiser l'état d'Ollama / des modèles</value></data>
+  <data name="ThemeToggleTip" xml:space="preserve"><value>Basculer clair / sombre</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>Clair</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>Sombre</value></data>
+  <data name="UiLanguageTip" xml:space="preserve"><value>Langue de l'interface</value></data>
+
+  <data name="SpeechHeading" xml:space="preserve"><value>Reconnaissance vocale (whisper.cpp)</value></data>
+  <data name="Download" xml:space="preserve"><value>Télécharger</value></data>
+  <data name="WhisperCliPath" xml:space="preserve"><value>Exécutable Whisper CLI (facultatif)</value></data>
+  <data name="WhisperCliPathTip" xml:space="preserve"><value>Chemin vers whisper-cli (ou main). Laisser vide pour utiliser l'adaptateur de bibliothèque native intégré.</value></data>
+  <data name="ModelPath" xml:space="preserve"><value>Chemin du fichier modèle (facultatif)</value></data>
+  <data name="ModelPathTip" xml:space="preserve"><value>Chemin explicite vers un fichier de modèle ggml. Laisser vide pour utiliser le dossier des modèles de l'application.</value></data>
+  <data name="ModelSuggested" xml:space="preserve"><value>Modèles locaux suggérés pour cette machine : Ollama : {0} | Whisper : {1}</value></data>
+
+  <data name="TranslationHeading" xml:space="preserve"><value>Moteur de traduction</value></data>
+  <data name="EnableTranslation" xml:space="preserve"><value>Activer la traduction (désactivé = afficher l'original, clairement indiqué)</value></data>
+  <data name="ExternalCliPath" xml:space="preserve"><value>Chemin du CLI externe (uniquement pour « CLI externe »)</value></data>
+  <data name="ExternalCliPathTip" xml:space="preserve"><value>ex. C:\tools\mariannet.exe - le texte passe par stdin ; la première ligne de stdout est la traduction.</value></data>
+  <data name="ExternalCliArgs" xml:space="preserve"><value>Arguments du CLI externe</value></data>
+  <data name="ExternalCliArgsTip" xml:space="preserve"><value>Modèle avec les espaces réservés {source} et {target}.</value></data>
+  <data name="EngineHint" xml:space="preserve"><value>Les paramètres du moteur s'appliquent après l'arrêt. whisper (vers l'anglais) réutilise le modèle de la voix ; le CLI externe nécessite un binaire et des modèles installés par l'utilisateur (jamais téléchargés par l'application).</value></data>
+
+  <data name="OllamaHeading" xml:space="preserve"><value>IA locale (Ollama, facultatif)</value></data>
+  <data name="OllamaModel" xml:space="preserve"><value>Modèle Ollama</value></data>
+  <data name="OllamaModelTip" xml:space="preserve"><value>Nom du modèle à tirer avec : ollama pull &lt;name&gt;. Jamais téléchargé par l'application.</value></data>
+
+  <data name="AnswerOptionsHeading" xml:space="preserve"><value>Options de réponse</value></data>
+  <data name="Length" xml:space="preserve"><value>Longueur</value></data>
+  <data name="Style" xml:space="preserve"><value>Style</value></data>
+
+  <data name="ContextHeading" xml:space="preserve"><value>Contexte du candidat (local uniquement)</value></data>
+  <data name="LoadCv" xml:space="preserve"><value>Charger le CV</value></data>
+  <data name="LoadJd" xml:space="preserve"><value>Charger l'offre d'emploi</value></data>
+  <data name="ContextNone" xml:space="preserve"><value>Aucun CV / offre d'emploi chargé.</value></data>
+  <data name="ContextCvLoaded" xml:space="preserve"><value>CV chargé (conservé localement uniquement).</value></data>
+  <data name="ContextJdLoaded" xml:space="preserve"><value>Offre d'emploi chargée (conservée localement uniquement).</value></data>
+  <data name="ContextBothLoaded" xml:space="preserve"><value>CV et offre d'emploi chargés (conservés localement uniquement).</value></data>
+
+  <data name="PrivacyNote" xml:space="preserve"><value>Seul le périphérique de sortie sélectionné est capturé (audio système, boucle) - le micro n'est jamais utilisé. L'audio et les transcriptions ne sont ni enregistrés ni stockés.</value></data>
+  <data name="DisclosureNote" xml:space="preserve"><value>Rappel : respectez les règles de votre entretien - déclarez l'utilisation d'une assistance le cas échéant.</value></data>
+
+  <data name="ErrorStopBeforeSettings" xml:space="preserve"><value>Arrêtez l'écoute avant de modifier les paramètres de la voix ou de la traduction.</value></data>
+  <data name="ErrorCouldNotApplySpeech" xml:space="preserve"><value>Impossible d'appliquer les paramètres vocaux : {0}</value></data>
+  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>Impossible d'énumérer les périphériques audio. Vérifiez qu'une sortie audio est connectée, puis réessayez.</value></data>
+  <data name="ErrorNoOutputDevice" xml:space="preserve"><value>Aucun périphérique de sortie audio actif trouvé. Connectez des haut-parleurs/écouteurs et appuyez sur Actualiser.</value></data>
+  <data name="ErrorModelDownload" xml:space="preserve"><value>Le téléchargement du modèle a échoué (problème réseau ou nom de modèle incorrect). Vérifiez la connexion et le nom du modèle, puis réessayez.</value></data>
+  <data name="ErrorCouldNotReadCv" xml:space="preserve"><value>Impossible de lire le CV : {0}</value></data>
+  <data name="ErrorCouldNotReadJd" xml:space="preserve"><value>Impossible de lire l'offre d'emploi : {0}</value></data>
+  <data name="DownloadingModel" xml:space="preserve"><value>Téléchargement du modèle « {0} »…</value></data>
+  <data name="LoadCvTitle" xml:space="preserve"><value>Sélectionner le CV (fichier texte)</value></data>
+  <data name="LoadJdTitle" xml:space="preserve"><value>Sélectionner l'offre d'emploi (fichier texte)</value></data>
+  <data name="FileFilterText" xml:space="preserve"><value>Fichiers texte (*.txt;*.md)</value></data>
+  <data name="FileFilter" xml:space="preserve"><value>{0}|*.txt;*.md|{1}|*.*</value></data>
+  <data name="FileFilterAll" xml:space="preserve"><value>Tous les fichiers (*.*)</value></data>
+
+  <data name="AiChecking" xml:space="preserve"><value>IA locale (Ollama) : vérification…</value></data>
+  <data name="AiUnavailable" xml:space="preserve"><value>IA locale (Ollama) : non démarré - suggestions de réponses désactivées (la transcription fonctionne toujours)</value></data>
+  <data name="AiModelReady" xml:space="preserve"><value>IA locale (Ollama) : démarré, modèle « {0} » prêt</value></data>
+  <data name="AiModelMissing" xml:space="preserve"><value>IA locale (Ollama) : démarré, modèle « {0} » MANQUANT - exécuter : ollama pull {0}</value></data>
+  <data name="AiStatusUnknown" xml:space="preserve"><value>IA locale (Ollama) : état inconnu</value></data>
+
+  <data name="SpeechEngineCli" xml:space="preserve"><value>CLI whisper.cpp</value></data>
+  <data name="SpeechEngineCliMissing" xml:space="preserve"><value>CLI whisper.cpp (exécutable introuvable)</value></data>
+  <data name="SpeechEngineNative" xml:space="preserve"><value>Bibliothèque native whisper.cpp</value></data>
+  <data name="SpeechModelReady" xml:space="preserve"><value>prêt</value></data>
+  <data name="SpeechSetupLine" xml:space="preserve"><value>Voix : {0} | modèle « {1} » : {2}</value></data>
+  <data name="SpeechModelMissing" xml:space="preserve"><value>MANQUANT - téléchargez-le ou définissez le chemin du modèle</value></data>
+  <data name="SpeechStatusUnknown" xml:space="preserve"><value>Moteur vocal : état inconnu</value></data>
+
+  <data name="EngineOllama" xml:space="preserve"><value>Ollama (LLM local)</value></data>
+  <data name="EngineWhisper" xml:space="preserve"><value>whisper.cpp (anglais uniquement)</value></data>
+  <data name="EngineExternal" xml:space="preserve"><value>CLI externe (opus-mt)</value></data>
+  <data name="LengthConcise" xml:space="preserve"><value>Concis</value></data>
+  <data name="LengthNormal" xml:space="preserve"><value>Normal</value></data>
+  <data name="LengthDetailed" xml:space="preserve"><value>Détaillé</value></data>
+  <data name="StyleConcise" xml:space="preserve"><value>Concis</value></data>
+  <data name="StyleNatural" xml:space="preserve"><value>Naturel</value></data>
+  <data name="StyleProfessional" xml:space="preserve"><value>Professionnel</value></data>
+
+  <!-- Messages d'erreur d'exécution (par catégorie ; le texte brut des exceptions avec chemins locaux n'est jamais affiché) -->
+  <data name="ErrorCaptureStart" xml:space="preserve"><value>Impossible de démarrer la capture de l'audio système. Vérifiez le périphérique de sortie sélectionné, cliquez sur Actualiser et réessayez.</value></data>
+  <data name="ErrorDeviceLost" xml:space="preserve"><value>Le périphérique de sortie audio a été déconnecté. La capture a été arrêtée.</value></data>
+  <data name="ErrorDeviceReopen" xml:space="preserve"><value>Le périphérique audio par défaut a changé, mais la capture n'a pas pu être rouverte.</value></data>
+  <data name="ErrorWhisperExeMissing" xml:space="preserve"><value>L'exécutable whisper.cpp est introuvable. Définissez un chemin valide dans les paramètres avancés.</value></data>
+  <data name="ErrorWhisperModelMissing" xml:space="preserve"><value>Le fichier de modèle vocal est introuvable. Cliquez sur Télécharger (action explicite) ou définissez un chemin de modèle valide.</value></data>
+  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>La bibliothèque d'exécution locale whisper n'est pas disponible sur cet appareil. Compilez whisper.cpp et placez la bibliothèque partagée à côté de l'application.</value></data>
+  <data name="ErrorModelPrepare" xml:space="preserve"><value>Impossible de préparer les modèles vocaux locaux. Vérifiez les paramètres vocaux dans « Avancé ».</value></data>
+  <data name="ErrorUnknownModel" xml:space="preserve"><value>Le modèle vocal configuré n'est pas reconnu. Choisissez tiny, base, small ou medium.</value></data>
+  <data name="ErrorWhisperRun" xml:space="preserve"><value>whisper.cpp a échoué pendant la transcription. Vérifiez l'exécutable et le modèle dans les paramètres avancés.</value></data>
+  <data name="ErrorWhisperTimeout" xml:space="preserve"><value>La transcription a pris trop de temps et a été arrêtée.</value></data>
+  <data name="ErrorOllama" xml:space="preserve"><value>L'assistant IA local (Ollama) a signalé une erreur. Vérifiez qu'il est en cours d'exécution avec le modèle configuré.</value></data>
+  <data name="ErrorRuntime" xml:space="preserve"><value>Une erreur est survenue lors du traitement de l'audio.</value></data>
+
+  <!-- Statuts honnêtes de traduction (un par code TranslationStatus ; jamais simulés) -->
+  <data name="TranslStatusPassThrough" xml:space="preserve"><value>La traduction est désactivée — le texte original est affiché.</value></data>
+  <data name="TranslStatusEcho" xml:space="preserve"><value>Le moteur a renvoyé le texte inchangé (ce n'est pas une traduction).</value></data>
+  <data name="TranslStatusProviderUnavailable" xml:space="preserve"><value>Le moteur de traduction (Ollama) est indisponible — le texte original est affiché.</value></data>
+  <data name="TranslStatusProviderFailed" xml:space="preserve"><value>La traduction a échoué — le texte original est affiché.</value></data>
+  <data name="TranslStatusNoOutput" xml:space="preserve"><value>Aucune traduction n'a été produite — le texte original est affiché.</value></data>
+  <data name="TranslStatusNeedsSource" xml:space="preserve"><value>Ce moteur exige une langue source fixée — choisissez la langue de l'entretien pour traduire.</value></data>
+  <data name="TranslStatusPairNotSupported" xml:space="preserve"><value>La paire {0} → {1} n'est pas couverte par le modèle configuré — téléchargez ce modèle ou utilisez Ollama.</value></data>
+  <data name="TranslStatusCliLaunch" xml:space="preserve"><value>La CLI de traduction n'a pas pu être lancée — vérifiez le chemin dans les paramètres avancés.</value></data>
+  <data name="TranslStatusCliTimeout" xml:space="preserve"><value>La traduction a pris trop de temps — le texte original est affiché.</value></data>
+  <data name="TranslStatusCliError" xml:space="preserve"><value>La CLI de traduction a signalé une erreur — le texte original est affiché.</value></data>
+  <data name="TranslStatusWhisperEnglishOnly" xml:space="preserve"><value>La traduction whisper ne prend en charge que l'anglais — utilisez Ollama pour la langue cible {0}.</value></data>
+  <data name="TranslStatusWhisperEngine" xml:space="preserve"><value>Le moteur vocal actif ne prend pas en charge le mode de traduction whisper — définissez le chemin whisper CLI ou utilisez Ollama.</value></data>
+
+  <!-- Import du CV / de la description de poste (Phase 3) -->
+  <data name="DocCvHeading" xml:space="preserve"><value>CV (curriculum vitæ)</value></data>
+  <data name="DocJobHeading" xml:space="preserve"><value>Description de poste</value></data>
+  <data name="DocImport" xml:space="preserve"><value>Importer…</value></data>
+  <data name="DocUse" xml:space="preserve"><value>Utiliser</value></data>
+  <data name="DocClear" xml:space="preserve"><value>Effacer</value></data>
+  <data name="DocNotImported" xml:space="preserve"><value>Non importé</value></data>
+  <data name="DocReview" xml:space="preserve"><value>Importé — vérifiez le texte, puis cliquez sur Utiliser</value></data>
+  <data name="DocInUse" xml:space="preserve"><value>Utilisé pour l'ancrage des réponses ({0} caractères)</value></data>
+  <data name="DocPrivacy" xml:space="preserve"><value>Conserve en mémoire uniquement pour cette session — jamais écrit sur le disque ou dans les journaux.</value></data>
+  <data name="ErrorDocUnsupported" xml:space="preserve"><value>Type de fichier non pris en charge. Importez un fichier PDF, DOCX ou TXT.</value></data>
+  <data name="ErrorDocEmpty" xml:space="preserve"><value>Le fichier est vide.</value></data>
+  <data name="ErrorDocCorrupt" xml:space="preserve"><value>Impossible de lire le fichier (corrompu ou format invalide).</value></data>
+  <data name="ErrorDocOversized" xml:space="preserve"><value>Le fichier est trop volumineux (max. {0} Mo).</value></data>
+  <data name="ErrorDocNoText" xml:space="preserve"><value>Aucun texte n'a pu être extrait (PDF scanné/image ? utilisez un fichier texte).</value></data>
+  <data name="ErrorDocEmptyUse" xml:space="preserve"><value>Le texte est vide — importez ou collez d'abord du contenu.</value></data>
+  <data name="ErrorDocTruncated" xml:space="preserve"><value>Seuls les {0} premiers caractères ont été importés.</value></data>
+  <data name="FileFilterPdf" xml:space="preserve"><value>Fichiers PDF (*.pdf)</value></data>
+  <data name="FileFilterDocx" xml:space="preserve"><value>Fichiers Word (*.docx)</value></data>
+  <data name="AnswerStatusUnavailable" xml:space="preserve"><value>L'IA locale (Ollama) ne fonctionne pas : aucune suggestion de réponse pour l'instant. Démarrez Ollama et réessayez — la transcription et la traduction continuent de fonctionner.</value></data>
+  <data name="AnswerStatusModelMissing" xml:space="preserve"><value>Le modèle Ollama « {0} » n'est pas installé sur cet ordinateur. Exécutez `ollama pull {0}` (ou choisissez un autre modèle dans les réglages), puis réessayez.</value></data>
+  <data name="AnswerStatusFailed" xml:space="preserve"><value>La génération de la réponse a échoué (erreur locale Ollama). La transcription et la traduction continuent de fonctionner — posez à nouveau la question.</value></data>
+  <data name="AnswerStatusTimeout" xml:space="preserve"><value>La génération de la réponse a expiré. Le modèle local est encore occupé ou trop lourd pour cette machine — réessayez ou choisissez un modèle plus petit.</value></data>
+  <data name="AnswerStatusEmpty" xml:space="preserve"><value>Le modèle a renvoyé une réponse vide. Réessayez ou choisissez un autre modèle.</value></data>
+  <data name="AnswerDisclaimer" xml:space="preserve"><value>Suggestion à vérifier — comparez-la à votre propre expérience avant de l'utiliser dans votre entretien.</value></data>
+  <data name="AnswerGenerating" xml:space="preserve"><value>Génération de la réponse…</value></data>
+  <data name="CopyAnswer" xml:space="preserve"><value>Copier</value></data>
+  <data name="ErrorCopyFailed" xml:space="preserve"><value>La copie dans le presse-papiers a échoué.</value></data>
+</root>

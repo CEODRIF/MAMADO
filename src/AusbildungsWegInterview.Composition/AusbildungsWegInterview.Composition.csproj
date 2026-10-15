@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AusbildungsWegInterview.App</RootNamespace>
+    <Description>Application composition root (wires the concrete local providers into the InterviewPipeline). Deliberately WPF-free and platform-neutral so it can be unit-tested on any OS. No paid services, no cloud, no API keys.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Speech\AusbildungsWegInterview.Speech.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Translation\AusbildungsWegInterview.Translation.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Answers\AusbildungsWegInterview.Answers.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Localization\AusbildungsWegInterview.Localization.csproj" />
+  </ItemGroup>
+
+</Project>

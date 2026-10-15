@@ -13,4 +13,10 @@
     <ProjectReference Include="..\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- MIT-licensed, pure C#, fully offline PDF text extraction. No paid/cloud dependency.
+         Version as provided by the environment's NuGet mirror. -->
+    <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
+  </ItemGroup>
+
 </Project>
