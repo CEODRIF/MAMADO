@@ -502,7 +502,9 @@ public sealed class MainViewModel : ObservableObject
             IsAnswerProvisional = e.Suggestion.IsProvisional;
         });
         _hState = (_, e) => Post(() => UpdateStatus(e.State));
-        _hError = (_, e) => Post(() => ErrorText = e.Error.Message);
+        // Runtime errors are category-localized (all four UI languages); raw
+        // exception text (which may contain local paths) is never shown.
+        _hError = (_, e) => Post(() => ErrorText = SpeechErrorLocalizer.Localize(T, e.Error));
 
         p.TranscriptUpdated += _hTranscript;
         p.TranslationUpdated += _hTranslation;
@@ -563,6 +565,15 @@ public sealed class MainViewModel : ObservableObject
     {
         IsBusy = true;
         ErrorText = string.Empty;
+        // Fresh session: previous transcript / translation / answer content is
+        // cleared so the live area only shows what the new session hears.
+        TranscriptText = string.Empty;
+        IsTranscriptProvisional = false;
+        TranslationText = string.Empty;
+        TranslationStatusText = string.Empty;
+        AnswerText = string.Empty;
+        IsAnswerProvisional = false;
+        DetectedQuestionText = string.Empty;
         try
         {
             SaveConfig();
@@ -571,7 +582,7 @@ public sealed class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             IsListening = false; // never claim "listening" after a failed start
-            ErrorText = ex.Message;
+            ErrorText = SpeechErrorLocalizer.Localize(T, ex);
             StatusText = T["StatusFaulted"];
             StatusBrush = StatusFaultBrush;
         }
@@ -590,7 +601,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorText = ex.Message;
+            ErrorText = SpeechErrorLocalizer.Localize(T, ex);
         }
         finally
         {
@@ -619,7 +630,9 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorText = T.F("ErrorCouldNotApplySpeech", ex.Message);
+            // Category-localized: "Stop listening before…", "Unknown model …",
+            // missing executable/model, or the generic runtime message.
+            ErrorText = SpeechErrorLocalizer.Localize(T, ex);
         }
     }
 

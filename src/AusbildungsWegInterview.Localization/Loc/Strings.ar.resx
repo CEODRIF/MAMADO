@@ -119,4 +119,18 @@
   <data name="StyleConcise" xml:space="preserve"><value>مختصر</value></data>
   <data name="StyleNatural" xml:space="preserve"><value>طبيعي</value></data>
   <data name="StyleProfessional" xml:space="preserve"><value>احترافي</value></data>
+
+  <!-- رسائل أخطاء وقت التشغيل (حسب الفئة؛ لا يُعرض نص الاستثناء الخام الذي قد يحتوي مسارات محلية) -->
+  <data name="ErrorCaptureStart" xml:space="preserve"><value>تعذر بدء التقاط صوت النظام. تحقق من جهاز الإخراج المحدد ثم اضغط على «تحديث» وحاول مرة أخرى.</value></data>
+  <data name="ErrorDeviceLost" xml:space="preserve"><value>تم فصل جهاز إخراج الصوت. تم إيقاف الالتقاط.</value></data>
+  <data name="ErrorDeviceReopen" xml:space="preserve"><value>تغيّر جهاز الصوت الافتراضي، لكن تعذر إعادة فتح الالتقاط.</value></data>
+  <data name="ErrorWhisperExeMissing" xml:space="preserve"><value>ملف whisper.cpp غير موجود. حدد مسارًا صالحًا في الإعدادات المتقدمة.</value></data>
+  <data name="ErrorWhisperModelMissing" xml:space="preserve"><value>ملف النموذج الصوتي مفقود. اضغط على «تنزيل» (إجراء صريح) أو حدد مسار نموذج صالحًا.</value></data>
+  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>مكتبة تشغيل whisper المحلية غير متاحة على هذا الجهاز. ابنِ whisper.cpp ووضِع المكتبة المشتركة بجانب التطبيق.</value></data>
+  <data name="ErrorModelPrepare" xml:space="preserve"><value>تعذر تجهيز النماذج الصوتية المحلية. تحقق من إعدادات الصوت في «متقدم».</value></data>
+  <data name="ErrorUnknownModel" xml:space="preserve"><value>النموذج الصوتي المُعد غير معروف. اختر tiny أو base أو small أو medium.</value></data>
+  <data name="ErrorWhisperRun" xml:space="preserve"><value>فشل whisper.cpp أثناء النسخ. تحقق من الملف القابل للتنفيذ والنموذج في الإعدادات المتقدمة.</value></data>
+  <data name="ErrorWhisperTimeout" xml:space="preserve"><value>استغرق النسخ وقتًا طويلًا جدًا فتم إيقافه.</value></data>
+  <data name="ErrorOllama" xml:space="preserve"><value>أبلغ مساعد الذكاء الاصطناعي المحلي (Ollama) عن خطأ. تحقق من أنه يعمل بالنموذج المُعد.</value></data>
+  <data name="ErrorRuntime" xml:space="preserve"><value>حدث خطأ أثناء معالجة الصوت.</value></data>
 </root>

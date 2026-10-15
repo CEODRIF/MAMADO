@@ -153,14 +153,100 @@ public class WhisperCliRecognizerTests
         }
         try
         {
-            await using var rec = new WhisperCliRecognizer(executable, model, timeoutMs: 1000, workDir: dir);
+            // partialIntervalSeconds low enough that the 0.5 s frame triggers a partial inference.
+            await using var rec = new WhisperCliRecognizer(executable, model, partialIntervalSeconds: 0.25, timeoutMs: 1000, workDir: dir);
             await rec.PrepareAsync("tiny", null);
 
-            // Feed 1 s of (silent) audio so a transcription actually starts; the hang is in the "executable".
+            // Feed 0.5 s of (silent) audio so a transcription actually starts; the hang is in the "executable".
             var frame = new AudioFrame(new byte[16000], 16000);
-            await rec.ProcessAudioAsync(frame);
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => rec.FinalizeAsync());
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => rec.ProcessAudioAsync(frame));
             Assert.Contains("timed out", ex.Message);
+
+            // Finalize must fail the same clear way (bounded by the timeout, not the hang).
+            var ex2 = await Assert.ThrowsAsync<InvalidOperationException>(() => rec.FinalizeAsync());
+            Assert.Contains("timed out", ex2.Message);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task RunWhisper_FailingExecutable_ErrorPropagates_NotSwallowed()
+    {
+        // A platform-native "executable" that exits non-zero without producing JSON.
+        // Partial transcriptions must surface this failure to the caller (the
+        // pipeline reports it), never swallow it silently.
+        string dir = Path.Combine(Path.GetTempPath(), "awg-fail-1-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        string model = Path.Combine(dir, "model.bin");
+        await File.WriteAllBytesAsync(model, new byte[] { 1 });
+
+        string executable;
+        if (OperatingSystem.IsWindows())
+        {
+            executable = Path.Combine(dir, "fail.bat");
+            await File.WriteAllTextAsync(executable, "@echo off\r\nexit 1\r\n");
+        }
+        else
+        {
+            executable = Path.Combine(dir, "fail.sh");
+            await File.WriteAllTextAsync(executable, "#!/bin/sh\nexit 1\n");
+            try { File.SetUnixFileMode(executable, UnixFileMode.UserExecute | UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+            catch { }
+        }
+        try
+        {
+            await using var rec = new WhisperCliRecognizer(executable, model, partialIntervalSeconds: 0.25, timeoutMs: 10000, workDir: dir);
+            await rec.PrepareAsync("tiny", null);
+
+            var frame = new AudioFrame(new byte[16000], 16000);
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => rec.ProcessAudioAsync(frame));
+            Assert.Contains("exited with code", ex.Message);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task RunWhisper_Cancellation_StaysCancellation_NotTimeout()
+    {
+        // A hanging "executable" (see the timeout test) + an external cancellation:
+        // Stop must observe an OperationCanceledException (quiet exit), not a
+        // "timed out" error — otherwise every Stop would flash an error banner.
+        string dir = Path.Combine(Path.GetTempPath(), "awg-cancel-1-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        string model = Path.Combine(dir, "model.bin");
+        await File.WriteAllBytesAsync(model, new byte[] { 1 });
+
+        string executable;
+        if (OperatingSystem.IsWindows())
+        {
+            executable = Path.Combine(dir, "hang.bat");
+            await File.WriteAllTextAsync(executable, "@echo off\r\nping 127.0.0.1 -n 61 >nul\r\n");
+        }
+        else
+        {
+            executable = Path.Combine(dir, "hang.sh");
+            await File.WriteAllTextAsync(executable, "#!/bin/sh\nsleep 30\n");
+            try { File.SetUnixFileMode(executable, UnixFileMode.UserExecute | UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+            catch { }
+        }
+        try
+        {
+            await using var rec = new WhisperCliRecognizer(executable, model, partialIntervalSeconds: 0.25, timeoutMs: 60000, workDir: dir);
+            await rec.PrepareAsync("tiny", null);
+
+            using var cts = new CancellationTokenSource();
+            var frame = new AudioFrame(new byte[16000], 16000);
+            var task = rec.ProcessAudioAsync(frame, cts.Token);
+            await Task.Delay(400); // let the subprocess start, then cancel like Stop does
+            cts.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
         }
         finally
         {
@@ -347,12 +433,15 @@ public class WhisperCliRecognizerTests
         try
         {
             await using var rec = new WhisperCliRecognizer(
-                bin.Bin, garbage, timeoutMs: 60000, workDir: Path.Combine(dir, "work"));
+                bin.Bin, garbage, partialIntervalSeconds: 0.25, timeoutMs: 60000, workDir: Path.Combine(dir, "work"));
             await rec.PrepareAsync("tiny", null);
 
             // 1 s of silence + broken model -> non-zero exit, clear error.
+            // The partial pass surfaces the failure (no silent swallowing)...
             var frame = new AudioFrame(new byte[16000], 16000);
-            await rec.ProcessAudioAsync(frame);
+            var exProcess = await Assert.ThrowsAsync<InvalidOperationException>(() => rec.ProcessAudioAsync(frame));
+            Assert.Contains("exited with code", exProcess.Message);
+            // ...and so does the final pass.
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => rec.FinalizeAsync());
             Assert.Contains("exited with code", ex.Message);
         }

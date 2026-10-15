@@ -119,4 +119,18 @@
   <data name="StyleConcise" xml:space="preserve"><value>Knapp</value></data>
   <data name="StyleNatural" xml:space="preserve"><value>Natürlich</value></data>
   <data name="StyleProfessional" xml:space="preserve"><value>Professionell</value></data>
+
+  <!-- Laufzeitfehler (kategoriebasiert; roher Fehlertext mit lokalen Pfaden wird nie angezeigt) -->
+  <data name="ErrorCaptureStart" xml:space="preserve"><value>Das Erfassen des Systemsounds konnte nicht gestartet werden. Prüfen Sie das ausgewählte Ausgabegerät, klicken Sie auf „Aktualisieren" und versuchen Sie es erneut.</value></data>
+  <data name="ErrorDeviceLost" xml:space="preserve"><value>Das Audio-Ausgabegerät wurde getrennt. Die Aufnahme wurde gestoppt.</value></data>
+  <data name="ErrorDeviceReopen" xml:space="preserve"><value>Das Standard-Audiogerät wurde geändert, aber die Aufnahme konnte nicht neu geöffnet werden.</value></data>
+  <data name="ErrorWhisperExeMissing" xml:space="preserve"><value>Die whisper.cpp-Ausführbare Datei fehlt. Legen Sie in den erweiterten Einstellungen einen gültigen Pfad fest.</value></data>
+  <data name="ErrorWhisperModelMissing" xml:space="preserve"><value>Die Sprachmodell-Datei fehlt. Klicken Sie auf „Herunterladen" (explizite Aktion) oder legen Sie einen gültigen Modellpfad fest.</value></data>
+  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>Die lokale whisper-Laufzeitbibliothek ist auf diesem Computer nicht verfügbar. Bauen Sie whisper.cpp und legen Sie die Shared Library neben die App.</value></data>
+  <data name="ErrorModelPrepare" xml:space="preserve"><value>Die lokalen Sprachmodelle konnten nicht vorbereitet werden. Prüfen Sie die Spracheinstellungen unter „Erweitert".</value></data>
+  <data name="ErrorUnknownModel" xml:space="preserve"><value>Das konfigurierte Sprachmodell wird nicht erkannt. Wählen Sie tiny, base, small oder medium.</value></data>
+  <data name="ErrorWhisperRun" xml:space="preserve"><value>whisper.cpp ist während der Transkription fehlgeschlagen. Prüfen Sie die ausführbare Datei und das Modell unter „Erweitert".</value></data>
+  <data name="ErrorWhisperTimeout" xml:space="preserve"><value>Die Transkription hat zu lange gedauert und wurde abgebrochen.</value></data>
+  <data name="ErrorOllama" xml:space="preserve"><value>Der lokale KI-Assistent (Ollama) hat einen Fehler gemeldet. Prüfen Sie, ob er mit dem konfigurierten Modell läuft.</value></data>
+  <data name="ErrorRuntime" xml:space="preserve"><value>Beim Verarbeiten des Audios ist etwas schiefgelaufen.</value></data>
 </root>

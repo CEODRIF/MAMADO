@@ -30,10 +30,17 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   **≈ 77 MB** (incl. runtime baseline).
 - Argos/opus-mt DE→EN probe (evaluation): **0.16–0.36 s warm** per sentence, ~100 MB per pair.
 
-**Verified by the automated suite (175 tests, cross-platform):**
+**Verified by the automated suite (220 tests, cross-platform):**
 - **Real end-to-end run**: actual JFK speech audio through the complete pipeline
   (real whisper.cpp → question detection → translation → answer), asserting the
   real transcript, a real generated answer, and honest stop semantics.
+- **Stop reliability (Phase 1 hardening)**: Stop cancels the in-flight whisper.cpp
+  subprocess promptly (test: 69 ms), queued audio is **not** transcribed after Stop,
+  concurrent Stops (UI stop + app shutdown) share one teardown, and a capture failure
+  at initial start reports exactly one error without an auto-restart race.
+- **Localized runtime errors**: every pipeline / capture / whisper / Ollama failure is
+  category-mapped to a short message in all four UI languages (en/de/fr/ar); raw
+  exception text (which can contain local file paths) is never shown.
 - Device-change decision logic (explicit selection kept; default-follow re-opens on the
   new default; lost device → fatal error → bounded pipeline restart).
 - Answer quality regressions: question-specific prompts, language/length respect, bounded
@@ -50,6 +57,10 @@ and therefore NOT claimed as verified:**
   switching on real hardware, and the WPF window/ViewModel at runtime. The published
   `win-x64` build was produced cross-platform and its file layout verified, but it has
   **not been launched on Windows** in this milestone.
+- Pressing **Stop while transcription is active** on real hardware (the cancellation
+  logic is unit-tested with fakes and real subprocesses; the WASAPI device release
+  itself needs Windows). Expected: the UI returns to "Stopped" within ~1 s, the capture
+  indicator turns off, and no further transcript updates appear.
 
 On Windows, verify with:
 ```powershell

@@ -45,6 +45,9 @@ public sealed class InterviewPipeline : IAsyncDisposable
     private CancellationTokenSource? _answerCts;
     private Task? _worker;
 
+    /// <summary>In-flight Stop (re-entrancy guard: concurrent Stops share one task).</summary>
+    private Task? _stopTask;
+
     // Segment-scoped state (worker thread only)
     private bool _activeSegment;
     private double _silentSeconds;
@@ -162,35 +165,65 @@ public sealed class InterviewPipeline : IAsyncDisposable
         SetState(PipelineState.Listening);
     }
 
-    public async Task StopAsync(CancellationToken ct = default)
+    public Task StopAsync(CancellationToken ct = default)
     {
         if (State is PipelineState.Stopped or PipelineState.Idle)
-            return;
+            return Task.CompletedTask;
 
+        // Re-entrancy: a second Stop (e.g. UI stop + app-shutdown dispose at the
+        // same moment) joins the in-flight stop instead of racing the CTS/queue
+        // teardown (which used to risk ObjectDisposedException).
         lock (_gate)
-            _userStopping = true;
-
-        SetState(PipelineState.Stopping);
-        _answerCts?.Cancel();
-
-        await UnsubscribeAndStopCaptureAsync().ConfigureAwait(false);
-
-        if (_frameQueue is not null)
-            _frameQueue.Writer.TryComplete();
-
-        if (_worker is not null)
         {
-            try { await _worker.ConfigureAwait(false); }
-            catch { /* best effort */ }
-            _worker = null;
+            if (_stopTask is not null)
+                return _stopTask;
+            _userStopping = true;
+            _stopTask = StopCoreAsync();
+            return _stopTask;
         }
+    }
 
-        _runCts?.Cancel();
-        _runCts?.Dispose();
-        _runCts = null;
-        _frameQueue = null;
-        _activeSegment = false;
-        SetState(PipelineState.Stopped);
+    private async Task StopCoreAsync()
+    {
+        try
+        {
+            SetState(PipelineState.Stopping);
+
+            // Cancel the run token FIRST. This is what makes Stop reliable:
+            //  * an in-flight whisper.cpp subprocess is killed promptly (its
+            //    WaitForExitAsync token is linked to the run token),
+            //  * the worker exits ReadAllAsync immediately instead of draining
+            //    the bounded queue (up to 128 frames of audio) after Stop,
+            //  * the worker's shutdown tail-flush is skipped (guarded by the token).
+            _runCts?.Cancel();
+            _answerCts?.Cancel();
+
+            await UnsubscribeAndStopCaptureAsync().ConfigureAwait(false);
+
+            if (_frameQueue is not null)
+                _frameQueue.Writer.TryComplete();
+
+            if (_worker is not null)
+            {
+                try { await _worker.ConfigureAwait(false); }
+                catch { /* best effort */ }
+                _worker = null;
+            }
+
+            _activeSegment = false;
+            SetState(PipelineState.Stopped);
+        }
+        finally
+        {
+            if (_runCts is not null)
+            {
+                _runCts.Dispose();
+                _runCts = null;
+            }
+            _frameQueue = null;
+            lock (_gate)
+                _stopTask = null;
+        }
     }
 
     /// <summary>Feeds an audio frame into the pipeline (custom sources + tests).</summary>
@@ -218,10 +251,15 @@ public sealed class InterviewPipeline : IAsyncDisposable
     {
         if (e.IsFatal)
         {
+            // Auto-restart applies to IN-SESSION failures (device lost while
+            // listening) only. A fatal error raised by the INITIAL StartAsync
+            // (e.g. no output device) is already handled by StartAsync's own
+            // catch (teardown + Faulted state); reacting here would schedule a
+            // duplicate restart, a duplicate error, and a racing StopAsync.
             bool restart;
             lock (_gate)
             {
-                restart = !_userStopping && _captureRestarts < _config.MaxCaptureRestarts;
+                restart = IsRunning && !_userStopping && _captureRestarts < _config.MaxCaptureRestarts;
                 if (restart)
                     _captureRestarts++;
             }
@@ -232,10 +270,14 @@ public sealed class InterviewPipeline : IAsyncDisposable
                 ReportError(e.Error, isFatal: false);
                 _ = TryRestartCaptureAsync();
             }
-            else
+            else if (IsRunning)
             {
                 ReportError(e.Error, isFatal: true);
                 _ = StopAsync();
+            }
+            else
+            {
+                ReportError(e.Error, isFatal: true);
             }
         }
         else
@@ -256,7 +298,12 @@ public sealed class InterviewPipeline : IAsyncDisposable
     private async Task TryRestartCaptureAsync()
     {
         var cts = _runCts;
-        if (cts is null || cts.IsCancellationRequested)
+        if (cts is null)
+            return;
+        bool cancelled;
+        try { cancelled = cts.IsCancellationRequested; }
+        catch (ObjectDisposedException) { return; } // Stop tore the run down concurrently
+        if (cancelled)
             return;
 
         _capture.FrameCaptured -= OnFrameCaptured;

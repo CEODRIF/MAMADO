@@ -100,19 +100,14 @@ public sealed class WhisperCliRecognizer : ISpeechRecognizer, ISegmentTranslator
             return _lastResult ?? TranscriptionResult.Empty;
 
         _lastInferSeconds = _audioSeconds;
-        try
-        {
-            _lastResult = await RunWhisperAsync(final: false, translate: false, ct).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            // Keep the previous result; surface nothing here (pipeline reports errors).
-        }
-        return _lastResult ?? TranscriptionResult.Empty;
+
+        // Runtime failures (crashed executable, broken model, non-zero exit,
+        // timeout) PROPAGATE: the pipeline catches them and surfaces a
+        // localized, non-fatal error to the UI. Cancellation propagates as
+        // OperationCanceledException so Stop exits cleanly without an error
+        // banner. The previous result is kept in both cases.
+        _lastResult = await RunWhisperAsync(final: false, translate: false, ct).ConfigureAwait(false);
+        return _lastResult;
     }
 
     public Task<TranscriptionResult> FinalizeAsync(CancellationToken ct = default)
@@ -207,7 +202,12 @@ public sealed class WhisperCliRecognizer : ISpeechRecognizer, ISegmentTranslator
             catch (OperationCanceledException)
             {
                 try { proc.Kill(entireProcessTree: true); } catch { /* ignore */ }
-                throw new InvalidOperationException("whisper.cpp transcription timed out or was cancelled.", null);
+                // Distinguish the two cases: a caller-initiated cancellation
+                // (Stop) must stay an OperationCanceledException so the pipeline
+                // exits quietly; only the internal timeout is a real error.
+                if (ct.IsCancellationRequested)
+                    throw new OperationCanceledException("whisper.cpp transcription was cancelled.", ct);
+                throw new InvalidOperationException("whisper.cpp transcription timed out.", null);
             }
 
             string stderr = await stderrTask.ConfigureAwait(false);

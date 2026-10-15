@@ -325,6 +325,123 @@ public class InterviewPipelineTests
     }
 
     [Fact]
+    public async Task Stop_CancelsInFlightTranscription_Promptly()
+    {
+        var capture = new NoopAudioCapture();
+        var speech = new CancellationObservingRecognizer(); // blocks inside ProcessAudioAsync until cancelled
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, new MockTranslator(), new MockAnswerGenerator(), new QuestionDetector(),
+            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000 });
+
+        var transcripts = new List<TranscriptionResult>();
+        pipeline.TranscriptUpdated += (_, e) => { lock (transcripts) transcripts.Add(e.Result); };
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(16000));
+        await WaitUntilAsync(() => speech.InFlightCount == 1); // partial inference in flight, waiting on the run token
+
+        var sw = Stopwatch.StartNew();
+        await pipeline.StopAsync();
+        sw.Stop();
+
+        Assert.True(sw.ElapsedMilliseconds < 2000,
+            $"Stop must cancel in-flight transcription promptly (took {sw.ElapsedMilliseconds} ms).");
+        Assert.True(speech.ObservedTokens.Count > 0 && speech.ObservedTokens[0].IsCancellationRequested,
+            "The in-flight transcription token must be cancelled by Stop.");
+        Assert.Equal(0, speech.InFlightCount);
+        Assert.True(capture.StopCalled, "Stop must release the capture device.");
+        lock (transcripts)
+            Assert.Empty(transcripts); // no transcript is emitted by the killed pass
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+    }
+
+    [Fact]
+    public async Task Stop_DoesNotKeepTranscribingQueuedAudio()
+    {
+        var capture = new NoopAudioCapture();
+        var speech = new SlowSpeechRecognizer { DelayMs = 25 }; // slower than real-time arrival
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, new MockTranslator(), new MockAnswerGenerator(), new QuestionDetector(),
+            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000 });
+
+        await pipeline.StartAsync();
+
+        // Flood the bounded queue (128) with 120 frames of non-silent audio.
+        for (int i = 0; i < 120; i++)
+            pipeline.EnqueueAudio(NonSilent(16000));
+
+        await WaitUntilAsync(() => speech.ProcessCallCount >= 3);
+        await pipeline.StopAsync();
+
+        int rightAfterStop = speech.ProcessCallCount;
+        await Task.Delay(300); // give incorrect post-stop draining a chance to show up
+        int afterSettle = speech.ProcessCallCount;
+
+        Assert.True(afterSettle <= rightAfterStop + 1,
+            $"Queued audio must not keep being transcribed after Stop (processed {afterSettle} chunks).");
+        Assert.True(afterSettle < 60,
+            $"Most queued audio must be dropped, not transcribed (processed {afterSettle} of ~120 chunks).");
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+    }
+
+    [Fact]
+    public async Task Start_CaptureFails_ReportsSingleFatal_NoAutoRestart()
+    {
+        // Mirrors LoopbackAudioCapture: a failed start raises a fatal Error event
+        // AND throws. The pipeline must report exactly one error, must not
+        // schedule an auto-restart for an initial start failure, and must end
+        // Faulted (StartAsync's own catch does the teardown).
+        var capture = new ScriptedCapture { ThrowOnStartCount = 1 };
+        var config = new AppConfiguration { MaxCaptureRestarts = 1 };
+        await using var pipeline = new InterviewPipeline(
+            capture, new ScriptedSpeechRecognizer(), new MockTranslator(), new MockAnswerGenerator(), new QuestionDetector(), config);
+
+        var errors = new List<CaptureErrorEventArgs>();
+        pipeline.Error += (_, e) => { lock (errors) errors.Add(e); };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => pipeline.StartAsync());
+        await Task.Delay(200); // give an incorrect duplicate restart/stop a chance to show up
+
+        Assert.Equal(1, capture.StartCount); // no auto-restart attempt
+        Assert.Equal(0, pipeline.CaptureRestarts);
+        lock (errors)
+        {
+            Assert.Single(errors); // exactly one error, not a duplicate
+            Assert.True(errors[0].IsFatal);
+        }
+        Assert.Equal(PipelineState.Faulted, pipeline.State);
+        Assert.NotNull(pipeline.LastError);
+    }
+
+    [Fact]
+    public async Task Stop_ConcurrentCalls_ShareOneTeardown()
+    {
+        // UI Stop and app-shutdown dispose can call StopAsync at the same
+        // moment: both must complete cleanly (no ObjectDisposedException),
+        // and the capture must be released exactly once.
+        var capture = new NoopAudioCapture();
+        var speech = new CancellationObservingRecognizer();
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, new MockTranslator(), new MockAnswerGenerator(), new QuestionDetector());
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(16000));
+        await WaitUntilAsync(() => speech.InFlightCount == 1);
+
+        var t1 = pipeline.StopAsync();
+        var t2 = pipeline.StopAsync(); // concurrent second stop
+        await Task.WhenAll(t1, t2);
+
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+        Assert.Equal(1, capture.StopCount);
+
+        // A later Stop is a plain no-op.
+        await pipeline.StopAsync();
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+        Assert.Equal(1, capture.StopCount);
+    }
+
+    [Fact]
     public async Task Cancellation_SuppressesObsoleteAnswer()
     {
         var capture = new NoopAudioCapture();
@@ -363,6 +480,9 @@ internal sealed class ScriptedCapture : IAudioCapture
     /// <summary>When set, the Nth StartAsync raises a fatal error synchronously (device dies again).</summary>
     public int RaiseFatalOnStartCount { get; set; }
 
+    /// <summary>When set, the Nth StartAsync raises a fatal error AND throws (mirrors LoopbackAudioCapture's failed start).</summary>
+    public int ThrowOnStartCount { get; set; }
+
 #pragma warning disable CS0067 // required by IAudioCapture; unused in this fake
     public event EventHandler<AudioFrameEventArgs>? FrameCaptured;
     public event EventHandler<AudioDeviceEventArgs>? DeviceChanged;
@@ -379,6 +499,12 @@ internal sealed class ScriptedCapture : IAudioCapture
         CurrentDeviceId = deviceId;
         if (RaiseFatalOnStartCount > 0 && StartCount == RaiseFatalOnStartCount)
             Error?.Invoke(this, new CaptureErrorEventArgs(new InvalidOperationException("device disconnected (again)"), true));
+        if (ThrowOnStartCount > 0 && StartCount == ThrowOnStartCount)
+        {
+            Error?.Invoke(this, new CaptureErrorEventArgs(new InvalidOperationException("no active output device"), true));
+            State = AudioCaptureState.Faulted;
+            throw new InvalidOperationException("Could not start loopback capture. Is an audio output device available?");
+        }
         return Task.CompletedTask;
     }
 
@@ -416,6 +542,48 @@ internal sealed class SlowSpeechRecognizer : ISpeechRecognizer
         await Task.Delay(Math.Max(1, DelayMs), ct);
         ProcessCallCount++;
         return TranscriptionResult.Empty;
+    }
+
+    public Task<TranscriptionResult> FinalizeAsync(CancellationToken ct = default)
+        => Task.FromResult(TranscriptionResult.Empty);
+
+    public void Reset() { }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}
+
+/// <summary>
+/// Recognizer that blocks inside ProcessAudioAsync until its token is cancelled
+/// (simulates a long in-flight whisper inference). Records the tokens it saw.
+/// </summary>
+internal sealed class CancellationObservingRecognizer : ISpeechRecognizer
+{
+    public int InFlightCount { get; private set; }
+    public List<CancellationToken> ObservedTokens { get; } = new();
+
+    public bool IsReady => true;
+    public string ModelName => "cancellation-observing";
+    public string? Language => null;
+
+    public Task PrepareAsync(string model, string? language, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task<TranscriptionResult> ProcessAudioAsync(AudioFrame chunk, CancellationToken ct = default)
+    {
+        lock (ObservedTokens)
+            ObservedTokens.Add(ct);
+        InFlightCount++;
+        return Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(Timeout.Infinite, ct).ConfigureAwait(false);
+                return TranscriptionResult.Empty;
+            }
+            finally
+            {
+                InFlightCount--;
+            }
+        });
     }
 
     public Task<TranscriptionResult> FinalizeAsync(CancellationToken ct = default)

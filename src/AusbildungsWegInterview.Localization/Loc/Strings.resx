@@ -119,4 +119,18 @@
   <data name="StyleConcise" xml:space="preserve"><value>Concise</value></data>
   <data name="StyleNatural" xml:space="preserve"><value>Natural</value></data>
   <data name="StyleProfessional" xml:space="preserve"><value>Professional</value></data>
+
+  <!-- Runtime error messages (category-based; raw exception text with local paths is never shown) -->
+  <data name="ErrorCaptureStart" xml:space="preserve"><value>Could not start capturing system audio. Check the selected output device, press Refresh, and try again.</value></data>
+  <data name="ErrorDeviceLost" xml:space="preserve"><value>The audio output device was disconnected. Capture stopped.</value></data>
+  <data name="ErrorDeviceReopen" xml:space="preserve"><value>The default audio device changed, but capture could not be re-opened.</value></data>
+  <data name="ErrorWhisperExeMissing" xml:space="preserve"><value>The whisper.cpp executable is missing. Set a valid path in Advanced settings.</value></data>
+  <data name="ErrorWhisperModelMissing" xml:space="preserve"><value>The speech model file is missing. Press Download (an explicit action) or set a valid model path.</value></data>
+  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>The local whisper runtime library is not available on this machine. Build whisper.cpp and place the shared library next to the app.</value></data>
+  <data name="ErrorModelPrepare" xml:space="preserve"><value>The local speech models could not be prepared. Check the speech settings in Advanced.</value></data>
+  <data name="ErrorUnknownModel" xml:space="preserve"><value>The configured speech model is not recognized. Choose tiny, base, small or medium.</value></data>
+  <data name="ErrorWhisperRun" xml:space="preserve"><value>whisper.cpp failed while transcribing. Check the executable and model in Advanced settings.</value></data>
+  <data name="ErrorWhisperTimeout" xml:space="preserve"><value>The transcription took too long and was stopped.</value></data>
+  <data name="ErrorOllama" xml:space="preserve"><value>The local AI assistant (Ollama) reported an error. Check that it is running with the configured model.</value></data>
+  <data name="ErrorRuntime" xml:space="preserve"><value>Something went wrong while processing the audio.</value></data>
 </root>
