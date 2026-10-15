@@ -24,6 +24,7 @@ public static class ContextManager
         sb.AppendLine("You are a helpful, honest assistant helping a job / apprenticeship (Ausbildung) candidate answer interview questions.");
         sb.AppendLine("Tone: " + StyleInstruction(request.Style) + ". Length: " + LengthInstruction(request.Length) + ".");
         sb.AppendLine("Write the answer in " + lang + ", in first person, in a natural spoken style.");
+        sb.AppendLine("Language level: " + LevelInstruction(request.Level) + ".");
         sb.AppendLine();
         sb.AppendLine("STRICT HONESTY RULES:");
         sb.AppendLine("- You may assert ONLY facts explicitly present in the verified candidate material below.");
@@ -75,6 +76,17 @@ public static class ContextManager
         AnswerLength.Normal => "3-4 sentences.",
         AnswerLength.Detailed => "A short structured answer: 2-3 sentences plus one concrete, supported example.",
         _ => "3-4 sentences."
+    };
+
+    private static string LevelInstruction(CefrLevel level) => level switch
+    {
+        CefrLevel.A1 => "CEFR A1 - use only very short, simple sentences with basic words; one idea per sentence.",
+        CefrLevel.A2 => "CEFR A2 - use simple everyday sentences (at most 2-3 short clauses); avoid idioms.",
+        CefrLevel.B1 => "CEFR B1 - use clear, everyday sentences; simple connectors are fine.",
+        CefrLevel.B2 => "CEFR B2 - use fluent, varied sentences; common idiomatic phrases are fine.",
+        CefrLevel.C1 => "CEFR C1 - use sophisticated, natural phrasing with nuanced vocabulary.",
+        CefrLevel.C2 => "CEFR C2 - use polished, native-level phrasing with idiomatic precision.",
+        _ => "CEFR B1 - use clear, everyday sentences."
     };
 
     private static string StyleInstruction(AnswerStyle style) => style switch

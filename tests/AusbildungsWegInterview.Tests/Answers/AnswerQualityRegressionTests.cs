@@ -119,6 +119,31 @@ public class AnswerQualityRegressionTests
     }
 
     [Fact]
+    public async Task AnswerRequest_CarriesConfiguredCefrLevel()
+    {
+        var answers = new MockAnswerGenerator();
+        var speech = new ScriptedSpeechRecognizer(TranscriptionResult.Partial("Warum möchten Sie zu uns?"));
+        var config = new AppConfiguration
+        {
+            ChunkSeconds = 0.5,
+            TargetSampleRate = 16000,
+            MinQuestionChars = 8,
+            AnswerLevel = AusbildungsWegInterview.Core.Common.CefrLevel.C2
+        };
+        await using var pipeline = new InterviewPipeline(
+            new NoopAudioCapture(), speech, new PassThroughTranslator(), answers, new QuestionDetector(), config);
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(16000));
+        await WaitUntilAsync(() => { lock (answers.Requests) return answers.Requests.Count >= 1; });
+        await pipeline.StopAsync();
+
+        AnswerRequest req;
+        lock (answers.Requests) req = answers.Requests[0];
+        Assert.Equal(AusbildungsWegInterview.Core.Common.CefrLevel.C2, req.Level);
+    }
+
+    [Fact]
     public async Task RecentTurns_BoundedToConfiguredCount_AndOrderPreserved()
     {
         var answers = new MockAnswerGenerator();

@@ -46,6 +46,9 @@ public sealed class AppConfiguration
     /// <summary>Tone of generated answers.</summary>
     public AnswerStyle AnswerStyle { get; set; } = AnswerStyle.Natural;
 
+    /// <summary>CEFR proficiency level for generated answers (A1–C2).</summary>
+    public CefrLevel AnswerLevel { get; set; } = CefrLevel.B1;
+
     // --- speech (whisper.cpp) ---
     /// <summary>whisper.cpp model name (e.g. "tiny", "base", "small").</summary>
     public string WhisperModel { get; set; } = "base";

@@ -17,11 +17,13 @@ public class ConfigurationStoreTests
             var cfg = store.Load();
             cfg.AnswerLanguage = "fr";
             cfg.WhisperModel = "small";
+            cfg.AnswerLevel = AusbildungsWegInterview.Core.Common.CefrLevel.C2;
             store.Save(cfg);
 
             var loaded = store.Load();
             Assert.Equal("fr", loaded.AnswerLanguage);
             Assert.Equal("small", loaded.WhisperModel);
+            Assert.Equal(AusbildungsWegInterview.Core.Common.CefrLevel.C2, loaded.AnswerLevel);
         }
         finally { File.Delete(path); }
     }
@@ -33,6 +35,7 @@ public class ConfigurationStoreTests
         var cfg = store.Load();
         Assert.Equal("base", cfg.WhisperModel);
         Assert.Equal("de", cfg.AnswerLanguage);
+        Assert.Equal(AusbildungsWegInterview.Core.Common.CefrLevel.B1, cfg.AnswerLevel);
     }
 
     [Fact]

@@ -160,10 +160,30 @@ Or publish a Windows executable:
 dotnet publish src/AusbildungsWegInterview.App -c Release -r win-x64 --self-contained false
 ```
 
+### Interface (Phase 3 UI redesign)
+
+The window is restyled to match the **ausbildungsweg.net** brand (light `#F6F6FB`
+surface, navy ink, violet/blue accent `#6D5DF6`, brand gradient buttons,
+Segoe UI, rounded cards) — see `src/AusbildungsWegInterview.App/Themes/AwTheme.xaml`
+for the token map extracted from the site's CSS.
+
+- **Primary screen** = the four interview choices only: *interview language*,
+  *translation language*, *suggested-answer language*, and *answer level (CEFR
+  A1–C2)*, plus one prominent **Start listening** button, a **Stop** button, and
+  a compact live status chip in the header.
+- **Live panels**: original transcript, detected question, translation (with
+  honest status), and the suggested answer (visually prominent).
+- **Advanced settings** (collapsed expander): output device + refresh, speech
+  model + download, whisper CLI/model paths, translation engine + external CLI,
+  Ollama status + model, answer length/style, CV/job-description loading.
+- The CEFR level is passed to the answer generator per request (persisted in the
+  existing config); it changes vocabulary/grammar complexity, not the pipeline.
+
 ### First-run setup (in the app)
 
 1. **Select the output device** to listen from (the device the interviewer's
-   voice is heard on — usually the default). Press **Refresh** if it is missing.
+   voice is heard on — usually the default) in *Advanced settings*; press
+   **Refresh** if it is missing.
 2. **Configure speech recognition** (Settings):
    - Set **Whisper CLI path** to your `whisper-cli` executable, **or** leave it
      empty to use the native-library adapter.

@@ -516,7 +516,8 @@ public sealed class InterviewPipeline : IAsyncDisposable
                 _config.AnswerLength,
                 _config.AnswerLanguage,
                 _config.AnswerStyle,
-                recent);
+                recent,
+                Level: _config.AnswerLevel);
 
             var suggestion = await _answers.GenerateAsync(request, linked.Token).ConfigureAwait(false);
             if (suggestion is not null)

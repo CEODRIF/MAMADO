@@ -27,6 +27,27 @@ public class ContextManagerTests
     }
 
     [Fact]
+    public void Prompt_DefaultsToCefrLevelB1()
+    {
+        var req = new AnswerRequest("Why you?", null, CandidateContext.Empty, AnswerLength.Normal, "de");
+        var prompt = ContextManager.BuildPrompt(req);
+        Assert.Contains("CEFR B1", prompt);
+    }
+
+    [Theory]
+    [InlineData(CefrLevel.A1, "CEFR A1")]
+    [InlineData(CefrLevel.A2, "CEFR A2")]
+    [InlineData(CefrLevel.B2, "CEFR B2")]
+    [InlineData(CefrLevel.C1, "CEFR C1")]
+    [InlineData(CefrLevel.C2, "CEFR C2")]
+    public void Prompt_ReflectsSelectedCefrLevel(CefrLevel level, string label)
+    {
+        var req = new AnswerRequest("Why you?", null, CandidateContext.Empty, AnswerLength.Normal, "de", Level: level);
+        var prompt = ContextManager.BuildPrompt(req);
+        Assert.Contains(label, prompt);
+    }
+
+    [Fact]
     public void Prompt_NoContext_StatesGeneralAndNoFabrication()
     {
         var req = new AnswerRequest("Why you?", null, CandidateContext.Empty, AnswerLength.Concise, "en");

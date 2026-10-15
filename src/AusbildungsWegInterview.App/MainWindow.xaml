@@ -3,231 +3,344 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:AusbildungsWegInterview.App.ViewModels"
         Title="AusbildungsWeg Interview"
-        Width="520" SizeToContent="Height" ResizeMode="CanMinimize"
-        WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen"
-        Topmost="{Binding AlwaysOnTop}"
-        Background="#14151c" Foreground="#f3f4f8"
-        FontFamily="Segoe UI" FontSize="13">
+        Width="640" Height="840" MinWidth="560" MinHeight="620"
+        ResizeMode="CanResize" WindowStartupLocation="CenterScreen"
+        Topmost="{Binding AlwaysOnTop}">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:InverseBoolToVisConverter x:Key="InverseBoolToVis"/>
-        <Style TargetType="TextBlock" x:Key="SectionHeader">
+        <Style x:Key="AwChipText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#8ab4ff"/>
-            <Setter Property="Margin" Value="0,12,0,4"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="#2b2d3a"/>
-            <Setter Property="Foreground" Value="#f3f4f8"/>
-            <Setter Property="BorderBrush" Value="#3a3d4d"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10,6"/>
-        </Style>
-        <Style TargetType="ComboBox">
-            <Setter Property="Padding" Value="6,4"/>
+        <Style x:Key="AwMiniLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource AwMutedBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
     </Window.Resources>
 
-    <StackPanel Margin="14">
+    <DockPanel>
 
-        <!-- Status -->
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Ellipse Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0"
-                     Fill="{Binding StatusBrush}"/>
-            <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontWeight="SemiBold"/>
-            <Button Grid.Column="2" Content="Refresh" Command="{Binding RefreshStatusCommand}"
-                    Margin="8,0,0,0" Padding="8,2" FontSize="11"/>
-        </Grid>
-
-        <!-- Explicit capture indicator: system audio only, never the microphone -->
-        <Border Background="#12351f" CornerRadius="5" Padding="6" Margin="0,6,0,0"
-                Visibility="{Binding IsCapturingSystemAudio, Converter={StaticResource BoolToVis}}">
-            <TextBlock Foreground="#7ee2a8" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap">
-                <Run Text="&#x25CF; System audio is being captured (loopback of the selected output device). The microphone is NOT used."/>
-            </TextBlock>
-        </Border>
-
-        <TextBlock Text="{Binding AiStatusText}" Foreground="#9aa0b6" FontSize="11" Margin="18,4,0,0" TextWrapping="Wrap"/>
-        <TextBlock Text="{Binding SpeechSetupStatus}" Foreground="#9aa0b6" FontSize="11" Margin="18,1,0,0" TextWrapping="Wrap"/>
-        <TextBlock Text="Suggested local models for this machine (RAM-based, conservative): Ollama: {Binding SuggestedOllamaModel, Mode=OneWay} | Whisper: {Binding SuggestedWhisperModel, Mode=OneWay}"
-                   Foreground="#6b7089" FontSize="10" Margin="18,1,0,6" TextWrapping="Wrap"/>
-
-        <!-- Transport -->
-        <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
-            <Button Content="Start Listening" Command="{Binding StartCommand}" Width="132" Height="36" FontWeight="SemiBold"/>
-            <Button Content="Stop" Command="{Binding StopCommand}" Width="72" Height="36" Margin="8,0,0,0"/>
-            <CheckBox Content="Always on top" IsChecked="{Binding AlwaysOnTop}" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#f3f4f8"/>
-        </StackPanel>
-
-        <!-- Output device -->
-        <Grid Margin="0,0,0,4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Text="Output" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <ComboBox Grid.Column="1" ItemsSource="{Binding OutputDevices}"
-                      SelectedItem="{Binding SelectedOutputDevice}" DisplayMemberPath="Name"/>
-            <Button Grid.Column="2" Content="Refresh" Command="{Binding RefreshDevicesCommand}" Margin="6,0,0,0" Width="66"/>
-        </Grid>
-
-        <!-- Transcript -->
-        <TextBlock Text="Transcript (original)" Style="{StaticResource SectionHeader}"/>
-        <Border Background="#1e2029" CornerRadius="6" Padding="8">
-            <StackPanel>
-                <TextBlock Text="{Binding TranscriptText}" TextWrapping="Wrap" FontSize="14" MinHeight="20"/>
-                <TextBlock Text="provisional" Foreground="#f0a868" FontSize="11"
-                           Visibility="{Binding IsTranscriptProvisional, Converter={StaticResource BoolToVis}}"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Detected question -->
-        <TextBlock Text="Detected question" Style="{StaticResource SectionHeader}"/>
-        <Border Background="#1e2029" CornerRadius="6" Padding="8">
+        <!-- ================= header ================= -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource AwSurfaceBrush}"
+                BorderBrush="{StaticResource AwLineBrush}" BorderThickness="0,0,0,1" Padding="16,12">
             <Grid>
-                <TextBlock Text="{Binding DetectedQuestionText}" TextWrapping="Wrap" FontSize="14" MinHeight="20"
-                           Visibility="{Binding HasDetectedQuestion, Converter={StaticResource BoolToVis}}"/>
-                <TextBlock Text="No complete question detected yet." Foreground="#6b7089" FontSize="12"
-                           Visibility="{Binding HasDetectedQuestion, Converter={StaticResource InverseBoolToVis}}"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- logo mark (brand gradient tile, like the site's rounded gradient icons) -->
+                <Border Width="38" Height="38" CornerRadius="11" Background="{StaticResource AwGradientNeon}"
+                        VerticalAlignment="Center">
+                    <TextBlock Text="AW" Foreground="White" FontWeight="Bold" FontSize="13"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="AusbildungsWeg Interview" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{StaticResource AwInkBrush}"/>
+                    <TextBlock Text="Local interview companion - nothing leaves your PC"
+                               FontSize="11" Foreground="{StaticResource AwMutedBrush}"/>
+                </StackPanel>
+
+                <!-- compact live status chip -->
+                <Border Grid.Column="2" Style="{StaticResource AwChip}" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="9" Height="9" Fill="{Binding StatusBrush}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource AwChipText}"
+                                   Foreground="{StaticResource AwInkSoftBrush}"/>
+                        <Button Content="&#x21BB;" Style="{StaticResource AwButtonGhost}" Margin="8,0,0,0"
+                                Padding="6,0" FontSize="13" Command="{Binding RefreshStatusCommand}"
+                                ToolTip="Refresh Ollama / model status"/>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
-        <!-- Translation -->
-        <TextBlock Text="Translation" Style="{StaticResource SectionHeader}"/>
-        <Border Background="#1e2029" CornerRadius="6" Padding="8">
-            <StackPanel>
-                <TextBlock Text="{Binding TranslationText}" TextWrapping="Wrap" FontSize="14" MinHeight="20" Foreground="#cfe3ff"/>
-                <TextBlock Text="{Binding TranslationStatusText}" TextWrapping="Wrap" Foreground="#f0a868" FontSize="11"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Suggested answer -->
-        <TextBlock Text="Suggested answer" Style="{StaticResource SectionHeader}"/>
-        <Border Background="#1e2029" CornerRadius="6" Padding="8">
-            <StackPanel>
-                <TextBlock Text="{Binding AnswerText}" TextWrapping="Wrap" FontSize="14" MinHeight="20"/>
-                <TextBlock Text="provisional - refining" Foreground="#f0a868" FontSize="11"
-                           Visibility="{Binding IsAnswerProvisional, Converter={StaticResource BoolToVis}}"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Settings -->
-        <TextBlock Text="Settings" Style="{StaticResource SectionHeader}"/>
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <TextBlock Grid.Row="0" Grid.Column="0" Text="Source language" Margin="0,0,8,6"/>
-            <ComboBox Grid.Row="0" Grid.Column="1" Margin="0,0,0,6"
-                      ItemsSource="{Binding SourceLanguages}" SelectedItem="{Binding SelectedSourceLanguage}"/>
-
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="Translate to" Margin="0,0,8,6"/>
-            <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,6"
-                      ItemsSource="{Binding TargetLanguages}" SelectedItem="{Binding SelectedTargetLanguage}"/>
-
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="Translation engine" Margin="0,0,8,6"/>
-            <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,6"
-                      ItemsSource="{Binding TranslationEngineOptions}" SelectedItem="{Binding SelectedTranslationEngine}"/>
-
-            <CheckBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,6" Foreground="#f3f4f8" VerticalAlignment="Center"
-                      Content="Enable translation (off = show original, clearly labeled)"
-                      IsChecked="{Binding TranslationEnabled}"/>
-
-            <TextBlock Grid.Row="4" Grid.Column="0" Text="External CLI" Margin="0,0,8,6" VerticalAlignment="Center"
-                       ToolTip="Only used when the engine is 'External CLI'. Text goes via stdin; first stdout line is the translation."/>
-            <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,0,6"
-                     Text="{Binding TranslatorCliPath, UpdateSourceTrigger=PropertyChanged}"
-                     ToolTip="e.g. C:\tools\mariannet.exe"/>
-
-            <TextBlock Grid.Row="5" Grid.Column="0" Text="External CLI args" Margin="0,0,8,6" VerticalAlignment="Center"
-                       ToolTip="Template with {source} and {target} placeholders."/>
-            <TextBox Grid.Row="5" Grid.Column="1" Margin="0,0,0,6"
-                     Text="{Binding TranslatorCliArgs, UpdateSourceTrigger=PropertyChanged}"
-                     ToolTip="e.g. &quot;mariannet -m C:\models\opus-mt-de-en.bin -s {source} -t {target} -i - -o -&quot;"/>
-
-            <TextBlock Grid.Row="6" Grid.Column="0" Text="Answer language" Margin="0,0,8,6"/>
-            <ComboBox Grid.Row="6" Grid.Column="1" Margin="0,0,0,6"
-                      ItemsSource="{Binding AnswerLanguages}" SelectedItem="{Binding SelectedAnswerLanguage}"/>
-
-            <TextBlock Grid.Row="7" Grid.Column="0" Text="Answer length" Margin="0,0,8,6"/>
-            <ComboBox Grid.Row="7" Grid.Column="1" Margin="0,0,0,6"
-                      ItemsSource="{Binding AnswerLengthOptions}" SelectedItem="{Binding SelectedAnswerLength}"/>
-
-            <TextBlock Grid.Row="8" Grid.Column="0" Text="Answer style" Margin="0,0,8,6"/>
-            <ComboBox Grid.Row="8" Grid.Column="1" Margin="0,0,0,6"
-                      ItemsSource="{Binding AnswerStyleOptions}" SelectedItem="{Binding SelectedAnswerStyle}"/>
-
-            <TextBlock Grid.Row="9" Grid.Column="0" Text="Speech model" Margin="0,0,8,6"/>
-            <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal">
-                <ComboBox Width="120" ItemsSource="{Binding WhisperModelOptions}" SelectedItem="{Binding SelectedWhisperModel}"/>
-                <Button Content="Download" Command="{Binding DownloadModelCommand}" Margin="8,0,0,0"/>
-            </StackPanel>
-
-            <TextBlock Grid.Row="10" Grid.Column="0" Text="Whisper CLI path" Margin="0,0,8,6" VerticalAlignment="Center" ToolTip="Path to whisper-cli (or main). Leave empty to use the built-in native library adapter."/>
-            <TextBox Grid.Row="10" Grid.Column="1" Margin="0,0,0,6"
-                     Text="{Binding WhisperExecutablePath, UpdateSourceTrigger=PropertyChanged}"
-                     ToolTip="e.g. C:\tools\whisper.cpp\build\bin\whisper-cli.exe  (applied when not listening)"/>
-
-            <TextBlock Grid.Row="11" Grid.Column="0" Text="Model path" Margin="0,0,8,6" VerticalAlignment="Center" ToolTip="Explicit path to a ggml model file. Leave empty to use the app's model folder."/>
-            <TextBox Grid.Row="11" Grid.Column="1" Margin="0,0,0,6"
-                     Text="{Binding WhisperModelPath, UpdateSourceTrigger=PropertyChanged}"
-                     ToolTip="e.g. C:\tools\whisper.cpp\models\ggml-small.bin  (applied when not listening)"/>
-
-            <TextBlock Grid.Row="12" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,0"
-                       Foreground="#6b7089" FontSize="10" TextWrapping="Wrap"
-                       Text="Engine settings apply after Stop. whisper (→EN) reuses the speech model; External CLI needs a user-installed binary + models (never downloaded by the app)."/>
-
-            <TextBlock Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,0"
-                       Foreground="#6b7089" FontSize="10" TextWrapping="Wrap"
-                       Text="Only the selected output device is captured (system audio, loopback) - the microphone is never used."/>
-        </Grid>
-
-        <!-- Candidate context -->
-        <TextBlock Text="Candidate context (local only)" Style="{StaticResource SectionHeader}"/>
-        <StackPanel Orientation="Horizontal">
-            <Button Content="Load CV" Command="{Binding LoadCvCommand}"/>
-            <Button Content="Load job description" Command="{Binding LoadJobCommand}" Margin="8,0,0,0"/>
-        </StackPanel>
-        <TextBlock Text="{Binding ContextStatus}" Foreground="#9aa0b6" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
-
-        <!-- Error -->
-        <Border Background="#3a1f24" CornerRadius="6" Padding="8" Margin="0,12,0,0"
+        <!-- ================= error banner ================= -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource AwDangerSoftBrush}"
+                BorderBrush="#33D9535D" BorderThickness="0,1,0,0" Padding="14,10"
                 Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding ErrorText}" Foreground="#ff9a9a"
-                           TextWrapping="Wrap" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Content="OK" Command="{Binding ClearErrorCommand}" Margin="8,0,0,0" Padding="10,2"/>
+                <TextBlock Grid.Column="0" Text="{Binding ErrorText}" Foreground="{StaticResource AwDangerBrush}"
+                           TextWrapping="Wrap" VerticalAlignment="Center" FontSize="12"/>
+                <Button Grid.Column="1" Content="OK" Style="{StaticResource AwButtonSecondary}" Height="30"
+                        Margin="10,0,0,0" MinWidth="56" Command="{Binding ClearErrorCommand}"/>
             </Grid>
         </Border>
 
-    </StackPanel>
+        <!-- ================= scrollable body ================= -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0">
+            <StackPanel Margin="16">
+
+                <!-- explicit capture indicator: system audio only, never the microphone -->
+                <Border Background="{StaticResource AwSuccessSoftBrush}" CornerRadius="12" Padding="12,8"
+                        Margin="0,0,0,12"
+                        Visibility="{Binding IsCapturingSystemAudio, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Foreground="{StaticResource AwSuccessBrush}" FontSize="11.5" FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               Text="System audio is being captured (loopback of the selected output device). The microphone is NOT used."/>
+                </Border>
+
+                <!-- ============ 1) interview setup ============ -->
+                <Border Style="{StaticResource AwCard}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Set up your interview" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,10"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Grid.Column="0">
+                                <TextBlock Text="Interview language" Style="{StaticResource AwFieldLabel}"/>
+                                <ComboBox Style="{StaticResource AwComboBox}"
+                                          ItemsSource="{Binding SourceLanguages}"
+                                          SelectedItem="{Binding SelectedSourceLanguage}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="2">
+                                <TextBlock Text="Translation language" Style="{StaticResource AwFieldLabel}"/>
+                                <ComboBox Style="{StaticResource AwComboBox}"
+                                          ItemsSource="{Binding TargetLanguages}"
+                                          SelectedItem="{Binding SelectedTargetLanguage}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="2" Grid.Column="0">
+                                <TextBlock Text="Suggested answer language" Style="{StaticResource AwFieldLabel}"/>
+                                <ComboBox Style="{StaticResource AwComboBox}"
+                                          ItemsSource="{Binding AnswerLanguages}"
+                                          SelectedItem="{Binding SelectedAnswerLanguage}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="2" Grid.Column="2">
+                                <TextBlock Text="Answer level (CEFR)" Style="{StaticResource AwFieldLabel}"/>
+                                <ComboBox Style="{StaticResource AwComboBox}"
+                                          ItemsSource="{Binding CefrLevelOptions}"
+                                          SelectedItem="{Binding SelectedCefrLevel}"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============ 2) transport ============ -->
+                <Border Style="{StaticResource AwCard}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <Button Style="{StaticResource AwButtonPrimary}" Command="{Binding StartCommand}"
+                                Content="Start listening"/>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Style="{StaticResource AwButtonDanger}"
+                                    Command="{Binding StopCommand}" Content="Stop" MinWidth="104"/>
+                            <CheckBox Grid.Column="2" Style="{StaticResource AwCheckBox}" VerticalAlignment="Center"
+                                      Content="Always on top" IsChecked="{Binding AlwaysOnTop}" FontSize="12"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============ 3) live results ============ -->
+                <Border Style="{StaticResource AwCard}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Live" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,10"/>
+
+                        <!-- original transcript -->
+                        <TextBlock Text="Original transcript" Style="{StaticResource AwMiniLabel}"/>
+                        <Border Style="{StaticResource AwPanel}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding TranscriptText}" TextWrapping="Wrap" FontSize="13.5"
+                                           Foreground="{StaticResource AwInkBrush}" MinHeight="18"/>
+                                <Border Background="{StaticResource AwWarningSoftBrush}" CornerRadius="999"
+                                        Padding="8,2" HorizontalAlignment="Left" Margin="0,6,0,0"
+                                        Visibility="{Binding IsTranscriptProvisional, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="provisional" FontSize="10.5" FontWeight="SemiBold"
+                                               Foreground="{StaticResource AwWarningBrush}"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- detected question -->
+                        <TextBlock Text="Detected question" Style="{StaticResource AwMiniLabel}" Margin="0,10,0,4"/>
+                        <Border Style="{StaticResource AwPanel}" Background="{StaticResource AwAccentSoftBrush}">
+                            <Grid>
+                                <TextBlock Text="{Binding DetectedQuestionText}" TextWrapping="Wrap" FontSize="13.5"
+                                           FontWeight="SemiBold" Foreground="{StaticResource AwInkBrush}" MinHeight="18"
+                                           Visibility="{Binding HasDetectedQuestion, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="No complete question detected yet." TextWrapping="Wrap"
+                                           FontSize="12.5" Foreground="{StaticResource AwFaintBrush}" MinHeight="18"
+                                           Visibility="{Binding HasDetectedQuestion, Converter={StaticResource InverseBoolToVis}}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- translation -->
+                        <TextBlock Text="Translation" Style="{StaticResource AwMiniLabel}" Margin="0,10,0,4"/>
+                        <Border Style="{StaticResource AwPanel}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding TranslationText}" TextWrapping="Wrap" FontSize="13.5"
+                                           Foreground="{StaticResource AwInkSoftBrush}" MinHeight="18"/>
+                                <TextBlock Text="{Binding TranslationStatusText}" TextWrapping="Wrap" FontSize="11"
+                                           Foreground="{StaticResource AwWarningBrush}" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- suggested answer (prominent) -->
+                        <TextBlock Text="Suggested answer" Style="{StaticResource AwMiniLabel}" Margin="0,10,0,4"/>
+                        <Border Background="{StaticResource AwAccentSoftBrush}" CornerRadius="12" Padding="0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="4"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Background="{StaticResource AwGradientHeadline}" CornerRadius="2,0,0,2"/>
+                                <StackPanel Grid.Column="1" Margin="12,10">
+                                    <TextBlock Text="{Binding AnswerText}" TextWrapping="Wrap" FontSize="14"
+                                               Foreground="{StaticResource AwInkBrush}" LineHeight="21"/>
+                                    <Border Background="{StaticResource AwWarningSoftBrush}" CornerRadius="999"
+                                            Padding="8,2" HorizontalAlignment="Left" Margin="0,7,0,0"
+                                            Visibility="{Binding IsAnswerProvisional, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="provisional - refining" FontSize="10.5" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource AwWarningBrush}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============ 4) advanced settings ============ -->
+                <Border Style="{StaticResource AwCard}" Padding="0" Margin="0,0,0,12">
+                    <Expander Style="{StaticResource AwExpander}" Padding="0">
+                        <Expander.Header>
+                            <TextBlock Text="Advanced settings" FontWeight="SemiBold" FontSize="12.5"
+                                       Foreground="{StaticResource AwInkSoftBrush}"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0,4,0,0">
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Output audio device" Style="{StaticResource AwFieldLabel}"/>
+                                <ComboBox Grid.Row="1" Grid.Column="0" Style="{StaticResource AwComboBox}"
+                                          ItemsSource="{Binding OutputDevices}"
+                                          SelectedItem="{Binding SelectedOutputDevice}" DisplayMemberPath="Name"/>
+                                <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource AwButtonSecondary}"
+                                        Content="Refresh" MinWidth="76" Margin="8,0,0,0"
+                                        Command="{Binding RefreshDevicesCommand}"/>
+                            </Grid>
+
+                            <TextBlock Text="Speech (whisper.cpp)" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox Style="{StaticResource AwComboBox}"
+                                          ItemsSource="{Binding WhisperModelOptions}"
+                                          SelectedItem="{Binding SelectedWhisperModel}"/>
+                                <Button Grid.Column="1" Style="{StaticResource AwButtonSecondary}"
+                                        Content="Download" MinWidth="86" Margin="8,0,0,0"
+                                        Command="{Binding DownloadModelCommand}"/>
+                            </Grid>
+                            <TextBlock Text="{Binding SpeechSetupStatus}" Style="{StaticResource AwHint}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Whisper CLI executable (optional)" Style="{StaticResource AwFieldLabel}"/>
+                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,8"
+                                     Text="{Binding WhisperExecutablePath, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Path to whisper-cli (or main). Leave empty to use the built-in native library adapter."/>
+                            <TextBlock Text="Model file path (optional override)" Style="{StaticResource AwFieldLabel}"/>
+                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,8"
+                                     Text="{Binding WhisperModelPath, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Explicit path to a ggml model file. Leave empty to use the app's model folder."/>
+                            <TextBlock Style="{StaticResource AwHint}" Margin="0,0,0,10"
+                                       Text="Suggested local models for this machine: Ollama: {Binding SuggestedOllamaModel, Mode=OneWay} | Whisper: {Binding SuggestedWhisperModel, Mode=OneWay}"/>
+
+                            <TextBlock Text="Translation engine" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <ComboBox Style="{StaticResource AwComboBox}" Margin="0,0,0,8"
+                                      ItemsSource="{Binding TranslationEngineOptions}"
+                                      SelectedItem="{Binding SelectedTranslationEngine}"/>
+                            <CheckBox Style="{StaticResource AwCheckBox}" Margin="0,0,0,8" FontSize="12"
+                                      Content="Enable translation (off = show original, clearly labeled)"
+                                      IsChecked="{Binding TranslationEnabled}"/>
+                            <TextBlock Text="External CLI path (only for 'External CLI')" Style="{StaticResource AwFieldLabel}"/>
+                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,8"
+                                     Text="{Binding TranslatorCliPath, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="e.g. C:\tools\mariannet.exe - text goes via stdin; first stdout line is the translation."/>
+                            <TextBlock Text="External CLI arguments" Style="{StaticResource AwFieldLabel}"/>
+                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,10"
+                                     Text="{Binding TranslatorCliArgs, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Template with {source} and {target} placeholders."/>
+                            <TextBlock Style="{StaticResource AwHint}" Margin="0,0,0,10"
+                                       Text="Engine settings apply after Stop. whisper (to English) reuses the speech model; External CLI needs a user-installed binary and models (never downloaded by the app)."/>
+
+                            <TextBlock Text="Local AI (Ollama, optional)" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <TextBlock Text="{Binding AiStatusText}" Style="{StaticResource AwHint}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Ollama model" Style="{StaticResource AwFieldLabel}"/>
+                            <TextBox Style="{StaticResource AwTextBox}" Margin="0,0,0,10"
+                                     Text="{Binding OllamaModel, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Model name pulled with: ollama pull &lt;name&gt;. Never downloaded by the app."/>
+
+                            <TextBlock Text="Answer options" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Length" Style="{StaticResource AwFieldLabel}"/>
+                                    <ComboBox Style="{StaticResource AwComboBox}"
+                                              ItemsSource="{Binding AnswerLengthOptions}"
+                                              SelectedItem="{Binding SelectedAnswerLength}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Style" Style="{StaticResource AwFieldLabel}"/>
+                                    <ComboBox Style="{StaticResource AwComboBox}"
+                                              ItemsSource="{Binding AnswerStyleOptions}"
+                                              SelectedItem="{Binding SelectedAnswerStyle}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="Candidate context (local only)" Style="{StaticResource AwSectionLabel}" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button Style="{StaticResource AwButtonSecondary}" Content="Load CV"
+                                        MinWidth="92" Command="{Binding LoadCvCommand}"/>
+                                <Button Style="{StaticResource AwButtonSecondary}" Content="Load job description"
+                                        MinWidth="150" Margin="8,0,0,0" Command="{Binding LoadJobCommand}"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ContextStatus}" Style="{StaticResource AwHint}"/>
+                        </StackPanel>
+                    </Expander>
+                </Border>
+
+                <!-- footer: privacy + disclosure reminder -->
+                <TextBlock Style="{StaticResource AwHint}" Margin="2,0,2,8"
+                           Text="Only the selected output device is captured (system audio, loopback) - the microphone is never used. Audio and transcripts are not recorded or stored."/>
+                <TextBlock Style="{StaticResource AwHint}" Margin="2,0,2,4"
+                           Text="Reminder: follow your interview's rules - disclose the use of assistance where required."/>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
 </Window>

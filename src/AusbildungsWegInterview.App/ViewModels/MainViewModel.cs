@@ -40,6 +40,7 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<string> AnswerLanguages { get; } = new() { "de", "en", "fr", "ar" };
     public ObservableCollection<string> AnswerLengthOptions { get; } = new() { "Concise", "Normal", "Detailed" };
     public ObservableCollection<string> AnswerStyleOptions { get; } = new() { "Concise", "Natural", "Professional" };
+    public ObservableCollection<string> CefrLevelOptions { get; } = new() { "A1", "A2", "B1", "B2", "C1", "C2" };
     public ObservableCollection<string> WhisperModelOptions { get; } = new() { "tiny", "base", "small", "medium" };
 
     // ---- settings-backed (persisted to config) ----
@@ -131,6 +132,36 @@ public sealed class MainViewModel : ObservableObject
         set { if (Set(ref _selectedAnswerStyle, value)) { _services.Config.AnswerStyle = value switch { "Concise" => AnswerStyle.Concise, "Professional" => AnswerStyle.Professional, _ => AnswerStyle.Natural }; SaveConfig(); } }
     }
 
+    /// <summary>CEFR level (A1–C2) for suggested answers. Applied per request; no pipeline rebuild needed.</summary>
+    private string _selectedCefrLevel = "B1";
+    public string SelectedCefrLevel
+    {
+        get => _selectedCefrLevel;
+        set
+        {
+            if (!Set(ref _selectedCefrLevel, value)) return;
+            if (Enum.TryParse<CefrLevel>(value, out var level))
+            {
+                _services.Config.AnswerLevel = level;
+                SaveConfig();
+            }
+        }
+    }
+
+    private string _ollamaModel = "llama3.1:8b";
+    public string OllamaModel
+    {
+        get => _ollamaModel;
+        set
+        {
+            if (!Set(ref _ollamaModel, value)) return;
+            var v = value?.Trim();
+            _services.Config.OllamaModel = string.IsNullOrEmpty(v) ? "llama3.1:8b" : v;
+            SaveConfig();
+            ApplySpeechSettings(); // generator holds the model name from build time
+        }
+    }
+
     private string _selectedWhisperModel = "base";
     public string SelectedWhisperModel
     {
@@ -219,8 +250,17 @@ public sealed class MainViewModel : ObservableObject
     private bool _isBusy;
     public bool IsBusy { get => _isBusy; private set { Set(ref _isBusy, value); RaiseCommandStates(); } }
 
-    private Brush _statusBrush = Brushes.Gray;
+    // Brand status colors (ausbildungsweg.net palette): success / warning / danger / faint.
+    private static readonly Brush StatusListeningBrush = Brush("#1F9D72");
+    private static readonly Brush StatusPreparingBrush = Brush("#A3611C");
+    private static readonly Brush StatusFaultBrush = Brush("#D9535D");
+    private static readonly Brush StatusIdleBrush = Brush("#9598B6");
+
+    private Brush _statusBrush = StatusIdleBrush;
     public Brush StatusBrush { get => _statusBrush; private set => Set(ref _statusBrush, value); }
+
+    private static Brush Brush(string hex)
+        => new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
 
     // ---- commands ----
     public RelayCommand StartCommand { get; }
@@ -355,10 +395,10 @@ public sealed class MainViewModel : ObservableObject
         };
         StatusBrush = state switch
         {
-            PipelineState.Listening or PipelineState.Processing => Brushes.LimeGreen,
-            PipelineState.Preparing => Brushes.Gold,
-            PipelineState.Faulted => Brushes.OrangeRed,
-            _ => Brushes.Gray
+            PipelineState.Listening or PipelineState.Processing => StatusListeningBrush,
+            PipelineState.Preparing => StatusPreparingBrush,
+            PipelineState.Faulted => StatusFaultBrush,
+            _ => StatusIdleBrush
         };
         RaiseCommandStates();
     }
@@ -377,7 +417,7 @@ public sealed class MainViewModel : ObservableObject
             IsListening = false; // never claim "listening" after a failed start
             ErrorText = ex.Message;
             StatusText = "Error - see below";
-            StatusBrush = Brushes.OrangeRed;
+            StatusBrush = StatusFaultBrush;
         }
         finally
         {
@@ -589,6 +629,8 @@ public sealed class MainViewModel : ObservableObject
         _selectedAnswerLanguage = c.AnswerLanguage;
         _selectedAnswerLength = c.AnswerLength.ToString();
         _selectedAnswerStyle = c.AnswerStyle.ToString();
+        _selectedCefrLevel = c.AnswerLevel.ToString();
+        _ollamaModel = c.OllamaModel;
         _selectedWhisperModel = c.WhisperModel;
         _whisperExecutablePath = c.WhisperExecutablePath ?? string.Empty;
         _whisperModelPath = c.WhisperModelPath ?? string.Empty;
