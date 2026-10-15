@@ -60,6 +60,32 @@ public class LocalizationTests
         }
     }
 
+    // (culture|key) pairs whose value is legitimately IDENTICAL to the English
+    // value: the brand name, true loanwords ("Live", "Normal"), the technical
+    // name "whisper.cpp CLI" (de), and the file-filter template whose localized
+    // parts are the {0}/{1} arguments. Anything else identical = raw-English leak.
+    private static readonly HashSet<string> LegitimatelySameAsEnglish = new()
+    {
+        "de|TitleApp", "de|LiveHeading", "de|FileFilter", "de|SpeechEngineCli", "de|LengthNormal",
+        "fr|TitleApp", "fr|FileFilter", "fr|LengthNormal", "fr|Style",
+        "ar|TitleApp", "ar|FileFilter"
+    };
+
+    [Fact]
+    public void NonEnglish_Catalogs_HaveNoRawEnglishText()
+    {
+        foreach (var key in LocalizationManager.BaselineKeys())
+        {
+            string en = Get("en", key);
+            foreach (var c in new[] { "de", "fr", "ar" })
+            {
+                string v = Get(c, key);
+                Assert.True(v != en || LegitimatelySameAsEnglish.Contains(c + "|" + key),
+                    $"key '{key}' in {c} is identical to the English value (raw-English leak): \"{v}\"");
+            }
+        }
+    }
+
     [Fact]
     public void SpotChecks_AreGenuineTranslations_NotFallbacks()
     {

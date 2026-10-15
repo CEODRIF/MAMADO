@@ -84,9 +84,9 @@
 
   <data name="ErrorStopBeforeSettings" xml:space="preserve"><value>Stop listening before changing the speech engine or translation settings.</value></data>
   <data name="ErrorCouldNotApplySpeech" xml:space="preserve"><value>Could not apply the speech settings: {0}</value></data>
-  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>Could not enumerate audio devices: {0}</value></data>
+  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>Could not enumerate audio devices. Check that an audio output is connected, then try again.</value></data>
   <data name="ErrorNoOutputDevice" xml:space="preserve"><value>No active audio output device found. Connect speakers/headphones and press Refresh.</value></data>
-  <data name="ErrorModelDownload" xml:space="preserve"><value>Model download failed: {0}</value></data>
+  <data name="ErrorModelDownload" xml:space="preserve"><value>The model download failed (network issue or wrong model name). Check the connection and the model name, then try again.</value></data>
   <data name="ErrorCouldNotReadCv" xml:space="preserve"><value>Could not read CV: {0}</value></data>
   <data name="ErrorCouldNotReadJd" xml:space="preserve"><value>Could not read job description: {0}</value></data>
   <data name="DownloadingModel" xml:space="preserve"><value>Downloading model '{0}'…</value></data>
@@ -173,6 +173,7 @@
   <data name="AnswerStatusTimeout" xml:space="preserve"><value>Answer generation timed out. The local model is still busy or too large for this machine — try again, or pick a smaller model.</value></data>
   <data name="AnswerStatusEmpty" xml:space="preserve"><value>The model returned an empty answer. Try again, or choose a different model.</value></data>
   <data name="AnswerDisclaimer" xml:space="preserve"><value>Suggestion for review — check it against your own experience before using it in your interview.</value></data>
+  <data name="AnswerGenerating" xml:space="preserve"><value>Generating answer…</value></data>
   <data name="CopyAnswer" xml:space="preserve"><value>Copy</value></data>
   <data name="ErrorCopyFailed" xml:space="preserve"><value>Copying to the clipboard failed.</value></data>
 </root>

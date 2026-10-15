@@ -84,9 +84,9 @@
 
   <data name="ErrorStopBeforeSettings" xml:space="preserve"><value>أوقف الاستماع قبل تغيير إعدادات التعرف على الكلام أو الترجمة.</value></data>
   <data name="ErrorCouldNotApplySpeech" xml:space="preserve"><value>تعذّر تطبيق إعدادات الكلام: {0}</value></data>
-  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>تعذّر عرض أجهزة الصوت: {0}</value></data>
+  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>تعذّر عرض أجهزة الصوت. تحقّق من وجود مخرج صوت متصل ثم حاول مرة أخرى.</value></data>
   <data name="ErrorNoOutputDevice" xml:space="preserve"><value>لم يُعثر على جهاز إخراج صوت نشط. وصّل مكبر صوت/سماعات واضغط تحديث.</value></data>
-  <data name="ErrorModelDownload" xml:space="preserve"><value>فشل تنزيل النموذج: {0}</value></data>
+  <data name="ErrorModelDownload" xml:space="preserve"><value>فشل تنزيل النموذج (مشكلة في الشبكة أو اسم نموذج غير صحيح). تحقّق من الاتصال واسم النموذج ثم حاول مرة أخرى.</value></data>
   <data name="ErrorCouldNotReadCv" xml:space="preserve"><value>تعذّرت قراءة السيرة الذاتية: {0}</value></data>
   <data name="ErrorCouldNotReadJd" xml:space="preserve"><value>تعذّرت قراءة وصف الوظيفة: {0}</value></data>
   <data name="DownloadingModel" xml:space="preserve"><value>جارٍ تنزيل النموذج «{0}»…</value></data>
@@ -173,6 +173,7 @@
   <data name="AnswerStatusTimeout" xml:space="preserve"><value>انتهت مهلة توليد الإجابة. النموذج المحلي ما زال مشغولًا أو كبيرًا جدًا على هذا الجهاز — حاول مرة أخرى أو اختر نموذجًا أصغر.</value></data>
   <data name="AnswerStatusEmpty" xml:space="preserve"><value>أعاد النموذج إجابة فارغة. حاول مرة أخرى أو اختر نموذجًا آخر.</value></data>
   <data name="AnswerDisclaimer" xml:space="preserve"><value>اقتراح للمراجعة — قارِنه بخبرتك الشخصية قبل استخدامه في المقابلة.</value></data>
+  <data name="AnswerGenerating" xml:space="preserve"><value>جارٍ توليد الإجابة…</value></data>
   <data name="CopyAnswer" xml:space="preserve"><value>نسخ</value></data>
   <data name="ErrorCopyFailed" xml:space="preserve"><value>فشل النسخ إلى الحافظة.</value></data>
 </root>

@@ -84,9 +84,9 @@
 
   <data name="ErrorStopBeforeSettings" xml:space="preserve"><value>Stopp drücken, bevor Sie die Spracherkennungs- oder Übersetzungseinstellungen ändern.</value></data>
   <data name="ErrorCouldNotApplySpeech" xml:space="preserve"><value>Spracheinstellungen konnten nicht angewendet werden: {0}</value></data>
-  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>Audio-Geräte konnten nicht aufgelistet werden: {0}</value></data>
+  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>Audio-Geräte konnten nicht aufgelistet werden. Bitte prüfen, ob ein Audio-Ausgang verbunden ist, und es erneut versuchen.</value></data>
   <data name="ErrorNoOutputDevice" xml:space="preserve"><value>Kein aktives Audio-Ausgabegerät gefunden. Lautsprecher/Headset anschließen und auf Aktualisieren drücken.</value></data>
-  <data name="ErrorModelDownload" xml:space="preserve"><value>Modell-Download fehlgeschlagen: {0}</value></data>
+  <data name="ErrorModelDownload" xml:space="preserve"><value>Der Modell-Download ist fehlgeschlagen (Netzwerkproblem oder falscher Modellname). Bitte Verbindung und Modellnamen prüfen und erneut versuchen.</value></data>
   <data name="ErrorCouldNotReadCv" xml:space="preserve"><value>CV konnte nicht gelesen werden: {0}</value></data>
   <data name="ErrorCouldNotReadJd" xml:space="preserve"><value>Stellenanzeige konnte nicht gelesen werden: {0}</value></data>
   <data name="DownloadingModel" xml:space="preserve"><value>Modell '{0}' wird heruntergeladen…</value></data>
@@ -173,6 +173,7 @@
   <data name="AnswerStatusTimeout" xml:space="preserve"><value>Die Antwortgenerierung hat die Zeit überschritten. Das lokale Modell ist noch beschäftigt oder für diesen Computer zu groß – versuche es erneut oder wähle ein kleineres Modell.</value></data>
   <data name="AnswerStatusEmpty" xml:space="preserve"><value>Das Modell hat eine leere Antwort geliefert. Versuche es erneut oder wähle ein anderes Modell.</value></data>
   <data name="AnswerDisclaimer" xml:space="preserve"><value>Vorschlag zur Prüfung – vergleiche ihn mit deiner eigenen Erfahrung, bevor du ihn im Interview verwendest.</value></data>
+  <data name="AnswerGenerating" xml:space="preserve"><value>Antwort wird generiert …</value></data>
   <data name="CopyAnswer" xml:space="preserve"><value>Kopieren</value></data>
   <data name="ErrorCopyFailed" xml:space="preserve"><value>Das Kopieren in die Zwischenablage ist fehlgeschlagen.</value></data>
 </root>

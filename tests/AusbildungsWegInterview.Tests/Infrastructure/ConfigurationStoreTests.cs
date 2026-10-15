@@ -86,6 +86,33 @@ public class ConfigurationStoreTests
         }
     }
 
+    /// <summary>
+    /// Privacy boundary: the persisted config file must only ever contain
+    /// non-sensitive preferences — never CV/JD content, transcripts, questions,
+    /// answers, or audio references.
+    /// </summary>
+    [Fact]
+    public void PersistedConfigJson_ContainsNoPersonalData()
+    {
+        var path = TempPath();
+        var store = new ConfigurationStore(path);
+        try
+        {
+            var cfg = store.Load();
+            cfg.WhisperModel = "small";
+            cfg.UiLanguage = "ar";
+            store.Save(cfg);
+
+            string json = File.ReadAllText(path);
+            // NOTE: "Transcript"/"Audio" appear in the OPT-IN FLAGS PersistTranscripts/
+            // PersistAudio (booleans, default off) — those are settings, not content.
+            // The markers below target CONTENT that must never be persisted.
+            foreach (var marker in new[] { "CvText", "JobDescription", "TranscriptText", "AnswerText", "DocumentText", "QuestionText", "Suggestion" })
+                Assert.DoesNotContain(marker, json, StringComparison.OrdinalIgnoreCase);
+        }
+        finally { File.Delete(path); }
+    }
+
     private static class AppConfigurationHolder
     {
         public static AusbildungsWegInterview.Core.Config.AppConfiguration New()

@@ -308,6 +308,57 @@ public sealed class MainViewModel : ObservableObject
     }
     public bool HasError => !string.IsNullOrEmpty(ErrorText);
 
+    // ---- source-of-truth for LOCALIZED dynamic strings ----
+    // These are re-localized on UI-language change (OnLanguageChanged) so no
+    // stale translation survives a language switch.
+    private Exception? _lastError;
+    private string? _lastErrorKey;
+    private object?[]? _lastErrorArgs;
+    private TranslationResult? _lastTranslationResult;
+    private AnswerSuggestion? _lastAnswerSuggestion;
+
+    /// <summary>Shows a runtime error by its category (localized); raw exception text is never displayed.</summary>
+    private void ShowRuntimeError(Exception ex)
+    {
+        _lastError = ex;
+        _lastErrorKey = null;
+        _lastErrorArgs = null;
+        ErrorText = SpeechErrorLocalizer.Localize(T, ex);
+    }
+
+    /// <summary>Shows a keyed UI error (optionally formatted) and remembers it for re-localization.</summary>
+    private void ShowKeyedError(string key, params object?[] args)
+    {
+        _lastError = null;
+        _lastErrorKey = key;
+        _lastErrorArgs = args;
+        ErrorText = args is { Length: > 0 } ? T.F(key, args) : T[key];
+    }
+
+    private void ClearErrorState()
+    {
+        _lastError = null;
+        _lastErrorKey = null;
+        _lastErrorArgs = null;
+        ErrorText = string.Empty;
+    }
+
+    /// <summary>Re-localizes every dynamic, language-dependent string after a UI language change.</summary>
+    private void ReLocalizeDynamicStrings()
+    {
+        if (_lastError is not null)
+            ErrorText = SpeechErrorLocalizer.Localize(T, _lastError);
+        else if (_lastErrorKey is not null)
+            ErrorText = _lastErrorArgs is { Length: > 0 } ? T.F(_lastErrorKey, _lastErrorArgs) : T[_lastErrorKey];
+
+        TranslationStatusText = _lastTranslationResult is not null && !_lastTranslationResult.IsTranslated
+            ? TranslationStatusLocalizer.Localize(T, _lastTranslationResult)
+            : string.Empty;
+
+        if (_lastAnswerSuggestion is { Status: not AnswerStatus.None })
+            AnswerText = AnswerStatusLocalizer.Localize(T, _lastAnswerSuggestion);
+    }
+
     private string _aiStatusText = string.Empty;
     public string AiStatusText { get => _aiStatusText; private set => Set(ref _aiStatusText, value); }
 
@@ -395,15 +446,21 @@ public sealed class MainViewModel : ObservableObject
     private string DocFilter
         => $"{T["FileFilterPdf"]} | *.pdf|{T["FileFilterDocx"]} | *.docx|{T["FileFilterText"]} | *.txt;*.md|{T["FileFilterAll"]} | *.*";
 
-    private string LocalizeDocError(DocumentImportError error) => error switch
+    private void ShowDocError(DocumentImportError error)
     {
-        DocumentImportError.Unsupported => T["ErrorDocUnsupported"],
-        DocumentImportError.Empty => T["ErrorDocEmpty"],
-        DocumentImportError.Corrupt => T["ErrorDocCorrupt"],
-        DocumentImportError.Oversized => T.F("ErrorDocOversized", _docImporter.MaxFileBytes / (1024 * 1024)),
-        DocumentImportError.NoText => T["ErrorDocNoText"],
-        _ => T["ErrorDocCorrupt"]
-    };
+        if (error is DocumentImportError.Oversized)
+        {
+            ShowKeyedError("ErrorDocOversized", _docImporter.MaxFileBytes / (1024 * 1024));
+            return;
+        }
+        ShowKeyedError(error switch
+        {
+            DocumentImportError.Unsupported => "ErrorDocUnsupported",
+            DocumentImportError.Empty => "ErrorDocEmpty",
+            DocumentImportError.NoText => "ErrorDocNoText",
+            _ => "ErrorDocCorrupt"
+        });
+    }
 
     // Conservative, RAM-based model suggestions (informational; nothing is downloaded automatically).
     public string SuggestedOllamaModel { get; }
@@ -444,6 +501,7 @@ public sealed class MainViewModel : ObservableObject
     private EventHandler<TranscriptUpdatedEventArgs>? _hTranscript;
     private EventHandler<TranslationUpdatedEventArgs>? _hTranslation;
     private EventHandler<AnswerUpdatedEventArgs>? _hAnswer;
+    private EventHandler? _hGenerating;
     private EventHandler<PipelineStateChangedEventArgs>? _hState;
     private EventHandler<CaptureErrorEventArgs>? _hError;
     private InterviewPipeline? _wiredPipeline;
@@ -476,7 +534,7 @@ public sealed class MainViewModel : ObservableObject
         UseJdCommand = new RelayCommand(_ => UseDocument(_jdDoc, isCv: false));
         ClearJdCommand = new RelayCommand(_ => ClearDocument(_jdDoc, isCv: false), _ => !string.IsNullOrEmpty(_jdDoc.Text) || _jdDoc.IsInUse);
         CopyAnswerCommand = new RelayCommand(_ => CopyAnswer(), _ => AnswerIsSuggestion && !IsBusy);
-        ClearErrorCommand = new RelayCommand(_ => ErrorText = string.Empty);
+        ClearErrorCommand = new RelayCommand(_ => ClearErrorState());
         RefreshStatusCommand = new RelayCommand(_ => _ = RefreshStatusAsync(), _ => !IsBusy);
         ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
 
@@ -516,6 +574,7 @@ public sealed class MainViewModel : ObservableObject
         UpdateSpeechSetupStatus();
         RecomputeContextStatus();
         UpdateAllDocStates();
+        ReLocalizeDynamicStrings();
         ModelSuggestedText = T.F("ModelSuggested", SuggestedOllamaModel, SuggestedWhisperModel);
         _ = RefreshStatusAsync();
 
@@ -583,6 +642,7 @@ public sealed class MainViewModel : ObservableObject
             _wiredPipeline.TranscriptUpdated -= _hTranscript;
             _wiredPipeline.TranslationUpdated -= _hTranslation;
             _wiredPipeline.AnswerUpdated -= _hAnswer;
+            _wiredPipeline.AnswerGenerating -= _hGenerating;
             _wiredPipeline.StateChanged -= _hState;
             _wiredPipeline.Error -= _hError;
             _wiredPipeline = null;
@@ -600,6 +660,7 @@ public sealed class MainViewModel : ObservableObject
             // Honest, LOCALIZED status (all four UI languages). A genuine
             // translation shows no status line; the raw English StatusMessage
             // on the result is log-only and never displayed.
+            _lastTranslationResult = e.Result;
             TranslationStatusText = e.Result.IsTranslated
                 ? string.Empty
                 : TranslationStatusLocalizer.Localize(T, e.Result);
@@ -614,6 +675,7 @@ public sealed class MainViewModel : ObservableObject
             // suggestion shows the model text; a failed / unavailable generation
             // shows the localized status line. The raw English message on the
             // suggestion is log-only and never displayed.
+            _lastAnswerSuggestion = e.Suggestion;
             AnswerText = e.Suggestion.Status is AnswerStatus.None
                 ? e.Suggestion.Answer
                 : AnswerStatusLocalizer.Localize(T, e.Suggestion);
@@ -621,14 +683,25 @@ public sealed class MainViewModel : ObservableObject
             AnswerIsSuggestion = e.Suggestion.Status is AnswerStatus.None;
             CopyAnswerCommand?.RaiseCanExecuteChanged();
         });
+        // "Generating…" state: shown while the model thinks about a question
+        // that has no provisional answer on screen yet; replaced by the result.
+        _hGenerating = (_, _) => Post(() =>
+        {
+            _lastAnswerSuggestion = null;
+            AnswerText = T["AnswerGenerating"];
+            IsAnswerProvisional = false;
+            AnswerIsSuggestion = false;
+            CopyAnswerCommand?.RaiseCanExecuteChanged();
+        });
         _hState = (_, e) => Post(() => UpdateStatus(e.State));
         // Runtime errors are category-localized (all four UI languages); raw
         // exception text (which may contain local paths) is never shown.
-        _hError = (_, e) => Post(() => ErrorText = SpeechErrorLocalizer.Localize(T, e.Error));
+        _hError = (_, e) => Post(() => ShowRuntimeError(e.Error));
 
         p.TranscriptUpdated += _hTranscript;
         p.TranslationUpdated += _hTranslation;
         p.AnswerUpdated += _hAnswer;
+        p.AnswerGenerating += _hGenerating;
         p.StateChanged += _hState;
         p.Error += _hError;
         _wiredPipeline = p;
@@ -672,7 +745,7 @@ public sealed class MainViewModel : ObservableObject
         catch (Exception)
         {
             // Clipboard can be transiently locked by another app — report, don't crash.
-            ErrorText = T["ErrorCopyFailed"];
+            ShowKeyedError("ErrorCopyFailed");
         }
     }
 
@@ -701,16 +774,18 @@ public sealed class MainViewModel : ObservableObject
     private async Task StartAsync()
     {
         IsBusy = true;
-        ErrorText = string.Empty;
+        ClearErrorState();
         // Fresh session: previous transcript / translation / answer content is
         // cleared so the live area only shows what the new session hears.
         TranscriptText = string.Empty;
         IsTranscriptProvisional = false;
         TranslationText = string.Empty;
         TranslationStatusText = string.Empty;
+        _lastTranslationResult = null;
         AnswerText = string.Empty;
         IsAnswerProvisional = false;
         AnswerIsSuggestion = false;
+        _lastAnswerSuggestion = null;
         CopyAnswerCommand?.RaiseCanExecuteChanged();
         DetectedQuestionText = string.Empty;
         try
@@ -721,7 +796,7 @@ public sealed class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             IsListening = false; // never claim "listening" after a failed start
-            ErrorText = SpeechErrorLocalizer.Localize(T, ex);
+            ShowRuntimeError(ex);
             StatusText = T["StatusFaulted"];
             StatusBrush = StatusFaultBrush;
         }
@@ -740,7 +815,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorText = SpeechErrorLocalizer.Localize(T, ex);
+            ShowRuntimeError(ex);
         }
         finally
         {
@@ -757,7 +832,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (_services.Pipeline.IsRunning)
         {
-            ErrorText = T["ErrorStopBeforeSettings"];
+            ShowKeyedError("ErrorStopBeforeSettings");
             return;
         }
         try
@@ -771,7 +846,7 @@ public sealed class MainViewModel : ObservableObject
         {
             // Category-localized: "Stop listening before…", "Unknown model …",
             // missing executable/model, or the generic runtime message.
-            ErrorText = SpeechErrorLocalizer.Localize(T, ex);
+            ShowRuntimeError(ex);
         }
     }
 
@@ -815,9 +890,11 @@ public sealed class MainViewModel : ObservableObject
             foreach (var d in _services.Audio.GetOutputDevices())
                 OutputDevices.Add(d);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            ErrorText = T.F("ErrorCouldNotEnumerateDevices", ex.Message);
+            // No raw ex.Message in the UI (it can contain local paths) — the
+            // category alone is actionable; details belong in the log, not the panel.
+            ShowKeyedError("ErrorCouldNotEnumerateDevices");
             return;
         }
 
@@ -827,7 +904,7 @@ public sealed class MainViewModel : ObservableObject
             ?? OutputDevices.FirstOrDefault();
 
         if (OutputDevices.Count == 0)
-            ErrorText = T["ErrorNoOutputDevice"];
+            ShowKeyedError("ErrorNoOutputDevice");
     }
 
     private async Task RefreshStatusAsync()
@@ -866,7 +943,7 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task DownloadModelAsync()
     {
-        ErrorText = string.Empty;
+        ClearErrorState();
         IsBusy = true;
         SpeechSetupStatus = T.F("DownloadingModel", _services.Config.WhisperModel);
         try
@@ -874,9 +951,10 @@ public sealed class MainViewModel : ObservableObject
             await _services.Models.DownloadAsync(_services.Config.WhisperModel);
             UpdateSpeechSetupStatus();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            ErrorText = T.F("ErrorModelDownload", ex.Message);
+            // No raw ex.Message in the UI (it can contain local paths).
+            ShowKeyedError("ErrorModelDownload");
             UpdateSpeechSetupStatus();
         }
         finally
@@ -905,21 +983,21 @@ public sealed class MainViewModel : ObservableObject
             var result = await Task.Run(() => _docImporter.ImportAsync(dlg.FileName));
             if (result.Success)
             {
-                ErrorText = string.Empty;
+                ClearErrorState();
                 doc.SetImported(result.Text!); // goes to REVIEW; old grounding text stays active
                 UpdateDocState(doc, isCv);
                 if (result.Truncated)
-                    ErrorText = T.F("ErrorDocTruncated", _docImporter.MaxExtractedChars);
+                    ShowKeyedError("ErrorDocTruncated", _docImporter.MaxExtractedChars);
             }
             else
             {
                 // Categorized, localized error; the file path is NOT shown (privacy).
-                ErrorText = LocalizeDocError(result.Error);
+                ShowDocError(result.Error);
             }
         }
         catch (Exception)
         {
-            ErrorText = LocalizeDocError(DocumentImportError.Corrupt);
+            ShowDocError(DocumentImportError.Corrupt);
         }
         finally
         {
@@ -931,12 +1009,12 @@ public sealed class MainViewModel : ObservableObject
     {
         if (doc.TryApply(out string errorKey))
         {
-            ErrorText = string.Empty;
+            ClearErrorState();
             ApplyDocumentToContext(doc, isCv);
         }
         else
         {
-            ErrorText = T[errorKey];
+            ShowKeyedError(errorKey);
         }
         UpdateDocState(doc, isCv);
     }
@@ -944,7 +1022,7 @@ public sealed class MainViewModel : ObservableObject
     private void ClearDocument(ReviewableDocument doc, bool isCv)
     {
         doc.Clear(); // removes box text AND stops grounding with it
-        ErrorText = string.Empty;
+        ClearErrorState();
         ApplyDocumentToContext(doc, isCv);
         UpdateDocState(doc, isCv);
         RaiseDocCommandStates();

@@ -33,6 +33,30 @@ public class AppConfigurationTests
         Assert.True(c.ChunkSeconds > 0);
     }
 
+    /// <summary>
+    /// Privacy boundary: the persisted configuration must never carry personal
+    /// data (CV/JD text, transcripts, questions, answers, audio) — only
+    /// non-sensitive preferences. Enforced by reflection so adding such a
+    /// property in the future breaks the build.
+    /// </summary>
+    [Fact]
+    public void AppConfiguration_ContainsNoPersonalDataProperties()
+    {
+        // Content would be carried as string properties; the bool opt-IN flags
+        // PersistAudio/PersistTranscripts are settings (default off) and exempt.
+        var stringProps = typeof(AppConfiguration)
+            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .Where(p => p.PropertyType == typeof(string))
+            .Select(p => p.Name)
+            .ToList();
+
+        foreach (var bad in new[] { "Cv", "JobDescription", "Transcript", "Document", "Question", "AnswerText", "Suggestion" })
+        {
+            Assert.True(stringProps.All(n => !n.Contains(bad, StringComparison.OrdinalIgnoreCase)),
+                $"AppConfiguration must not carry personal data (string property matching '{bad}'). String properties: {string.Join(", ", stringProps)}");
+        }
+    }
+
     [Fact]
     public void Clone_IsIndependent()
     {

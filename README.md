@@ -30,7 +30,7 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   **≈ 77 MB** (incl. runtime baseline).
 - Argos/opus-mt DE→EN probe (evaluation): **0.16–0.36 s warm** per sentence, ~100 MB per pair.
 
-**Verified by the automated suite (312 tests, cross-platform):**
+**Verified by the automated suite (320 tests, cross-platform):**
 - **Real end-to-end run**: actual JFK speech audio through the complete pipeline
   (real whisper.cpp → question detection → translation → answer), asserting the
   real transcript, a real generated answer, and honest stop semantics.
@@ -81,8 +81,22 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   20 s window), so starting Ollama or pulling the model mid-session is picked
   up without a restart. Status messages are no longer recorded as conversation
   turns (no English boilerplate in the grounding context). The answer panel
-  shows a review disclaimer and a localized Copy action (real suggestions
-  only).
+   shows a review disclaimer and a localized Copy action (real suggestions
+   only).
+- **UX integration & reliability (Phase 5)**: deterministic Start/Stop — a
+  second Start during the async Preparing window is a no-op, and a failed
+  start (device missing/locked) leaves a retryable Faulted state after
+  releasing its token sources + frame channel (no app restart needed). An
+  honest "Generating answer…" state is shown while the model thinks for a
+  question that has no provisional yet (never for in-place refinements).
+  Dynamic UI strings (error lines, translation status, answer status) are
+  re-localized on a UI-language switch — no stale translations survive. Error
+  messages no longer embed raw exception text (which can contain local paths):
+  the two pre-existing `…: {0}` device/download templates are now
+  self-contained. Privacy invariants are test-enforced: the persisted config
+  can never carry CV/JD/transcript/answer content (reflection + JSON scan),
+  and a WPF-free theme audit verifies Light/Dark define identical resource
+  keys and every referenced resource is defined.
 - Device-change decision logic (explicit selection kept; default-follow re-opens on the
   new default; lost device → fatal error → bounded pipeline restart).
 - Answer quality regressions: question-specific prompts, language/length respect, bounded
@@ -90,9 +104,11 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   bounded recent-conversation context (a question is never in its own context).
 - Translation providers: whisper `-tr` (real subprocess, English-only honesty), external CLI
   (real subprocess stdin/stdout, unsupported-pair / timeout / echo honesty).
-- Plus all Phase 1/2/3/4 coverage (pipeline, cancellation, backpressure, Ollama
-   failure modes + answer statuses/timeouts/recovery, document import + review
-   states, redacting logger, config, WAV writer).
+- Plus all Phase 1/2/3/4/5 coverage (pipeline, cancellation, backpressure,
+   Ollama failure modes + answer statuses/timeouts/recovery, start-window
+   races + failed-start recovery, document import + review states, catalog
+   raw-English leak guard, theme resource consistency, config privacy
+   boundary, redacting logger, config, WAV writer).
 
 **Requires a Windows machine (Windows 10/11 x64) — NOT verifiable on the Linux build host
 and therefore NOT claimed as verified:**

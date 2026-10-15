@@ -65,6 +65,10 @@ public sealed class InterviewPipeline : IAsyncDisposable
     private volatile bool _userStopping;
     private int _captureRestarts;
 
+    // True while a Start is in its (async) Preparing window — closes the race
+    // where IsRunning alone does not yet cover a starting pipeline.
+    private bool _starting;
+
     public PipelineState State { get; private set; } = PipelineState.Idle;
     public string? LastError { get; private set; }
     public CandidateContext Context { get; set; } = CandidateContext.Empty;
@@ -82,6 +86,14 @@ public sealed class InterviewPipeline : IAsyncDisposable
     public event EventHandler<TranscriptUpdatedEventArgs>? TranscriptUpdated;
     public event EventHandler<TranslationUpdatedEventArgs>? TranslationUpdated;
     public event EventHandler<AnswerUpdatedEventArgs>? AnswerUpdated;
+
+    /// <summary>
+    /// Raised when answer generation STARTS for a question that has no
+    /// provisional suggestion on screen yet (lets the UI show an honest
+    /// "generating…" state instead of looking dead while the model thinks).
+    /// Not raised when a provisional is already displayed (final refines it).
+    /// </summary>
+    public event EventHandler? AnswerGenerating;
     public event EventHandler<PipelineStateChangedEventArgs>? StateChanged;
     public event EventHandler<CaptureErrorEventArgs>? Error;
 
@@ -107,11 +119,14 @@ public sealed class InterviewPipeline : IAsyncDisposable
 
     public async Task StartAsync(CancellationToken ct = default)
     {
-        if (IsRunning)
-            return;
-
         lock (_gate)
         {
+            // Deterministic start: at most ONE active session. IsRunning covers
+            // Listening/Processing; the _starting flag covers the async
+            // Preparing window, during which IsRunning alone is not set yet.
+            if (IsRunning || _starting)
+                return;
+            _starting = true;
             _userStopping = false;
             _captureRestarts = 0;
         }
@@ -125,53 +140,73 @@ public sealed class InterviewPipeline : IAsyncDisposable
             SingleWriter = false
         });
 
-        // Reset segment + conversation state for a clean session.
-        _activeSegment = false;
-        _silentSeconds = 0;
-        _answeredInRound = false;
-        _lastAnsweredText = null;
-        _lastSuggestion = null;
-        _lastTranslationKey = string.Empty;
-        _lastTranslation = null;
-        _recentTurns.Clear();
-        _answeredQuestions.Clear();
-        _chunker.Reset();
-        LastError = null;
-
-        SetState(PipelineState.Preparing);
-
-        // 1) Prepare local runtimes. Fail fast with a clear, actionable error.
         try
         {
-            if (!_speech.IsReady)
-                await _speech.PrepareAsync(_config.WhisperModel, _config.SourceLanguage, ct).ConfigureAwait(false);
-            await _translator.PrepareAsync(_config.SourceLanguage, _config.TranslationLanguage, ct).ConfigureAwait(false);
+            // Reset segment + conversation state for a clean session.
+            _activeSegment = false;
+            _silentSeconds = 0;
+            _answeredInRound = false;
+            _lastAnsweredText = null;
+            _lastSuggestion = null;
+            _lastTranslationKey = string.Empty;
+            _lastTranslation = null;
+            _recentTurns.Clear();
+            _answeredQuestions.Clear();
+            _chunker.Reset();
+            LastError = null;
+
+            SetState(PipelineState.Preparing);
+
+            // 1) Prepare local runtimes. Fail fast with a clear, actionable error.
+            try
+            {
+                if (!_speech.IsReady)
+                    await _speech.PrepareAsync(_config.WhisperModel, _config.SourceLanguage, ct).ConfigureAwait(false);
+                await _translator.PrepareAsync(_config.SourceLanguage, _config.TranslationLanguage, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                LastError = ex.Message;
+                SetState(PipelineState.Faulted);
+                throw new InvalidOperationException("Failed to prepare local models: " + ex.Message, ex);
+            }
+
+            // 2) Start audio capture.
+            _capture.FrameCaptured += OnFrameCaptured;
+            _capture.Error += OnCaptureError;
+            _capture.DeviceChanged += OnCaptureDeviceChanged;
+            try
+            {
+                await _capture.StartAsync(_config.OutputDeviceId, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                await UnsubscribeAndStopCaptureAsync().ConfigureAwait(false);
+                LastError = ex.Message;
+                SetState(PipelineState.Faulted);
+                throw new InvalidOperationException("Failed to start audio capture: " + ex.Message, ex);
+            }
+
+            _worker = Task.Run(() => WorkerAsync(runCts.Token), runCts.Token);
+            SetState(PipelineState.Listening);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            LastError = ex.Message;
-            SetState(PipelineState.Faulted);
-            throw new InvalidOperationException("Failed to prepare local models: " + ex.Message, ex);
+            // Release everything this start allocated: a failed start must be
+            // retryable without leaking token sources or channels. (OCE = Stop
+            // racing start: StopCoreAsync owns that teardown.)
+            if (ReferenceEquals(_runCts, runCts))
+            {
+                runCts.Dispose();
+                _runCts = null;
+            }
+            _frameQueue = null;
+            throw;
         }
-
-        // 2) Start audio capture.
-        _capture.FrameCaptured += OnFrameCaptured;
-        _capture.Error += OnCaptureError;
-        _capture.DeviceChanged += OnCaptureDeviceChanged;
-        try
+        finally
         {
-            await _capture.StartAsync(_config.OutputDeviceId, ct).ConfigureAwait(false);
+            lock (_gate) _starting = false;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            await UnsubscribeAndStopCaptureAsync().ConfigureAwait(false);
-            LastError = ex.Message;
-            SetState(PipelineState.Faulted);
-            throw new InvalidOperationException("Failed to start audio capture: " + ex.Message, ex);
-        }
-
-        _worker = Task.Run(() => WorkerAsync(runCts.Token), runCts.Token);
-        SetState(PipelineState.Listening);
     }
 
     public Task StopAsync(CancellationToken ct = default)
@@ -613,6 +648,15 @@ public sealed class InterviewPipeline : IAsyncDisposable
                 _config.AnswerStyle,
                 recent,
                 Level: _config.AnswerLevel);
+
+            // Honest "generating" state while the panel has no provisional
+            // answer for THIS question yet (otherwise it keeps showing the
+            // previous question's answer and looks dead). A final that refines
+            // an existing provisional of the same text returned early in case 2,
+            // so it never reaches this raise.
+            if (_lastSuggestion is null ||
+                !string.Equals(_lastAnsweredText, result.Text, StringComparison.Ordinal))
+                AnswerGenerating?.Invoke(this, EventArgs.Empty);
 
             var suggestion = await _answers.GenerateAsync(request, linked.Token).ConfigureAwait(false);
 

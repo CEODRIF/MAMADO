@@ -84,9 +84,9 @@
 
   <data name="ErrorStopBeforeSettings" xml:space="preserve"><value>Arrêtez l'écoute avant de modifier les paramètres de la voix ou de la traduction.</value></data>
   <data name="ErrorCouldNotApplySpeech" xml:space="preserve"><value>Impossible d'appliquer les paramètres vocaux : {0}</value></data>
-  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>Impossible d'énumérer les périphériques audio : {0}</value></data>
+  <data name="ErrorCouldNotEnumerateDevices" xml:space="preserve"><value>Impossible d'énumérer les périphériques audio. Vérifiez qu'une sortie audio est connectée, puis réessayez.</value></data>
   <data name="ErrorNoOutputDevice" xml:space="preserve"><value>Aucun périphérique de sortie audio actif trouvé. Connectez des haut-parleurs/écouteurs et appuyez sur Actualiser.</value></data>
-  <data name="ErrorModelDownload" xml:space="preserve"><value>Échec du téléchargement du modèle : {0}</value></data>
+  <data name="ErrorModelDownload" xml:space="preserve"><value>Le téléchargement du modèle a échoué (problème réseau ou nom de modèle incorrect). Vérifiez la connexion et le nom du modèle, puis réessayez.</value></data>
   <data name="ErrorCouldNotReadCv" xml:space="preserve"><value>Impossible de lire le CV : {0}</value></data>
   <data name="ErrorCouldNotReadJd" xml:space="preserve"><value>Impossible de lire l'offre d'emploi : {0}</value></data>
   <data name="DownloadingModel" xml:space="preserve"><value>Téléchargement du modèle « {0} »…</value></data>
@@ -173,6 +173,7 @@
   <data name="AnswerStatusTimeout" xml:space="preserve"><value>La génération de la réponse a expiré. Le modèle local est encore occupé ou trop lourd pour cette machine — réessayez ou choisissez un modèle plus petit.</value></data>
   <data name="AnswerStatusEmpty" xml:space="preserve"><value>Le modèle a renvoyé une réponse vide. Réessayez ou choisissez un autre modèle.</value></data>
   <data name="AnswerDisclaimer" xml:space="preserve"><value>Suggestion à vérifier — comparez-la à votre propre expérience avant de l'utiliser dans votre entretien.</value></data>
+  <data name="AnswerGenerating" xml:space="preserve"><value>Génération de la réponse…</value></data>
   <data name="CopyAnswer" xml:space="preserve"><value>Copier</value></data>
   <data name="ErrorCopyFailed" xml:space="preserve"><value>La copie dans le presse-papiers a échoué.</value></data>
 </root>

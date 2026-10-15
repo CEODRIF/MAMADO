@@ -212,6 +212,108 @@ public class InterviewPipelineTests
     }
 
     [Fact]
+    public async Task StartCaptureFailure_Faults_ThenRecovers_OnRetry()
+    {
+        // A failed start (device missing/locked) must leave the pipeline in a
+        // retryable Faulted state — no application restart needed.
+        var capture = new FailingAudioCapture { FailFirstStarts = 1 };
+        await using var pipeline = new InterviewPipeline(
+            capture, new ScriptedSpeechRecognizer(), new MockTranslator(), new MockAnswerGenerator(), new QuestionDetector());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => pipeline.StartAsync());
+        Assert.Equal(PipelineState.Faulted, pipeline.State);
+        Assert.NotNull(pipeline.LastError);
+        Assert.Equal(1, capture.StartCount);
+
+        // Device "reconnected": the same pipeline instance starts cleanly.
+        await pipeline.StartAsync();
+        Assert.Equal(PipelineState.Listening, pipeline.State);
+        Assert.Equal(2, capture.StartCount);
+
+        await pipeline.StopAsync();
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+        Assert.Equal(2, capture.StopCount);
+    }
+
+    [Fact]
+    public async Task ConcurrentStart_SecondStartIsIgnored_NoDoubleSession()
+    {
+        // While the first Start is still in its async Preparing window, a second
+        // Start must be a no-op (deterministic single-session guarantee).
+        var capture = new FailingAudioCapture { StartGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
+        await using var pipeline = new InterviewPipeline(
+            capture, new ScriptedSpeechRecognizer(), new MockTranslator(), new MockAnswerGenerator(), new QuestionDetector());
+
+        var first = pipeline.StartAsync();
+        var second = pipeline.StartAsync();
+
+        // The second call completes immediately (guard hit) — it did NOT wait for the gate.
+        await second.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(1, capture.StartCount); // only the first start touched the device
+
+        capture.StartGate!.SetResult();
+        await first.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(PipelineState.Listening, pipeline.State);
+        Assert.Equal(1, capture.StartCount);
+
+        await pipeline.StopAsync();
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+    }
+
+    [Fact]
+    public async Task AnswerGenerating_RaisedOnlyWhenPanelHasNoProvisionalForQuestion()
+    {
+        // Q1: sufficient partial -> provisional (generating raised), final same
+        //     text -> in-place refinement (NO generating raised).
+        // Q2: short partial (not a question yet), sufficient final -> generating
+        //     raised once (panel still shows Q1's answer).
+        var capture = new NoopAudioCapture();
+        var speech = new ScriptedSpeechRecognizer(
+            new[]
+            {
+                TranscriptionResult.Partial("What is your greatest strength?"),
+                TranscriptionResult.Partial("Why")
+            },
+            new[]
+            {
+                "What is your greatest strength?",
+                "Why this Ausbildung?"
+            });
+        var answers = new MockAnswerGenerator();
+        var config = new AppConfiguration
+        {
+            ChunkSeconds = 0.5,
+            TargetSampleRate = 16000,
+            SilenceRmsThreshold = 0.01,
+            SilenceFinalizeSeconds = 0.8,
+            MinQuestionChars = 8
+        };
+
+        await using var pipeline = new InterviewPipeline(capture, speech, new MockTranslator(), answers, new QuestionDetector(), config);
+
+        var events = new List<char>(); // 'G' = AnswerGenerating, 'A' = AnswerUpdated
+        pipeline.AnswerGenerating += (_, _) => { lock (events) events.Add('G'); };
+        pipeline.AnswerUpdated += (_, e) => { lock (events) events.Add('A'); };
+
+        await pipeline.StartAsync();
+
+        pipeline.EnqueueAudio(NonSilent(16000)); // Q1 partial
+        pipeline.EnqueueAudio(NonSilent(16000)); // (chunk 2 -> finalizes below)
+        pipeline.EnqueueAudio(new AudioFrame(new byte[16000], 16000));
+        pipeline.EnqueueAudio(new AudioFrame(new byte[16000], 16000)); // Q1 final
+        pipeline.EnqueueAudio(NonSilent(16000)); // Q2 partial "Why" (too short)
+        pipeline.EnqueueAudio(new AudioFrame(new byte[16000], 16000));
+        pipeline.EnqueueAudio(new AudioFrame(new byte[16000], 16000)); // Q2 final
+
+        await WaitUntilAsync(() => { lock (events) return events.Count >= 5; });
+        await pipeline.StopAsync();
+
+        lock (events)
+            Assert.Equal(new[] { 'G', 'A', 'A', 'G', 'A' }, events.ToArray());
+        Assert.Equal(2, answers.Requests.Count); // refinement (2nd A) generated nothing
+    }
+
+    [Fact]
     public async Task CaptureFatalError_RestartsOnce_ThenStopsCleanly()
     {
         var capture = new ScriptedCapture { RaiseFatalOnStartCount = 2 }; // the restart itself dies again

@@ -58,7 +58,7 @@ public sealed class LocalizationManager
         => Rm.GetString(key, Culture) ?? Rm.GetString(key, CultureInfo.GetCultureInfo("en")) ?? key;
 
     /// <summary>Localizes and formats with the current culture (for {0} placeholders).</summary>
-    public string F(string key, params object[] args)
+    public string F(string key, params object?[] args)
         => args is { Length: > 0 } ? string.Format(Culture, Get(key), args) : Get(key);
 
     /// <summary>All keys of a culture catalog (neutral for "en"). For tests/tooling.</summary>
