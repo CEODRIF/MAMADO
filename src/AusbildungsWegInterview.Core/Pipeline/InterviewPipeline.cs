@@ -1,24 +1,30 @@
 using System.Threading.Channels;
 using AusbildungsWegInterview.Core.Answers;
 using AusbildungsWegInterview.Core.Audio;
+using AusbildungsWegInterview.Core.Common;
 using AusbildungsWegInterview.Core.Config;
 using AusbildungsWegInterview.Core.Domain;
+using AusbildungsWegInterview.Core.Logging;
 using AusbildungsWegInterview.Core.Speech;
 using AusbildungsWegInterview.Core.Translation;
 
 namespace AusbildungsWegInterview.Core.Pipeline;
 
 /// <summary>
-/// The real-time interview pipeline. It ties the four providers together:
-///   audio capture -> chunking/silence gating -> speech -> translation -> answer.
+/// The real-time interview pipeline. It ties the providers together:
+///   audio capture -> normalize -> chunk -> silence segmentation -> speech
+///   -> question detection -> translation -> grounded answer.
 ///
-/// Design goals (all covered by tests):
-///  * Incremental processing with a bounded queue (no unbounded memory growth).
-///  * Silence gating to avoid work on quiet audio.
-///  * Deduplication so minor transcript updates do not re-trigger translation/answers.
-///  * Obsolete answer work is cancelled; a provisional answer is produced once per
-///    question and refined when the question finalizes.
-///  * No persistent audio or transcripts by default.
+/// Hardening goals (all covered by tests):
+///  * Bounded queue (DropOldest) = backpressure; no unbounded memory growth.
+///  * Silence GATES segment start only. Once a segment is active, every chunk
+///    (including quiet ones) is fed to the recognizer so sentence endings survive.
+///  * Sustained trailing silence FINALIZES the segment (end-of-question), then resets.
+///  * Translation dedup: only re-translate when the segment text actually changed.
+///  * Answer policy: provisional once per question, refined on final; obsolete
+///    in-flight generations are cancelled.
+///  * Capture device failures trigger a bounded number of auto-restarts before faulting.
+///  * Deterministic start/stop/disposal, including repeated cycles.
 /// </summary>
 public sealed class InterviewPipeline : IAsyncDisposable
 {
@@ -30,6 +36,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
     private readonly AppConfiguration _config;
     private readonly AudioChunker _chunker;
     private readonly SilenceDetector _silence;
+    private readonly IAppLogger _logger;
 
     private readonly object _gate = new();
 
@@ -38,13 +45,30 @@ public sealed class InterviewPipeline : IAsyncDisposable
     private CancellationTokenSource? _answerCts;
     private Task? _worker;
 
+    // Segment-scoped state (worker thread only)
+    private bool _activeSegment;
+    private double _silentSeconds;
     private string _lastTranslationKey = string.Empty;
     private bool _answeredInRound;
+    private readonly List<string> _recentTurns = new();
+
+    // Capture lifecycle (shared: capture thread + control thread)
+    private volatile bool _userStopping;
+    private int _captureRestarts;
 
     public PipelineState State { get; private set; } = PipelineState.Idle;
     public string? LastError { get; private set; }
     public CandidateContext Context { get; set; } = CandidateContext.Empty;
     public bool IsRunning => State is PipelineState.Listening or PipelineState.Processing;
+
+    /// <summary>Depth of the bounded input queue (backpressure / saturation metric).</summary>
+    public int QueueDepth => _frameQueue?.Reader.Count ?? 0;
+
+    /// <summary>Number of capture auto-restarts performed.</summary>
+    public int CaptureRestarts
+    {
+        get { lock (_gate) return _captureRestarts; }
+    }
 
     public event EventHandler<TranscriptUpdatedEventArgs>? TranscriptUpdated;
     public event EventHandler<TranslationUpdatedEventArgs>? TranslationUpdated;
@@ -58,7 +82,8 @@ public sealed class InterviewPipeline : IAsyncDisposable
         ITranslator translator,
         IAnswerGenerator answers,
         IQuestionDetector questionDetector,
-        AppConfiguration? config = null)
+        AppConfiguration? config = null,
+        IAppLogger? logger = null)
     {
         _capture = capture ?? throw new ArgumentNullException(nameof(capture));
         _speech = speech ?? throw new ArgumentNullException(nameof(speech));
@@ -68,12 +93,19 @@ public sealed class InterviewPipeline : IAsyncDisposable
         _config = config ?? AppConfiguration.Default();
         _chunker = new AudioChunker(_config.TargetSampleRate, _config.ChunkSeconds);
         _silence = new SilenceDetector(_config.SilenceRmsThreshold);
+        _logger = logger ?? NullLogger.Instance;
     }
 
     public async Task StartAsync(CancellationToken ct = default)
     {
         if (IsRunning)
             return;
+
+        lock (_gate)
+        {
+            _userStopping = false;
+            _captureRestarts = 0;
+        }
 
         var runCts = new CancellationTokenSource();
         _runCts = runCts;
@@ -83,9 +115,15 @@ public sealed class InterviewPipeline : IAsyncDisposable
             SingleReader = true,
             SingleWriter = false
         });
-        _chunker.Reset();
+
+        // Reset segment + conversation state for a clean session.
+        _activeSegment = false;
+        _silentSeconds = 0;
         _answeredInRound = false;
         _lastTranslationKey = string.Empty;
+        _lastTranslation = null;
+        _recentTurns.Clear();
+        _chunker.Reset();
         LastError = null;
 
         SetState(PipelineState.Preparing);
@@ -107,13 +145,14 @@ public sealed class InterviewPipeline : IAsyncDisposable
         // 2) Start audio capture.
         _capture.FrameCaptured += OnFrameCaptured;
         _capture.Error += OnCaptureError;
+        _capture.DeviceChanged += OnCaptureDeviceChanged;
         try
         {
             await _capture.StartAsync(_config.OutputDeviceId, ct).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            await CleanupCaptureAsync().ConfigureAwait(false);
+            await UnsubscribeAndStopCaptureAsync().ConfigureAwait(false);
             LastError = ex.Message;
             SetState(PipelineState.Faulted);
             throw new InvalidOperationException("Failed to start audio capture: " + ex.Message, ex);
@@ -128,10 +167,13 @@ public sealed class InterviewPipeline : IAsyncDisposable
         if (State is PipelineState.Stopped or PipelineState.Idle)
             return;
 
+        lock (_gate)
+            _userStopping = true;
+
         SetState(PipelineState.Stopping);
         _answerCts?.Cancel();
 
-        await CleanupCaptureAsync().ConfigureAwait(false);
+        await UnsubscribeAndStopCaptureAsync().ConfigureAwait(false);
 
         if (_frameQueue is not null)
             _frameQueue.Writer.TryComplete();
@@ -147,13 +189,11 @@ public sealed class InterviewPipeline : IAsyncDisposable
         _runCts?.Dispose();
         _runCts = null;
         _frameQueue = null;
+        _activeSegment = false;
         SetState(PipelineState.Stopped);
     }
 
-    /// <summary>
-    /// Feeds an audio frame into the pipeline. Used by custom capture sources and
-    /// by deterministic tests; the real IAudioCapture also pushes frames here.
-    /// </summary>
+    /// <summary>Feeds an audio frame into the pipeline (custom sources + tests).</summary>
     public void EnqueueAudio(AudioFrame frame)
     {
         _frameQueue?.Writer.TryWrite(frame);
@@ -167,6 +207,8 @@ public sealed class InterviewPipeline : IAsyncDisposable
         _answerCts = null;
     }
 
+    // ---------------- capture events ----------------
+
     private void OnFrameCaptured(object? sender, AudioFrameEventArgs e)
     {
         _frameQueue?.Writer.TryWrite(e.Frame);
@@ -176,14 +218,76 @@ public sealed class InterviewPipeline : IAsyncDisposable
     {
         if (e.IsFatal)
         {
-            ReportError(e.Error, isFatal: true);
-            _ = StopAsync();
+            bool restart;
+            lock (_gate)
+            {
+                restart = !_userStopping && _captureRestarts < _config.MaxCaptureRestarts;
+                if (restart)
+                    _captureRestarts++;
+            }
+
+            if (restart)
+            {
+                // Non-fatal from the user's perspective: we will try to recover.
+                ReportError(e.Error, isFatal: false);
+                _ = TryRestartCaptureAsync();
+            }
+            else
+            {
+                ReportError(e.Error, isFatal: true);
+                _ = StopAsync();
+            }
         }
         else
         {
             ReportError(e.Error, isFatal: false);
         }
     }
+
+    // Device changes are handled by the capture itself (re-open on a new default,
+    // fatal error when the device is lost). The pipeline only observes + logs so
+    // the operator has an audit trail; a lost device already raised Error above.
+    private void OnCaptureDeviceChanged(object? sender, AudioDeviceEventArgs e)
+    {
+        _logger.Log(LogLevel.Warning, "audio",
+            "device change -> " + (e.Device?.Id ?? "(none)"));
+    }
+
+    private async Task TryRestartCaptureAsync()
+    {
+        var cts = _runCts;
+        if (cts is null || cts.IsCancellationRequested)
+            return;
+
+        _capture.FrameCaptured -= OnFrameCaptured;
+        _capture.Error -= OnCaptureError;
+        _capture.DeviceChanged -= OnCaptureDeviceChanged;
+        try { await _capture.StopAsync(cts.Token).ConfigureAwait(false); }
+        catch { /* ignore */ }
+
+        try
+        {
+            _capture.FrameCaptured += OnFrameCaptured;
+            _capture.Error += OnCaptureError;
+            _capture.DeviceChanged += OnCaptureDeviceChanged;
+            await _capture.StartAsync(_config.OutputDeviceId, cts.Token).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            ReportError(ex, isFatal: true);
+        }
+    }
+
+    private async Task UnsubscribeAndStopCaptureAsync()
+    {
+        _capture.FrameCaptured -= OnFrameCaptured;
+        _capture.Error -= OnCaptureError;
+        _capture.DeviceChanged -= OnCaptureDeviceChanged;
+        try { await _capture.StopAsync().ConfigureAwait(false); }
+        catch { /* ignore */ }
+    }
+
+    // ---------------- worker ----------------
 
     private async Task WorkerAsync(CancellationToken ct)
     {
@@ -210,9 +314,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
 
                 foreach (var chunk in _chunker.Push(normalized))
                 {
-                    if (_silence.IsSilent(chunk))
-                        continue;
-                    await ProcessChunkAsync(chunk, ct).ConfigureAwait(false);
+                    await HandleChunkAsync(chunk, ct).ConfigureAwait(false);
                 }
             }
         }
@@ -222,20 +324,41 @@ public sealed class InterviewPipeline : IAsyncDisposable
         }
         finally
         {
-            // Flush any trailing samples once.
+            // On shutdown, flush the tail and finalize any in-flight segment.
             var tail = _chunker.Flush();
             if (tail is not null && !_silence.IsSilent(tail) && !ct.IsCancellationRequested)
             {
-                try { await ProcessChunkAsync(tail, CancellationToken.None).ConfigureAwait(false); }
+                try { await HandleChunkAsync(tail, CancellationToken.None).ConfigureAwait(false); }
+                catch { /* best effort */ }
+            }
+            if (_activeSegment && !ct.IsCancellationRequested)
+            {
+                try { await FinalizeSegmentAsync(CancellationToken.None).ConfigureAwait(false); }
                 catch { /* best effort */ }
             }
         }
     }
 
-    private async Task ProcessChunkAsync(AudioFrame chunk, CancellationToken ct)
+    private async Task HandleChunkAsync(AudioFrame chunk, CancellationToken ct)
     {
         if (!_speech.IsReady)
             return;
+
+        bool silent = _silence.IsSilent(chunk);
+        double chunkSeconds = chunk.DurationMs / 1000.0;
+
+        // Segment START: silence gates entry; once active, keep feeding (incl. quiet) so endings survive.
+        if (!_activeSegment)
+        {
+            if (silent)
+                return;
+            _activeSegment = true;
+            _silentSeconds = 0;
+            _answeredInRound = false;
+            _lastTranslationKey = string.Empty;
+            _lastTranslation = null;
+            _speech.Reset();
+        }
 
         TranscriptionResult result;
         try
@@ -252,12 +375,75 @@ public sealed class InterviewPipeline : IAsyncDisposable
             return;
         }
 
-        if (result is null || string.IsNullOrWhiteSpace(result.Text))
+        if (result is not null && !string.IsNullOrWhiteSpace(result.Text))
+        {
+            EmitTranscript(result);
+            await TranslateIncrementallyAsync(result, ct).ConfigureAwait(false);
+            await MaybeAnswerAsync(result, ct).ConfigureAwait(false);
+        }
+
+        // Segment END, recognizer-driven. An EMPTY result must not count as final
+        // (TranscriptionResult.Empty is Final-shaped), or silence-driven
+        // finalization would never run.
+        if (result is { IsFinal: true } && !string.IsNullOrWhiteSpace(result.Text))
+        {
+            FinalizeSegment();
+            return;
+        }
+
+        // Segment END, silence-driven (sustained trailing silence).
+        if (silent)
+        {
+            _silentSeconds += chunkSeconds;
+            if (_silentSeconds >= _config.SilenceFinalizeSeconds)
+            {
+                await FinalizeSegmentAsync(ct).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            _silentSeconds = 0;
+        }
+    }
+
+    private async Task FinalizeSegmentAsync(CancellationToken ct)
+    {
+        if (!_activeSegment)
             return;
 
-        EmitTranscript(result);
-        await TranslateIncrementallyAsync(result, ct).ConfigureAwait(false);
-        await MaybeAnswerAsync(result, ct).ConfigureAwait(false);
+        TranscriptionResult? final = null;
+        try
+        {
+            final = await _speech.FinalizeAsync(ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // stopped mid-finalize
+        }
+        catch (Exception ex)
+        {
+            ReportError(ex, isFatal: false);
+        }
+
+        if (final is not null && !string.IsNullOrWhiteSpace(final.Text))
+        {
+            var f = final.IsFinal ? final : final with { Kind = TranscriptKind.Final };
+            EmitTranscript(f);
+            await TranslateIncrementallyAsync(f, CancellationToken.None).ConfigureAwait(false);
+            await MaybeAnswerAsync(f, CancellationToken.None).ConfigureAwait(false);
+        }
+
+        FinalizeSegment();
+    }
+
+    private void FinalizeSegment()
+    {
+        _activeSegment = false;
+        _silentSeconds = 0;
+        _answeredInRound = false;
+        _lastTranslationKey = string.Empty;
+        _lastTranslation = null;
+        _speech.Reset();
     }
 
     private void EmitTranscript(TranscriptionResult result)
@@ -265,16 +451,30 @@ public sealed class InterviewPipeline : IAsyncDisposable
 
     private async Task TranslateIncrementallyAsync(TranscriptionResult result, CancellationToken ct)
     {
-        if (result.Text == _lastTranslationKey)
+        // whisper (-tr) translates the segment AUDIO: expensive and only meaningful
+        // once the segment is final. Partials stay untranslated on that provider.
+        if (_config.TranslationProvider == TranslationProvider.WhisperTranslate && !result.IsFinal)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(result.Text) && result.Text == _lastTranslationKey)
             return; // dedup: unchanged text
-        _lastTranslationKey = result.Text;
+        if (!string.IsNullOrWhiteSpace(result.Text))
+            _lastTranslationKey = result.Text;
 
         try
         {
             var tr = await _translator.TranslateAsync(
                 result.Text, result.DetectedLanguage, _config.TranslationLanguage, ct).ConfigureAwait(false);
-            if (tr is not null && tr.HasText)
+            // Emit when there is real text OR an honest status to display
+            // (e.g. "Ollama unavailable - original shown").
+            if (tr is not null && (tr.HasText || tr.StatusMessage is not null))
+            {
+                // Remember only GENUINE translations for the answer prompt
+                // (pass-through / unchanged / failure are not translations).
+                if (tr.IsTranslated)
+                    _lastTranslation = tr.TargetText;
                 TranslationUpdated?.Invoke(this, new TranslationUpdatedEventArgs(tr));
+            }
         }
         catch (OperationCanceledException)
         {
@@ -285,6 +485,9 @@ public sealed class InterviewPipeline : IAsyncDisposable
             ReportError(ex, isFatal: false);
         }
     }
+
+    /// <summary>Latest real translation of the current segment (null unless one was produced).</summary>
+    private string? _lastTranslation;
 
     private async Task MaybeAnswerAsync(TranscriptionResult result, CancellationToken ct)
     {
@@ -305,12 +508,15 @@ public sealed class InterviewPipeline : IAsyncDisposable
             _answerCts = answerCts;
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, answerCts.Token);
 
+            var recent = SnapshotRecentTurns();
             var request = new AnswerRequest(
                 result.Text,
-                null,
+                _lastTranslation,
                 Context,
                 _config.AnswerLength,
-                _config.AnswerLanguage);
+                _config.AnswerLanguage,
+                _config.AnswerStyle,
+                recent);
 
             var suggestion = await _answers.GenerateAsync(request, linked.Token).ConfigureAwait(false);
             if (suggestion is not null)
@@ -319,6 +525,9 @@ public sealed class InterviewPipeline : IAsyncDisposable
                     ? suggestion with { IsProvisional = false }
                     : suggestion with { IsProvisional = true };
                 AnswerUpdated?.Invoke(this, new AnswerUpdatedEventArgs(emitted));
+
+                if (result.IsFinal && emitted.HasAnswer)
+                    RememberTurn(result.Text, emitted.Answer);
             }
 
             _answeredInRound = !result.IsFinal;
@@ -333,17 +542,32 @@ public sealed class InterviewPipeline : IAsyncDisposable
         }
     }
 
-    private async Task CleanupCaptureAsync()
+    private IReadOnlyList<string> SnapshotRecentTurns()
     {
-        _capture.FrameCaptured -= OnFrameCaptured;
-        _capture.Error -= OnCaptureError;
-        try { await _capture.StopAsync().ConfigureAwait(false); }
-        catch { /* ignore */ }
+        lock (_recentTurns)
+            return _recentTurns.ToList().AsReadOnly();
     }
+
+    private void RememberTurn(string question, string answer)
+    {
+        lock (_recentTurns)
+        {
+            _recentTurns.Add($"Q: {Truncate(question, 200)} | A: {Truncate(answer, 300)}");
+            int max = Math.Max(0, _config.RecentTurns);
+            while (_recentTurns.Count > max)
+                _recentTurns.RemoveAt(0);
+        }
+    }
+
+    private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
+
+    // ---------------- error/state ----------------
 
     private void ReportError(Exception ex, bool isFatal)
     {
         LastError = ex.Message;
+        // Log only the exception TYPE (never transcript/CV/audio content).
+        _logger.Log(LogLevel.Error, "pipeline", "error: " + ex.GetType().Name);
         if (isFatal)
             SetState(PipelineState.Faulted);
         Error?.Invoke(this, new CaptureErrorEventArgs(ex, isFatal));
@@ -358,5 +582,6 @@ public sealed class InterviewPipeline : IAsyncDisposable
             State = state;
         }
         StateChanged?.Invoke(this, new PipelineStateChangedEventArgs(state));
+        _logger.Log(LogLevel.Info, "pipeline", "state -> " + state);
     }
 }

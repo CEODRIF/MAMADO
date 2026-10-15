@@ -3,26 +3,39 @@ using AusbildungsWegInterview.Core.Answers;
 namespace AusbildungsWegInterview.Answers;
 
 /// <summary>
-/// Heuristic question detector. It is intentionally conservative: a finalized
-/// segment that is long enough is treated as answerable, while a provisional
-/// segment must also look like a question (a "?" or a question word) so the app
-/// does not fire answers on fragments.
+/// Practical, multilingual question detector that works on INCOMPLETE transcript
+/// segments. It distinguishes an interview question from an ordinary statement or
+/// an incomplete fragment, and is deliberately conservative for provisional text:
+///  * A "?" (ASCII or Arabic "؟") or a known question phrase is sufficient at any length.
+///  * A finalized segment that is long enough is treated as answerable.
+///  * A provisional segment additionally needs an interrogative word.
 ///
-/// This is a fast, deterministic pre-gate. A model-based detector can replace it
-/// later by implementing <see cref="IQuestionDetector"/>.
+/// Deterministic and fast; a model-based detector can replace it via IQuestionDetector.
 /// </summary>
 public sealed class QuestionDetector : IQuestionDetector
 {
-    private static readonly string[] Interrogatives =
+    private static readonly string[] Words =
     {
         // English
-        "who", "what", "why", "when", "where", "which", "whom", "whose", "how",
+        "why", "how", "what", "which", "who", "when", "where", "whom", "whose", "could", "can", "would",
         // German
-        "wer", "was", "warum", "wann", "wo", "wie", "welche", "welchen", "welches", "welcher",
+        "warum", "weshalb", "wie", "was", "welche", "welchen", "welches", "welcher", "wer", "wann", "wo",
         // French
-        "qui", "quoi", "pourquoi", "comment", "quand", "ou", "quelle", "quel", "combien",
+        "pourquoi", "comment", "quel", "quelle", "quels", "quelles", "quand", "qui", "combien",
         // Arabic
-        "مَن", "ماذا", "لماذا", "متى", "اين", "كيف", "ما"
+        "لماذا", "كيف", "ماذا", "متى", "من", "مَن", "ما"
+    };
+
+    private static readonly string[] Phrases =
+    {
+        // English
+        "could you", "can you", "tell me about", "what do you", "why do you", "what would", "why should",
+        // German
+        "koennen sie", "können sie", "erzaehlen sie", "erzählen sie", "was ist", "warum wollen", "wie sind",
+        // French
+        "qu'est-ce que", "qu est ce que", "pouvez-vous", "pouvez vous", "parlez-moi", "est-ce que",
+        // Arabic
+        "هل", "ما رأيك", "لماذا تريد", "حدثني"
     };
 
     public bool IsSufficient(string transcript, int minChars, bool isFinal)
@@ -30,28 +43,34 @@ public sealed class QuestionDetector : IQuestionDetector
         if (string.IsNullOrWhiteSpace(transcript))
             return false;
 
-        var text = transcript.Trim();
+        var text = CollapseWhitespace(transcript);
         if (text.Length < minChars)
             return false;
 
-        if (text.Contains('?'))
+        if (text.Contains('?') || text.Contains('؟'))
             return true;
-
+        if (HasPhrase(text))
+            return true;
         if (isFinal)
-            return true;
-
-        return HasInterrogative(text);
+            return true; // finalized + long enough
+        return HasWord(text);   // provisional: require an interrogative cue
     }
 
-    private static bool HasInterrogative(string text)
+    private static bool HasPhrase(string normalized)
+        => Phrases.Any(p => normalized.Contains(p, StringComparison.OrdinalIgnoreCase));
+
+    private static bool HasWord(string normalized)
     {
-        foreach (var token in Tokenize(text))
+        foreach (var token in Tokenize(normalized))
         {
-            if (Interrogatives.Contains(token, StringComparer.OrdinalIgnoreCase))
+            if (Words.Contains(token, StringComparer.OrdinalIgnoreCase))
                 return true;
         }
         return false;
     }
+
+    private static string CollapseWhitespace(string text)
+        => string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     private static IEnumerable<string> Tokenize(string text)
     {

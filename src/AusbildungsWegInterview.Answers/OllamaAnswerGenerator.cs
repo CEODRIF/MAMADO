@@ -6,15 +6,23 @@ namespace AusbildungsWegInterview.Answers;
 
 /// <summary>
 /// Generates grounded answer suggestions using a local Ollama model.
-/// Ollama is OPTIONAL: when the server is unavailable, the generator returns a
-/// clear, non-fabricated "unavailable" suggestion and the rest of the app keeps
-/// working (transcription + translation are unaffected).
+///
+/// Graceful degradation (each case returns a clear, non-fabricated message, and the
+/// rest of the app keeps working):
+///  * Ollama not running  -> "start Ollama" message.
+///  * Model not pulled     -> "ollama pull &lt;model&gt;" message.
+///  * Error / timeout       -> "generation failed" message.
+///  * Empty / malformed     -> "empty answer" message.
+///
+/// Answers are grounded in the supplied CV / job description (see ContextManager)
+/// and never invent facts.
 /// </summary>
 public sealed class OllamaAnswerGenerator : IAnswerGenerator
 {
     private readonly IOllamaClient _client;
     private readonly string _model;
     private bool _availabilityChecked;
+    private bool? _modelAvailable;
 
     public string RuntimeName => "Ollama (local)";
     public string? ModelName => _model;
@@ -32,6 +40,7 @@ public sealed class OllamaAnswerGenerator : IAnswerGenerator
     {
         IsAvailable = await _client.IsAvailableAsync(ct).ConfigureAwait(false);
         _availabilityChecked = true;
+        _modelAvailable = null; // re-evaluate when availability changes
     }
 
     public async Task<AnswerSuggestion> GenerateAsync(AnswerRequest request, CancellationToken ct = default)
@@ -40,44 +49,59 @@ public sealed class OllamaAnswerGenerator : IAnswerGenerator
             await RefreshAvailabilityAsync(ct).ConfigureAwait(false);
 
         if (!IsAvailable)
-            return Unavailable(request);
+            return StatusMessage(request,
+                "The local AI (Ollama) isn't running, so I can't draft a suggested answer right now. " +
+                "You can still see the live transcription and translation. Start Ollama to enable answer suggestions.");
+
+        if (!_modelAvailable.HasValue)
+            _modelAvailable = await _client.ModelAvailableAsync(_model, ct).ConfigureAwait(false);
+        if (!_modelAvailable.Value)
+            return StatusMessage(request,
+                $"The Ollama model '{_model}' isn't pulled on this machine. Run `ollama pull {_model}` " +
+                "(or choose a smaller model in settings), then try again.");
 
         var sw = Stopwatch.StartNew();
-        var prompt = ContextManager.BuildPrompt(request);
         string answer;
         try
         {
-            answer = await _client.GenerateAsync(_model, prompt, 0.3, ct).ConfigureAwait(false);
+            answer = await _client.GenerateAsync(_model, ContextManager.BuildPrompt(request), 0.3, ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw; // superseded or stopped
         }
         catch
         {
-            return Unavailable(request);
+            sw.Stop();
+            return StatusMessage(request,
+                "Answer generation failed (Ollama error or timeout). Transcription and translation still work.");
         }
         sw.Stop();
 
-        answer = (answer ?? string.Empty).Trim();
+        answer = CleanAnswer(answer);
         if (string.IsNullOrWhiteSpace(answer))
-            return Unavailable(request);
+            return StatusMessage(request, "Ollama returned an empty answer. Try again or select a different model.");
 
         return new AnswerSuggestion(
-            request.QuestionOriginal,
-            answer,
-            request.Length,
-            request.AnswerLanguage,
-            IsProvisional: false,
-            Model: _model,
-            LatencyMs: sw.Elapsed.TotalMilliseconds);
+            request.QuestionOriginal, answer, request.Length, request.AnswerLanguage,
+            IsProvisional: false, Model: _model, LatencyMs: sw.Elapsed.TotalMilliseconds);
     }
 
-    private static AnswerSuggestion Unavailable(AnswerRequest request) => new(
-        request.QuestionOriginal,
-        "The local AI (Ollama) isn't running, so I can't draft a suggested answer right now. " +
-        "You can still see the live transcription and translation. Start Ollama to enable answer suggestions.",
-        request.Length,
-        request.AnswerLanguage,
-        IsProvisional: false,
-        Model: null,
-        LatencyMs: null);
+    private static AnswerSuggestion StatusMessage(AnswerRequest r, string message)
+        => new(r.QuestionOriginal, message, r.Length, r.AnswerLanguage, IsProvisional: false, Model: null, LatencyMs: null);
 
-    public ValueTask DisposeAsync() => _client.DisposeAsync();
+    /// <summary>Strips common model artifacts (prompt echo, surrounding quotes). Never invents content.</summary>
+    private static string CleanAnswer(string answer)
+    {
+        var s = (answer ?? string.Empty).Trim();
+        if (s.StartsWith("Suggested answer:", StringComparison.OrdinalIgnoreCase))
+            s = s["Suggested answer:".Length..].Trim();
+        if (s.Length >= 2 && ((s[0] == '"' && s[^1] == '"') || (s[0] == '“' && s[^1] == '”')))
+            s = s[1..^1].Trim();
+        return s;
+    }
+
+    // The Ollama client is shared with the translator and owned by the
+    // composition root (AppServices); do NOT dispose it here.
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

@@ -21,7 +21,7 @@ public class ContextManagerTests
         var prompt = ContextManager.BuildPrompt(req);
         Assert.Contains("Strong in C# and teamwork", prompt);
         Assert.Contains("Looking for a developer", prompt);
-        Assert.Contains("do NOT invent", prompt);          // no-fabrication guardrail
+        Assert.Contains("NEVER invent", prompt);           // no-fabrication guardrail
         Assert.Contains("German", prompt);                 // answer language
         Assert.Contains("[CV]", prompt);
     }

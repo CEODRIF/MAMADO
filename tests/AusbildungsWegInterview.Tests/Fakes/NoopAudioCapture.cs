@@ -7,8 +7,10 @@ public sealed class NoopAudioCapture : IAudioCapture
 {
     public AudioCaptureState State { get; private set; } = AudioCaptureState.Stopped;
     public string? CurrentDeviceId { get; private set; }
-    public bool StartCalled { get; private set; }
-    public bool StopCalled { get; private set; }
+    public int StartCount { get; private set; }
+    public int StopCount { get; private set; }
+    public bool StartCalled => StartCount > 0;
+    public bool StopCalled => StopCount > 0;
 
 #pragma warning disable CS0067 // required by IAudioCapture; unused in this fake
     public event EventHandler<AudioFrameEventArgs>? FrameCaptured;
@@ -21,7 +23,7 @@ public sealed class NoopAudioCapture : IAudioCapture
 
     public Task StartAsync(string? deviceId = null, CancellationToken ct = default)
     {
-        StartCalled = true;
+        StartCount++;
         State = AudioCaptureState.Running;
         CurrentDeviceId = deviceId;
         return Task.CompletedTask;
@@ -29,7 +31,7 @@ public sealed class NoopAudioCapture : IAudioCapture
 
     public Task StopAsync(CancellationToken ct = default)
     {
-        StopCalled = true;
+        StopCount++;
         State = AudioCaptureState.Stopped;
         return Task.CompletedTask;
     }
