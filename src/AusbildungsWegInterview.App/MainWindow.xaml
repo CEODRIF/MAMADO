@@ -8,11 +8,10 @@
         FlowDirection="{Binding IsRtl, Converter={StaticResource BoolToFlowDirection}}"
         Topmost="{Binding AlwaysOnTop}">
 
+    <!-- Converters (BoolToVis, InverseBoolToVis, BoolToFlowDirection, LocKey) are
+         declared at Application scope in App.xaml - they must be, because window
+         start-tag attributes are parsed before this resources block exists. -->
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-        <local:InverseBoolToVisConverter x:Key="InverseBoolToVis"/>
-        <local:BoolToFlowDirectionConverter x:Key="BoolToFlowDirection"/>
-        <local:LocKeyConverter x:Key="LocKey"/>
         <Style x:Key="AwChipText" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
