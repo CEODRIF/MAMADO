@@ -14,7 +14,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        _services = AppServices.Create();
+        _services = AppServiceFactory.Create();
         var window = new MainWindow(_services);
         MainWindow = window;
         window.Show();

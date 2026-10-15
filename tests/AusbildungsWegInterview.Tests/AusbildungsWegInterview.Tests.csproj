@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\src\AusbildungsWegInterview.Translation\AusbildungsWegInterview.Translation.csproj" />
     <ProjectReference Include="..\..\src\AusbildungsWegInterview.Speech\AusbildungsWegInterview.Speech.csproj" />
     <ProjectReference Include="..\..\src\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\AusbildungsWegInterview.Composition\AusbildungsWegInterview.Composition.csproj" />
   </ItemGroup>
 
 </Project>

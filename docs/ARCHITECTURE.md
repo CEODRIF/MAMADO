@@ -9,7 +9,8 @@ single composition root.
 
 | Project | TFM | Role |
 |---|---|---|
-| `App` | `net8.0-windows` (WPF) | Floating window, view models, composition root. |
+| `App` | `net8.0-windows` (WPF) | Floating window, view models, Windows bootstrap (`AppServiceFactory.Create()`). |
+| `Composition` | `net8.0` | **Composition root** (`AppServices`): wires concrete local providers into the pipeline. WPF-free and platform-neutral so it is unit-tested on any OS. |
 | `Core` | `net8.0` | Domain models, provider interfaces, the real-time pipeline, config model. |
 | `Audio` | `net8.0-windows` | WASAPI loopback capture of system output (NAudio). |
 | `Speech` | `net8.0` | whisper.cpp adapters: **CLI subprocess** (`WhisperCliRecognizer`, recommended) + native-library P/Invoke (`WhisperCppRecognizer`). Runtime-optional. |
@@ -192,7 +193,11 @@ files → defaults). Key Phase 2 fields: `TranslationEnabled`, `AnswerStyle`,
 `PartialIntervalSeconds`, `OllamaRequestTimeoutSeconds`, `SilenceFinalizeSeconds`,
 `RecentTurns`, `MaxCaptureRestarts`.
 
-`App.AppServices` is the composition root. Because recognizer/translator choice
+`Composition.AppServices` is the composition root (Windows bootstrap lives in
+`App.AppServiceFactory.Create()`, the only place that instantiates the WASAPI
+loopback capture). Invariant: **the constructor builds the pipeline as its last
+step**, so `AppServices` is never observable in a half-built state (regression
+tested in `AppServicesCompositionTests`). Because recognizer/translator choice
 depends on config, `AppServices.RebuildPipeline()` rebuilds the speech
 recognizer, translator, answer generator, and pipeline from the current config
 (blocked while listening; candidate context preserved). Language/length/style

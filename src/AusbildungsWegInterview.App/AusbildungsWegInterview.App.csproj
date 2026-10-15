@@ -23,6 +23,7 @@
     <ProjectReference Include="..\AusbildungsWegInterview.Translation\AusbildungsWegInterview.Translation.csproj" />
     <ProjectReference Include="..\AusbildungsWegInterview.Answers\AusbildungsWegInterview.Answers.csproj" />
     <ProjectReference Include="..\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
+    <ProjectReference Include="..\AusbildungsWegInterview.Composition\AusbildungsWegInterview.Composition.csproj" />
   </ItemGroup>
 
 </Project>

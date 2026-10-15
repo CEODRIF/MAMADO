@@ -129,7 +129,8 @@ dotnet run --project src/AusbildungsWegInterview.App -c Release
 ```
 AusbildungsWegInterview.sln
 src/
-  AusbildungsWegInterview.App/            WPF UI, view models, composition root (Windows)
+  AusbildungsWegInterview.App/            WPF UI, view models, Windows bootstrap (Windows)
+  AusbildungsWegInterview.Composition/    Composition root (AppServices), testable on any OS
   AusbildungsWegInterview.Audio/          WASAPI loopback capture (Windows)
   AusbildungsWegInterview.Core/           Domain models, provider interfaces, pipeline
   AusbildungsWegInterview.Speech/         whisper.cpp adapters (CLI subprocess + native lib)
