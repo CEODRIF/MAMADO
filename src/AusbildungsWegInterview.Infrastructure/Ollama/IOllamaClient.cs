@@ -16,6 +16,12 @@ public interface IOllamaClient : IAsyncDisposable
     /// <summary>Lists model names available on the server. Empty if unreachable.</summary>
     Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct = default);
 
-    /// <summary>Runs a one-shot text generation and returns the produced text.</summary>
+    /// <summary>True if the named model (or a quantization of it) is present on the server.</summary>
+    Task<bool> ModelAvailableAsync(string model, CancellationToken ct = default);
+
+    /// <summary>
+    /// Runs a one-shot text generation and returns the produced text.
+    /// Throws on HTTP errors or malformed/empty JSON responses.
+    /// </summary>
     Task<string> GenerateAsync(string model, string prompt, double? temperature = null, CancellationToken ct = default);
 }

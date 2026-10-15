@@ -93,6 +93,18 @@ public sealed class WhisperCppRecognizer : ISpeechRecognizer
         return Task.FromResult(TranscriptionResult.Empty);
     }
 
+    public Task<TranscriptionResult> FinalizeAsync(CancellationToken ct = default)
+    {
+        if (!IsReady || _pcm.Count == 0)
+            return Task.FromResult(TranscriptionResult.Empty);
+
+        string text = RunWhisper();
+        _pcm.Clear();
+        return Task.FromResult(string.IsNullOrWhiteSpace(text)
+            ? TranscriptionResult.Empty
+            : TranscriptionResult.Final(text, Language));
+    }
+
     private string RunWhisper()
     {
         int rc = 0;

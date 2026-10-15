@@ -11,6 +11,9 @@ public sealed class FakeOllamaClient : IOllamaClient
     public IReadOnlyList<string> Models { get; set; } = new[] { "llama3.1:8b" };
     public List<string> Prompts { get; } = new();
 
+    /// <summary>When set, GenerateAsync throws this (simulates Ollama error / timeout).</summary>
+    public Exception? GenerateException { get; set; }
+
     public Task<bool> IsAvailableAsync(CancellationToken ct = default)
     {
         Task.Yield();
@@ -23,8 +26,19 @@ public sealed class FakeOllamaClient : IOllamaClient
         return Task.FromResult(result);
     }
 
+    public Task<bool> ModelAvailableAsync(string model, CancellationToken ct = default)
+    {
+        bool ok = Available && (Models.Contains(model, StringComparer.OrdinalIgnoreCase)
+            || Models.Any(m => m.StartsWith(model, StringComparison.OrdinalIgnoreCase) && m.Length > model.Length));
+        return Task.FromResult(ok);
+    }
+
     public Task<string> GenerateAsync(string model, string prompt, double? temperature = null, CancellationToken ct = default)
     {
+        if (ct.IsCancellationRequested)
+            return Task.FromCanceled<string>(ct);
+        if (GenerateException is not null)
+            throw GenerateException; // simulated failure: nothing was sent
         lock (Prompts) Prompts.Add(prompt);
         return Task.FromResult(Available ? GenerateResponse : string.Empty);
     }

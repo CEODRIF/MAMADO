@@ -25,11 +25,105 @@ public sealed class AppServices : IAsyncDisposable
     public WhisperModelManager Models { get; }
     public IAudioCapture Audio { get; }
     public IOllamaClient Ollama { get; }
-    public InterviewPipeline Pipeline { get; }
 
-    private readonly ISpeechRecognizer _recognizer;
-    private readonly ITranslator _translator;
-    private readonly IAnswerGenerator _answers;
+    private InterviewPipeline _pipeline;
+    /// <summary>Replaced by <see cref="RebuildPipeline"/> when speech/translation settings change.</summary>
+    public InterviewPipeline Pipeline => _pipeline;
+
+    private ISpeechRecognizer _recognizer;
+    private ITranslator _translator;
+    private IAnswerGenerator _answers;
+
+    private readonly object _rebuildGate = new();
+
+    public static AppServices Create()
+    {
+        var store = new ConfigurationStore(ConfigurationStore.DefaultPath);
+        var config = store.Load();
+
+        // Local-only Ollama client with a configurable per-request timeout.
+        var ollama = new OllamaClient(config.OllamaBaseUrl, requestTimeoutMs: Math.Max(5, config.OllamaRequestTimeoutSeconds) * 1000);
+        var models = new WhisperModelManager(WhisperModelManager.DefaultDirectory);
+        var audio = new LoopbackAudioCapture();
+
+        var services = new AppServices(config, store, models, audio, ollama);
+        services.BuildSpeechAndPipeline();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Rebuilds the speech recognizer / translator / answer generator / pipeline
+    /// from the CURRENT config (used when the user changes whisper executable,
+    /// model paths, translation toggle, or answer style at runtime). The pipeline
+    /// must not be running. The candidate context (CV / job description) is preserved.
+    /// </summary>
+    public void RebuildPipeline()
+    {
+        lock (_rebuildGate)
+        {
+            if (Pipeline.IsRunning)
+                throw new InvalidOperationException("Stop listening before changing these settings.");
+
+            var keepContext = Pipeline.Context;
+
+            var oldPipeline = Pipeline;
+            var oldRecognizer = _recognizer;
+            var oldTranslator = _translator;
+            var oldAnswers = _answers;
+
+            BuildSpeechAndPipeline();
+            Pipeline.Context = keepContext;
+
+            // Release the old instances off the critical path.
+            var p = oldPipeline;
+            var r = oldRecognizer;
+            var t = oldTranslator;
+            var a = oldAnswers;
+            _ = Task.Run(async () =>
+            {
+                try { await p.DisposeAsync(); } catch { /* best effort */ }
+                try { await r.DisposeAsync(); } catch { /* best effort */ }
+                try { await t.DisposeAsync(); } catch { /* best effort */ }
+                try { await a.DisposeAsync(); } catch { /* best effort */ }
+            });
+        }
+    }
+
+    private void BuildSpeechAndPipeline()
+    {
+        var config = Config;
+
+        string modelPath = !string.IsNullOrWhiteSpace(config.WhisperModelPath)
+            ? config.WhisperModelPath
+            : Models.ResolvePath(config.WhisperModel);
+
+        // Prefer the whisper.cpp CLI when an executable path is configured; otherwise the native-lib adapter.
+        ISpeechRecognizer recognizer;
+        if (!string.IsNullOrWhiteSpace(config.WhisperExecutablePath) && System.IO.File.Exists(config.WhisperExecutablePath))
+        {
+            recognizer = new WhisperCliRecognizer(
+                config.WhisperExecutablePath, modelPath, config.WhisperThreads, config.PartialIntervalSeconds);
+        }
+        else
+        {
+            recognizer = new WhisperCppRecognizer(modelPath, threads: Math.Max(1, config.WhisperThreads));
+        }
+
+        // Translation: explicit pass-through when disabled (never falsely labeled).
+        ITranslator translator = config.TranslationEnabled
+            ? new OllamaTranslator(Ollama, config.OllamaModel)
+            : new PassThroughTranslator();
+
+        var answers = new OllamaAnswerGenerator(Ollama, config.OllamaModel);
+        var detector = new QuestionDetector();
+
+        _recognizer = recognizer;
+        _translator = translator;
+        _answers = answers;
+        _pipeline = new InterviewPipeline(Audio, recognizer, translator, answers, detector, config,
+            AusbildungsWegInterview.Infrastructure.Logging.AppLogging.CreateFileLogger());
+    }
 
     private AppServices(
         AppConfiguration config,
@@ -37,49 +131,41 @@ public sealed class AppServices : IAsyncDisposable
         WhisperModelManager models,
         IAudioCapture audio,
         IOllamaClient ollama,
-        InterviewPipeline pipeline,
-        ISpeechRecognizer recognizer,
-        ITranslator translator,
-        IAnswerGenerator answers)
+        InterviewPipeline? pipeline = null,
+        ISpeechRecognizer? recognizer = null,
+        ITranslator? translator = null,
+        IAnswerGenerator? answers = null)
     {
         Config = config;
         ConfigStore = configStore;
         Models = models;
         Audio = audio;
         Ollama = ollama;
-        Pipeline = pipeline;
-        _recognizer = recognizer;
-        _translator = translator;
-        _answers = answers;
-    }
-
-    public static AppServices Create()
-    {
-        var store = new ConfigurationStore(ConfigurationStore.DefaultPath);
-        var config = store.Load();
-
-        var ollama = new OllamaClient(config.OllamaBaseUrl);
-        var models = new WhisperModelManager(WhisperModelManager.DefaultDirectory);
-        var modelPath = models.ResolvePath(config.WhisperModel);
-
-        var recognizer = new WhisperCppRecognizer(modelPath, threads: Math.Max(1, Environment.ProcessorCount));
-        var translator = new OllamaTranslator(ollama, config.OllamaModel);
-        var answers = new OllamaAnswerGenerator(ollama, config.OllamaModel);
-        var detector = new QuestionDetector();
-        var audio = new LoopbackAudioCapture();
-
-        var pipeline = new InterviewPipeline(audio, recognizer, translator, answers, detector, config);
-
-        return new AppServices(config, store, models, audio, ollama, pipeline, recognizer, translator, answers);
+        _pipeline = pipeline ?? throw new InvalidOperationException("pipeline is built via BuildSpeechAndPipeline()");
+        _recognizer = recognizer ?? throw new InvalidOperationException("recognizer is built via BuildSpeechAndPipeline()");
+        _translator = translator ?? throw new InvalidOperationException("translator is built via BuildSpeechAndPipeline()");
+        _answers = answers ?? throw new InvalidOperationException("answers is built via BuildSpeechAndPipeline()");
     }
 
     public async ValueTask DisposeAsync()
     {
-        // Stop and release the pipeline first.
-        await Pipeline.DisposeAsync();
-        await ((IAsyncDisposable)_recognizer).DisposeAsync();
-        await ((IAsyncDisposable)_translator).DisposeAsync();
-        await ((IAsyncDisposable)_answers).DisposeAsync();
+        // Snapshot under the gate, dispose outside (no awaits inside a lock).
+        InterviewPipeline pipeline;
+        ISpeechRecognizer recognizer;
+        ITranslator translator;
+        IAnswerGenerator answers;
+        lock (_rebuildGate)
+        {
+            pipeline = _pipeline;
+            recognizer = _recognizer;
+            translator = _translator;
+            answers = _answers;
+        }
+
+        await pipeline.DisposeAsync();
+        await recognizer.DisposeAsync();
+        await translator.DisposeAsync();
+        await answers.DisposeAsync();
         if (Audio is IAsyncDisposable ad)
             await ad.DisposeAsync();
         await Ollama.DisposeAsync();

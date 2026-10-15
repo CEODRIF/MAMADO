@@ -130,6 +130,201 @@ public class InterviewPipelineTests
     }
 
     [Fact]
+    public async Task TrailingSilence_FinalizesSegment_WithFinalText()
+    {
+        var capture = new NoopAudioCapture();
+        var speech = new ScriptedSpeechRecognizer(
+            new[]
+            {
+                TranscriptionResult.Partial("Warum möchten Sie"),
+                TranscriptionResult.Partial("Warum möchten Sie zu uns?")
+            },
+            new[] { "Warum möchten Sie zu uns?" });
+        var answers = new MockAnswerGenerator();
+        var config = new AppConfiguration
+        {
+            ChunkSeconds = 0.5,
+            TargetSampleRate = 16000,
+            SilenceRmsThreshold = 0.01,
+            SilenceFinalizeSeconds = 0.8,
+            MinQuestionChars = 8
+        };
+
+        await using var pipeline = new InterviewPipeline(capture, speech, new MockTranslator(), answers, new QuestionDetector(), config);
+
+        var transcripts = new List<TranscriptionResult>();
+        var answerSuggs = new List<AnswerSuggestion>();
+        pipeline.TranscriptUpdated += (_, e) => { lock (transcripts) transcripts.Add(e.Result); };
+        pipeline.AnswerUpdated += (_, e) => { lock (answerSuggs) answerSuggs.Add(e.Suggestion); };
+
+        await pipeline.StartAsync();
+
+        // 2 chunks of speech, then 2 chunks of trailing silence (1.0 s >= 0.8 s finalize threshold).
+        pipeline.EnqueueAudio(NonSilent(16000));
+        pipeline.EnqueueAudio(NonSilent(16000));
+        pipeline.EnqueueAudio(new AudioFrame(new byte[16000], 16000));
+        pipeline.EnqueueAudio(new AudioFrame(new byte[16000], 16000));
+
+        await WaitUntilAsync(() => { lock (answerSuggs) return answerSuggs.Count >= 2; });
+        await pipeline.StopAsync();
+
+        Assert.True(speech.FinalizeCallCount >= 1, "Sustained trailing silence must trigger FinalizeAsync.");
+        Assert.True(speech.ResetCount >= 1, "Segment state must be reset after finalization.");
+
+        lock (transcripts)
+        {
+            var last = transcripts[^1];
+            Assert.True(last.IsFinal);
+            Assert.Equal("Warum möchten Sie zu uns?", last.Text);
+        }
+        lock (answerSuggs)
+        {
+            Assert.True(answerSuggs[0].IsProvisional);  // first pass while still hearing
+            Assert.False(answerSuggs[^1].IsProvisional); // refined by the final transcript
+        }
+    }
+
+    [Fact]
+    public async Task RepeatedStartStop_CyclesCleanly()
+    {
+        var capture = new NoopAudioCapture();
+        var pipeline = new InterviewPipeline(
+            capture, new ScriptedSpeechRecognizer(), new MockTranslator(), new MockAnswerGenerator(), new QuestionDetector());
+
+        for (int i = 0; i < 3; i++)
+        {
+            await pipeline.StartAsync();
+            Assert.Equal(PipelineState.Listening, pipeline.State);
+            await pipeline.StopAsync();
+            Assert.Equal(PipelineState.Stopped, pipeline.State);
+        }
+
+        Assert.Equal(3, capture.StartCount);
+        Assert.Equal(3, capture.StopCount);
+
+        // One more cycle proves the pipeline is reusable, not single-shot.
+        await pipeline.StartAsync();
+        Assert.Equal(PipelineState.Listening, pipeline.State);
+        await pipeline.StopAsync();
+        Assert.Equal(4, capture.StartCount);
+        Assert.Equal(4, capture.StopCount);
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+    }
+
+    [Fact]
+    public async Task CaptureFatalError_RestartsOnce_ThenStopsCleanly()
+    {
+        var capture = new ScriptedCapture { RaiseFatalOnStartCount = 2 }; // the restart itself dies again
+        var config = new AppConfiguration { MaxCaptureRestarts = 1 };
+        await using var pipeline = new InterviewPipeline(
+            capture, new ScriptedSpeechRecognizer(), new MockTranslator(), new MockAnswerGenerator(), new QuestionDetector(), config);
+
+        var errors = new List<CaptureErrorEventArgs>();
+        pipeline.Error += (_, e) => { lock (errors) errors.Add(e); };
+
+        await pipeline.StartAsync();
+        Assert.Equal(1, capture.StartCount);
+
+        // Simulate a device disconnect while running.
+        capture.RaiseFatal(new InvalidOperationException("device disconnected"));
+
+        await WaitUntilAsync(() => pipeline.State is PipelineState.Stopped or PipelineState.Faulted, 8000);
+        await pipeline.StopAsync(); // idempotent safety stop
+
+        Assert.Equal(1, pipeline.CaptureRestarts); // exactly one auto-restart allowed (MaxCaptureRestarts=1)
+        Assert.Equal(2, capture.StartCount); // restart re-opened the capture device once
+        lock (errors)
+        {
+            Assert.Contains(errors, e => e.IsFatal); // fatal error surfaced to the UI
+        }
+        Assert.NotNull(pipeline.LastError);
+        Assert.False(pipeline.IsRunning, "After the second fatal error the pipeline must not keep running.");
+    }
+
+    [Fact]
+    public async Task Backpressure_QueueStaysBounded()
+    {
+        var capture = new NoopAudioCapture();
+        var speech = new SlowSpeechRecognizer { DelayMs = 5 }; // slower than real-time arrival
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, new MockTranslator(), new MockAnswerGenerator(), new QuestionDetector(),
+            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000 });
+
+        await pipeline.StartAsync();
+
+        // Flood the pipeline with far more audio than the bounded queue (128) can hold.
+        const int frames = 400;
+        for (int i = 0; i < frames; i++)
+            pipeline.EnqueueAudio(NonSilent(16000));
+
+        int maxSeen = 0;
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < 20000)
+        {
+            maxSeen = Math.Max(maxSeen, pipeline.QueueDepth);
+            if (pipeline.QueueDepth == 0 && speech.ProcessCallCount >= 100)
+                break;
+            await Task.Delay(5);
+        }
+
+        await pipeline.StopAsync();
+
+        Assert.True(speech.ProcessCallCount >= 100, "The worker must keep draining after saturation (no wedge).");
+        Assert.True(maxSeen <= 128, $"Queue must stay bounded (saw {maxSeen}).");
+    }
+
+    [Fact]
+    public async Task TranslationDedup_OnlyWhenTextChanged()
+    {
+        var capture = new NoopAudioCapture();
+        // Three chunks, identical text on every pass (partial, partial, final).
+        var speech = new ScriptedSpeechRecognizer(
+            TranscriptionResult.Partial("What is your greatest strength?"),
+            TranscriptionResult.Partial("What is your greatest strength?"),
+            TranscriptionResult.Final("What is your greatest strength?"));
+        var translator = new MockTranslator();
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, translator, new MockAnswerGenerator(), new QuestionDetector(),
+            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000, MinQuestionChars = 8 });
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(3 * 16000));
+        await WaitUntilAsync(() => { lock (translator.Translated) return translator.Translated.Count >= 1; });
+        await Task.Delay(200); // allow any (incorrect) duplicate translations to surface
+        await pipeline.StopAsync();
+
+        Assert.Equal(3, speech.ProcessCallCount);
+        lock (translator.Translated)
+            Assert.Single(translator.Translated); // unchanged text must not be re-translated
+    }
+
+    [Fact]
+    public async Task Stop_CancelsInFlightAnswer()
+    {
+        var capture = new NoopAudioCapture();
+        var speech = new ScriptedSpeechRecognizer(TranscriptionResult.Partial("What is your greatest strength?"));
+        var answers = new MockAnswerGenerator { DelayMs = 500 }; // still "generating" when Stop is pressed
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, new MockTranslator(), answers, new QuestionDetector(),
+            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000, MinQuestionChars = 8 });
+
+        var answerSuggs = new List<AnswerSuggestion>();
+        pipeline.AnswerUpdated += (_, e) => { lock (answerSuggs) answerSuggs.Add(e.Suggestion); };
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(16000));
+        await WaitUntilAsync(() => { lock (answers.Requests) return answers.Requests.Count >= 1; });
+
+        await pipeline.StopAsync(); // must cancel the in-flight generation
+
+        await WaitUntilAsync(() => answers.Tokens.Count > 0 && answers.Tokens[0].IsCancellationRequested, 3000);
+        Assert.True(answers.Tokens[0].IsCancellationRequested, "Stop must cancel the in-flight answer generation.");
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+        lock (answerSuggs)
+            Assert.Empty(answerSuggs); // cancelled generation emitted no answer
+    }
+
+    [Fact]
     public async Task Cancellation_SuppressesObsoleteAnswer()
     {
         var capture = new NoopAudioCapture();
@@ -157,6 +352,76 @@ public class InterviewPipelineTests
     }
 }
 
+/// <summary>Capture fake that can raise a fatal error on demand (device disconnect).</summary>
+internal sealed class ScriptedCapture : IAudioCapture
+{
+    public AudioCaptureState State { get; private set; } = AudioCaptureState.Stopped;
+    public string? CurrentDeviceId { get; private set; }
+    public int StartCount { get; private set; }
+    public int StopCount { get; private set; }
+
+    /// <summary>When set, the Nth StartAsync raises a fatal error synchronously (device dies again).</summary>
+    public int RaiseFatalOnStartCount { get; set; }
+
+#pragma warning disable CS0067 // required by IAudioCapture; unused in this fake
+    public event EventHandler<AudioFrameEventArgs>? FrameCaptured;
+    public event EventHandler<AudioDeviceEventArgs>? DeviceChanged;
+    public event EventHandler<CaptureErrorEventArgs>? Error;
+#pragma warning restore CS0067
+
+    public IReadOnlyList<AudioDevice> GetOutputDevices()
+        => new[] { new AudioDevice("d1", "Test Output", true) };
+
+    public Task StartAsync(string? deviceId = null, CancellationToken ct = default)
+    {
+        StartCount++;
+        State = AudioCaptureState.Running;
+        CurrentDeviceId = deviceId;
+        if (RaiseFatalOnStartCount > 0 && StartCount == RaiseFatalOnStartCount)
+            Error?.Invoke(this, new CaptureErrorEventArgs(new InvalidOperationException("device disconnected (again)"), true));
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken ct = default)
+    {
+        StopCount++;
+        State = AudioCaptureState.Stopped;
+        return Task.CompletedTask;
+    }
+
+    public void RaiseFatal(Exception ex)
+        => Error?.Invoke(this, new CaptureErrorEventArgs(ex, true));
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}
+
+/// <summary>Recognizer slower than real time (each chunk takes DelayMs) to exercise backpressure.</summary>
+internal sealed class SlowSpeechRecognizer : ISpeechRecognizer
+{
+    public int DelayMs { get; set; } = 5;
+    public int ProcessCallCount { get; private set; }
+
+    public bool IsReady => true;
+    public string ModelName => "slow";
+    public string? Language => null;
+
+    public Task PrepareAsync(string model, string? language, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public async Task<TranscriptionResult> ProcessAudioAsync(AudioFrame chunk, CancellationToken ct = default)
+    {
+        await Task.Delay(Math.Max(1, DelayMs), ct);
+        ProcessCallCount++;
+        return TranscriptionResult.Empty;
+    }
+
+    public Task<TranscriptionResult> FinalizeAsync(CancellationToken ct = default)
+        => Task.FromResult(TranscriptionResult.Empty);
+
+    public void Reset() { }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}
+
 /// <summary>Recognizer whose PrepareAsync always fails (simulates a missing model).</summary>
 internal sealed class FailingSpeechRecognizer : ISpeechRecognizer
 {
@@ -166,6 +431,8 @@ internal sealed class FailingSpeechRecognizer : ISpeechRecognizer
     public Task PrepareAsync(string model, string? language, CancellationToken ct = default)
         => throw new InvalidOperationException("Whisper model not found (simulated).");
     public Task<TranscriptionResult> ProcessAudioAsync(AudioFrame chunk, CancellationToken ct = default)
+        => Task.FromResult(TranscriptionResult.Empty);
+    public Task<TranscriptionResult> FinalizeAsync(CancellationToken ct = default)
         => Task.FromResult(TranscriptionResult.Empty);
     public void Reset() { }
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
