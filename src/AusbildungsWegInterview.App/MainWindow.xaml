@@ -340,13 +340,41 @@
                             </Grid>
 
                             <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ContextHeading}" Style="{DynamicResource AwSectionLabel}" Margin="0,0,0,6"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=LoadCv}"
-                                        MinWidth="92" Command="{Binding LoadCvCommand}"/>
-                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=LoadJd}"
-                                        MinWidth="150" Margin="8,0,0,0" Command="{Binding LoadJobCommand}"/>
+
+                            <!-- CV: import (PDF/DOCX/TXT) -> review the extracted text -> Use. Memory-only. -->
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocCvHeading}" Style="{DynamicResource AwFieldLabel}" Margin="0,0,0,2"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocImport}"
+                                        MinWidth="88" Command="{Binding LoadCvCommand}"/>
+                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocUse}"
+                                        MinWidth="72" Margin="6,0,0,0" Command="{Binding UseCvCommand}"/>
+                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocClear}"
+                                        MinWidth="72" Margin="6,0,0,0" Command="{Binding ClearCvCommand}"/>
                             </StackPanel>
+                            <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,4"
+                                     Text="{Binding CvText, UpdateSourceTrigger=PropertyChanged}"
+                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                     MinHeight="72" MaxHeight="140"/>
+                            <TextBlock Text="{Binding CvStateText}" Style="{DynamicResource AwHint}" Margin="0,0,0,10"/>
+
+                            <!-- Job description: import a file OR paste text directly, then review -> Use. -->
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocJobHeading}" Style="{DynamicResource AwFieldLabel}" Margin="0,0,0,2"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocImport}"
+                                        MinWidth="88" Command="{Binding LoadJdCommand}"/>
+                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocUse}"
+                                        MinWidth="72" Margin="6,0,0,0" Command="{Binding UseJdCommand}"/>
+                                <Button Style="{DynamicResource AwButtonSecondary}" Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocClear}"
+                                        MinWidth="72" Margin="6,0,0,0" Command="{Binding ClearJdCommand}"/>
+                            </StackPanel>
+                            <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,4"
+                                     Text="{Binding JdText, UpdateSourceTrigger=PropertyChanged}"
+                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                     MinHeight="72" MaxHeight="140"/>
+                            <TextBlock Text="{Binding JdStateText}" Style="{DynamicResource AwHint}" Margin="0,0,0,10"/>
+
                             <TextBlock Text="{Binding ContextStatus}" Style="{DynamicResource AwHint}"/>
+                            <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocPrivacy}" Style="{DynamicResource AwHint}" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Expander>
                 </Border>

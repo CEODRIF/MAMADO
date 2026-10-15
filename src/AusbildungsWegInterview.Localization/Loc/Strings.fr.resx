@@ -147,4 +147,24 @@
   <data name="TranslStatusCliError" xml:space="preserve"><value>La CLI de traduction a signalé une erreur — le texte original est affiché.</value></data>
   <data name="TranslStatusWhisperEnglishOnly" xml:space="preserve"><value>La traduction whisper ne prend en charge que l'anglais — utilisez Ollama pour la langue cible {0}.</value></data>
   <data name="TranslStatusWhisperEngine" xml:space="preserve"><value>Le moteur vocal actif ne prend pas en charge le mode de traduction whisper — définissez le chemin whisper CLI ou utilisez Ollama.</value></data>
+
+  <!-- Import du CV / de la description de poste (Phase 3) -->
+  <data name="DocCvHeading" xml:space="preserve"><value>CV (curriculum vitæ)</value></data>
+  <data name="DocJobHeading" xml:space="preserve"><value>Description de poste</value></data>
+  <data name="DocImport" xml:space="preserve"><value>Importer…</value></data>
+  <data name="DocUse" xml:space="preserve"><value>Utiliser</value></data>
+  <data name="DocClear" xml:space="preserve"><value>Effacer</value></data>
+  <data name="DocNotImported" xml:space="preserve"><value>Non importé</value></data>
+  <data name="DocReview" xml:space="preserve"><value>Importé — vérifiez le texte, puis cliquez sur Utiliser</value></data>
+  <data name="DocInUse" xml:space="preserve"><value>Utilisé pour l'ancrage des réponses ({0} caractères)</value></data>
+  <data name="DocPrivacy" xml:space="preserve"><value>Conserve en mémoire uniquement pour cette session — jamais écrit sur le disque ou dans les journaux.</value></data>
+  <data name="ErrorDocUnsupported" xml:space="preserve"><value>Type de fichier non pris en charge. Importez un fichier PDF, DOCX ou TXT.</value></data>
+  <data name="ErrorDocEmpty" xml:space="preserve"><value>Le fichier est vide.</value></data>
+  <data name="ErrorDocCorrupt" xml:space="preserve"><value>Impossible de lire le fichier (corrompu ou format invalide).</value></data>
+  <data name="ErrorDocOversized" xml:space="preserve"><value>Le fichier est trop volumineux (max. {0} Mo).</value></data>
+  <data name="ErrorDocNoText" xml:space="preserve"><value>Aucun texte n'a pu être extrait (PDF scanné/image ? utilisez un fichier texte).</value></data>
+  <data name="ErrorDocEmptyUse" xml:space="preserve"><value>Le texte est vide — importez ou collez d'abord du contenu.</value></data>
+  <data name="ErrorDocTruncated" xml:space="preserve"><value>Seuls les {0} premiers caractères ont été importés.</value></data>
+  <data name="FileFilterPdf" xml:space="preserve"><value>Fichiers PDF (*.pdf)</value></data>
+  <data name="FileFilterDocx" xml:space="preserve"><value>Fichiers Word (*.docx)</value></data>
 </root>

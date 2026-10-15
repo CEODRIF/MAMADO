@@ -147,4 +147,24 @@
   <data name="TranslStatusCliError" xml:space="preserve"><value>Die Übersetzungs-CLI hat einen Fehler gemeldet — es wird der Originaltext angezeigt.</value></data>
   <data name="TranslStatusWhisperEnglishOnly" xml:space="preserve"><value>whisper-Übersetzung unterstützt nur Englisch — nutzen Sie Ollama für die Zielsprache {0}.</value></data>
   <data name="TranslStatusWhisperEngine" xml:space="preserve"><value>Die aktive Sprache-Engine unterstützt den whisper-Übersetzungsmodus nicht — legen Sie den whisper-CLI-Pfad fest oder nutzen Sie Ollama.</value></data>
+
+  <!-- CV / Stellenbeschreibung importieren (Phase 3) -->
+  <data name="DocCvHeading" xml:space="preserve"><value>Lebenslauf (CV)</value></data>
+  <data name="DocJobHeading" xml:space="preserve"><value>Stellenbeschreibung</value></data>
+  <data name="DocImport" xml:space="preserve"><value>Importieren…</value></data>
+  <data name="DocUse" xml:space="preserve"><value>Verwenden</value></data>
+  <data name="DocClear" xml:space="preserve"><value>Löschen</value></data>
+  <data name="DocNotImported" xml:space="preserve"><value>Nicht importiert</value></data>
+  <data name="DocReview" xml:space="preserve"><value>Importiert — Text prüfen, dann „Verwenden" klicken</value></data>
+  <data name="DocInUse" xml:space="preserve"><value>Wird zur Antwort-Grundierung verwendet ({0} Zeichen)</value></data>
+  <data name="DocPrivacy" xml:space="preserve"><value>Bleibt nur im Arbeitsspeicher dieser Sitzung — wird nie auf die Festplatte oder in Logs geschrieben.</value></data>
+  <data name="ErrorDocUnsupported" xml:space="preserve"><value>Nicht unterstützter Dateityp. Importieren Sie eine PDF-, DOCX- oder TXT-Datei.</value></data>
+  <data name="ErrorDocEmpty" xml:space="preserve"><value>Die Datei ist leer.</value></data>
+  <data name="ErrorDocCorrupt" xml:space="preserve"><value>Die Datei konnte nicht gelesen werden (beschädigt oder ungültiges Format).</value></data>
+  <data name="ErrorDocOversized" xml:space="preserve"><value>Die Datei ist zu groß (max. {0} MB).</value></data>
+  <data name="ErrorDocNoText" xml:space="preserve"><value>Kein Text konnte extrahiert werden (gescanntes/Bild-PDF? Textdatei verwenden).</value></data>
+  <data name="ErrorDocEmptyUse" xml:space="preserve"><value>Der Text ist leer — importieren oder fügen Sie zuerst Inhalt ein.</value></data>
+  <data name="ErrorDocTruncated" xml:space="preserve"><value>Nur die ersten {0} Zeichen wurden importiert.</value></data>
+  <data name="FileFilterPdf" xml:space="preserve"><value>PDF-Dateien (*.pdf)</value></data>
+  <data name="FileFilterDocx" xml:space="preserve"><value>Word-Dateien (*.docx)</value></data>
 </root>

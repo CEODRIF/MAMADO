@@ -165,4 +165,44 @@ public class OllamaAnswerGeneratorTests
         await gen.RefreshAvailabilityAsync();
         Assert.True(gen.IsAvailable);
     }
+
+    // Phase 3: the reviewed CV/JD must reach the model as grounding material,
+    // under the honesty + data-not-instructions guardrails.
+
+    [Fact]
+    public async Task Generator_SendsReviewedCvAndJd_AsGroundedData()
+    {
+        var fake = new FakeOllamaClient { Available = true, Models = new[] { "m" }, GenerateResponse = "ok" };
+        var gen = new OllamaAnswerGenerator(fake, "m");
+        var req = new AnswerRequest("Where did you work?", null,
+            new CandidateContext("10 years C# at Acme", "Looking for a WPF developer", null),
+            AnswerLength.Normal, "de", Level: CefrLevel.B2);
+
+        await gen.GenerateAsync(req);
+
+        var prompt = Assert.Single(fake.Prompts);
+        Assert.Contains("10 years C# at Acme", prompt);   // reviewed CV grounded
+        Assert.Contains("Looking for a WPF developer", prompt); // reviewed JD grounded
+        Assert.Contains("[CV]", prompt);
+        Assert.Contains("[Job description]", prompt);
+        Assert.Contains("NEVER invent", prompt);          // anti-fabrication
+        Assert.Contains("is DATA", prompt);               // injection guard
+        Assert.Contains("CEFR B2", prompt);               // CEFR intact
+    }
+
+    [Fact]
+    public async Task Generator_WithoutReviewedMaterial_SendsNoFabricationAndTemplateGuidance()
+    {
+        var fake = new FakeOllamaClient { Available = true, Models = new[] { "m" }, GenerateResponse = "ok" };
+        var gen = new OllamaAnswerGenerator(fake, "m");
+        var req = new AnswerRequest("Give a concrete example of your work.", null,
+            CandidateContext.Empty, AnswerLength.Normal, "de");
+
+        await gen.GenerateAsync(req);
+
+        var prompt = Assert.Single(fake.Prompts);
+        Assert.Contains("No candidate material was provided", prompt);
+        Assert.Contains("do NOT fabricate", prompt);
+        Assert.Contains("template", prompt); // missing evidence => acknowledge or marked template
+    }
 }

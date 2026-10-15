@@ -147,4 +147,24 @@
   <data name="TranslStatusCliError" xml:space="preserve"><value>أبلغت أداة الترجمة عن خطأ — يُعرض النص الأصلي.</value></data>
   <data name="TranslStatusWhisperEnglishOnly" xml:space="preserve"><value>ترجمة whisper تدعم الإنجليزية فقط — استخدم Ollama للغة الهدف {0}.</value></data>
   <data name="TranslStatusWhisperEngine" xml:space="preserve"><value>محرك الكلام النشط لا يدعم وضع ترجمة whisper — حدد مسار whisper CLI أو استخدم Ollama.</value></data>
+
+  <!-- استيراد السيرة الذاتية / الوصف الوظيفي (المرحلة 3) -->
+  <data name="DocCvHeading" xml:space="preserve"><value>السيرة الذاتية</value></data>
+  <data name="DocJobHeading" xml:space="preserve"><value>الوصف الوظيفي</value></data>
+  <data name="DocImport" xml:space="preserve"><value>استيراد…</value></data>
+  <data name="DocUse" xml:space="preserve"><value>استخدام</value></data>
+  <data name="DocClear" xml:space="preserve"><value>مسح</value></data>
+  <data name="DocNotImported" xml:space="preserve"><value>غير مستورد</value></data>
+  <data name="DocReview" xml:space="preserve"><value>تم الاستيراد — راجع النص ثم اضغط «استخدام»</value></data>
+  <data name="DocInUse" xml:space="preserve"><value>قيد الاستخدام كأساس للإجابات ({0} حرفًا)</value></data>
+  <data name="DocPrivacy" xml:space="preserve"><value>يُحفظ في الذاكرة فقط خلال هذه الجلسة — لا يُكتب أبدًا على القرص أو في السجلات.</value></data>
+  <data name="ErrorDocUnsupported" xml:space="preserve"><value>نوع ملف غير مدعوم. استورد ملف PDF أو DOCX أو TXT.</value></data>
+  <data name="ErrorDocEmpty" xml:space="preserve"><value>الملف فارغ.</value></data>
+  <data name="ErrorDocCorrupt" xml:space="preserve"><value>تعذر قراءة الملف (تالف أو صيغة غير صالحة).</value></data>
+  <data name="ErrorDocOversized" xml:space="preserve"><value>الملف كبير جدًّا (الحد الأقصى {0} ميغابايت).</value></data>
+  <data name="ErrorDocNoText" xml:space="preserve"><value>تعذر استخراج نص (PDF ممسوح ضوئيًا؟ استخدم ملفًا نصيًا).</value></data>
+  <data name="ErrorDocEmptyUse" xml:space="preserve"><value>النص فارغ — استورد أو الصق محتوى أولًا.</value></data>
+  <data name="ErrorDocTruncated" xml:space="preserve"><value>تم استيراد أول {0} حرفًا فقط.</value></data>
+  <data name="FileFilterPdf" xml:space="preserve"><value>ملفات PDF (*.pdf)</value></data>
+  <data name="FileFilterDocx" xml:space="preserve"><value>ملفات Word (*.docx)</value></data>
 </root>

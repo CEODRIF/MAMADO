@@ -30,7 +30,7 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   **≈ 77 MB** (incl. runtime baseline).
 - Argos/opus-mt DE→EN probe (evaluation): **0.16–0.36 s warm** per sentence, ~100 MB per pair.
 
-**Verified by the automated suite (263 tests, cross-platform):**
+**Verified by the automated suite (292 tests, cross-platform):**
 - **Real end-to-end run**: actual JFK speech audio through the complete pipeline
   (real whisper.cpp → question detection → translation → answer), asserting the
   real transcript, a real generated answer, and honest stop semantics.
@@ -55,7 +55,20 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   machine-readable status code (pass-through, echo, provider unavailable/failed, no
   output, pinned-source required, pair not supported, CLI launch/timeout/error,
   whisper English-only/engine-unsupported) rendered as a short line in all four UI
-  languages; the raw English provider message is log-only and never displayed.
+     languages; the raw English provider message is log-only and never displayed.
+- **CV & job-description import (Phase 3)**: PDF / DOCX / TXT import — the file
+  content is *sniffed* (PDF header, ZIP/DOCX structure, plain text), extensions
+  alone are never trusted; size is validated first (10 MB default), extraction is
+  capped (60 000 chars, truncation flagged), and every failure (unsupported /
+  empty / corrupt / oversized / no extractable text) is a categorized, localized
+  error in all four UI languages. Extracted text lands in an editable **review
+  box** — nothing grounds answers until you press **Use**; a replacement import
+  keeps the old grounding active until the new text is accepted; **Clear**
+  removes the material from UI *and* answer context. Import is memory-only:
+  no disk writes, no content logging, no telemetry (verified by a directory
+  snapshot/diff test). The answer prompt explicitly marks imported material as
+  DATA, not instructions (prompt-injection guard), and missing evidence must be
+  acknowledged or given as a *clearly marked template* — never fabricated.
 - Device-change decision logic (explicit selection kept; default-follow re-opens on the
   new default; lost device → fatal error → bounded pipeline restart).
 - Answer quality regressions: question-specific prompts, language/length respect, bounded
@@ -63,8 +76,8 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   bounded recent-conversation context (a question is never in its own context).
 - Translation providers: whisper `-tr` (real subprocess, English-only honesty), external CLI
   (real subprocess stdin/stdout, unsupported-pair / timeout / echo honesty).
-- Plus all Phase 1/2 coverage (pipeline, cancellation, backpressure, Ollama failure modes,
-  redacting logger, config, WAV writer).
+- Plus all Phase 1/2/3 coverage (pipeline, cancellation, backpressure, Ollama failure modes,
+   document import + review states, redacting logger, config, WAV writer).
 
 **Requires a Windows machine (Windows 10/11 x64) — NOT verifiable on the Linux build host
 and therefore NOT claimed as verified:**
@@ -528,3 +541,8 @@ rebuilds the speech pipeline automatically (your CV/JD context is preserved).
   practical minimum for good DE/EN quality.
 - The question detector is a deterministic multilingual heuristic (words,
   phrases, `?`/`؟`), not a model; it favors not answering short fragments.
+- **Scanned PDFs**: the importer extracts embedded text only. Image-only
+  (scanned) PDFs contain no text layer, so import reports "no extractable
+  text" (no OCR is included, by the local-first/no-paid-dependency constraint).
+  No structured-field extraction is claimed — the review box shows the raw
+  extracted text, which you edit before grounding answers.

@@ -10,6 +10,7 @@ using AusbildungsWegInterview.Core.Config;
 using AusbildungsWegInterview.Core.Pipeline;
 using AusbildungsWegInterview.Core.Speech;
 using AusbildungsWegInterview.Core.Translation;
+using AusbildungsWegInterview.Infrastructure.Documents;
 using AusbildungsWegInterview.Localization;
 
 namespace AusbildungsWegInterview.App.ViewModels;
@@ -312,6 +313,94 @@ public sealed class MainViewModel : ObservableObject
     private string _contextStatus = string.Empty;
     public string ContextStatus { get => _contextStatus; private set => Set(ref _contextStatus, value); }
 
+    // ---- CV / job description documents (Phase 3) ----
+    // Review-before-use, memory-only. Imported text is grounded for answers
+    // ONLY after the user reviews it in the box and presses "Use". Nothing is
+    // persisted; the pipeline context (and thus the answer prompt) holds the
+    // reviewed text in memory.
+    private readonly ReviewableDocument _cvDoc = new();
+    private readonly ReviewableDocument _jdDoc = new();
+    private readonly DocumentImporter _docImporter = new();
+
+    private string _cvStateText = string.Empty;
+    public string CvStateText { get => _cvStateText; private set => Set(ref _cvStateText, value); }
+
+    private string _jdStateText = string.Empty;
+    public string JdStateText { get => _jdStateText; private set => Set(ref _jdStateText, value); }
+
+    /// <summary>CV review box (two-way): shows imported text for review; edits re-apply live while in use.</summary>
+    public string CvText
+    {
+        get => _cvDoc.Text;
+        set
+        {
+            _cvDoc.Edit(value);
+            ApplyDocumentToContext(_cvDoc, isCv: true);
+            UpdateDocState(_cvDoc, isCv: true);
+            RaiseDocCommandStates();
+        }
+    }
+
+    /// <summary>Job-description review box: paste directly, or import a file.</summary>
+    public string JdText
+    {
+        get => _jdDoc.Text;
+        set
+        {
+            _jdDoc.Edit(value);
+            ApplyDocumentToContext(_jdDoc, isCv: false);
+            UpdateDocState(_jdDoc, isCv: false);
+            RaiseDocCommandStates();
+        }
+    }
+
+    private void RaiseDocCommandStates()
+    {
+        ClearCvCommand?.RaiseCanExecuteChanged();
+        ClearJdCommand?.RaiseCanExecuteChanged();
+    }
+
+    /// <summary>Pushes the document's ACTIVE (reviewed) text into the answer context.</summary>
+    private void ApplyDocumentToContext(ReviewableDocument doc, bool isCv)
+    {
+        string? active = doc.IsInUse ? (string.IsNullOrWhiteSpace(doc.ActiveText) ? null : doc.ActiveText) : null;
+        _services.Pipeline.Context = isCv
+            ? _services.Pipeline.Context.WithCv(active)
+            : _services.Pipeline.Context.WithJobDescription(active);
+        RecomputeContextStatus();
+    }
+
+    /// <summary>Localized per-document status line (not imported / review / in use).</summary>
+    private void UpdateDocState(ReviewableDocument doc, bool isCv)
+    {
+        string text = doc.State switch
+        {
+            DocumentState.InUse => T.F("DocInUse", doc.ActiveText?.Length ?? 0),
+            DocumentState.Review => T["DocReview"],
+            _ => T["DocNotImported"]
+        };
+        if (isCv) CvStateText = text; else JdStateText = text;
+    }
+
+    private void UpdateAllDocStates()
+    {
+        UpdateDocState(_cvDoc, isCv: true);
+        UpdateDocState(_jdDoc, isCv: false);
+    }
+
+    private string DocFilter
+        => $"{T["FileFilterPdf"]} | *.pdf|{T["FileFilterDocx"]} | *.docx|{T["FileFilterText"]} | *.txt;*.md|{T["FileFilterAll"]} | *.*";
+
+    private string LocalizeDocError(DocumentImportError error) => error switch
+    {
+        DocumentImportError.Unsupported => T["ErrorDocUnsupported"],
+        DocumentImportError.Empty => T["ErrorDocEmpty"],
+        DocumentImportError.Corrupt => T["ErrorDocCorrupt"],
+        DocumentImportError.Oversized => T.F("ErrorDocOversized", _docImporter.MaxFileBytes / (1024 * 1024)),
+        DocumentImportError.NoText => T["ErrorDocNoText"],
+        _ => T["ErrorDocCorrupt"]
+    };
+
     // Conservative, RAM-based model suggestions (informational; nothing is downloaded automatically).
     public string SuggestedOllamaModel { get; }
     public string SuggestedWhisperModel { get; }
@@ -337,7 +426,11 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand RefreshDevicesCommand { get; }
     public RelayCommand DownloadModelCommand { get; }
     public RelayCommand LoadCvCommand { get; }
-    public RelayCommand LoadJobCommand { get; }
+    public RelayCommand UseCvCommand { get; }
+    public RelayCommand ClearCvCommand { get; }
+    public RelayCommand LoadJdCommand { get; }
+    public RelayCommand UseJdCommand { get; }
+    public RelayCommand ClearJdCommand { get; }
     public RelayCommand ClearErrorCommand { get; }
     public RelayCommand RefreshStatusCommand { get; }
     public RelayCommand ToggleThemeCommand { get; }
@@ -371,8 +464,12 @@ public sealed class MainViewModel : ObservableObject
         StopCommand = new RelayCommand(_ => _ = StopAsync(), _ => IsListening && !IsBusy);
         RefreshDevicesCommand = new RelayCommand(_ => RefreshDevices(), _ => !IsBusy);
         DownloadModelCommand = new RelayCommand(_ => _ = DownloadModelAsync(), _ => !IsBusy);
-        LoadCvCommand = new RelayCommand(_ => _ = LoadCvAsync());
-        LoadJobCommand = new RelayCommand(_ => _ = LoadJobAsync());
+        LoadCvCommand = new RelayCommand(_ => _ = ImportDocumentAsync(_cvDoc, isCv: true));
+        UseCvCommand = new RelayCommand(_ => UseDocument(_cvDoc, isCv: true));
+        ClearCvCommand = new RelayCommand(_ => ClearDocument(_cvDoc, isCv: true), _ => !string.IsNullOrEmpty(_cvDoc.Text) || _cvDoc.IsInUse);
+        LoadJdCommand = new RelayCommand(_ => _ = ImportDocumentAsync(_jdDoc, isCv: false));
+        UseJdCommand = new RelayCommand(_ => UseDocument(_jdDoc, isCv: false));
+        ClearJdCommand = new RelayCommand(_ => ClearDocument(_jdDoc, isCv: false), _ => !string.IsNullOrEmpty(_jdDoc.Text) || _jdDoc.IsInUse);
         ClearErrorCommand = new RelayCommand(_ => ErrorText = string.Empty);
         RefreshStatusCommand = new RelayCommand(_ => _ = RefreshStatusAsync(), _ => !IsBusy);
         ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
@@ -412,6 +509,7 @@ public sealed class MainViewModel : ObservableObject
         UpdateStatus(_services.Pipeline.State);
         UpdateSpeechSetupStatus();
         RecomputeContextStatus();
+        UpdateAllDocStates();
         ModelSuggestedText = T.F("ModelSuggested", SuggestedOllamaModel, SuggestedWhisperModel);
         _ = RefreshStatusAsync();
 
@@ -425,6 +523,7 @@ public sealed class MainViewModel : ObservableObject
         AiStatusText = T["AiChecking"];
         UpdateSpeechSetupStatus();
         RecomputeContextStatus();
+        UpdateAllDocStates();
         ModelSuggestedText = T.F("ModelSuggested", SuggestedOllamaModel, SuggestedWhisperModel);
     }
 
@@ -751,48 +850,69 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private async Task LoadCvAsync()
+    // ---- CV / job description: import (PDF/DOCX/TXT, content-sniffed) -> review box -> Use ----
+
+    private async Task ImportDocumentAsync(ReviewableDocument doc, bool isCv)
     {
         var dlg = new OpenFileDialog
         {
-            Title = T["LoadCvTitle"],
-            Filter = T.F("FileFilter", T["FileFilterText"], T["FileFilterAll"])
+            Title = isCv ? T["LoadCvTitle"] : T["LoadJdTitle"],
+            Filter = DocFilter
         };
-        if (dlg.ShowDialog() == true)
+        if (dlg.ShowDialog() != true)
+            return;
+
+        IsBusy = true;
+        try
         {
-            try
+            // Extraction runs on the thread pool (PdfPig / ZIP / text read);
+            // the UI thread only awaits, so long files never freeze the window.
+            var result = await Task.Run(() => _docImporter.ImportAsync(dlg.FileName));
+            if (result.Success)
             {
-                var text = await System.IO.File.ReadAllTextAsync(dlg.FileName);
-                _services.Pipeline.Context = _services.Pipeline.Context.WithCv(text);
-                RecomputeContextStatus();
+                ErrorText = string.Empty;
+                doc.SetImported(result.Text!); // goes to REVIEW; old grounding text stays active
+                UpdateDocState(doc, isCv);
+                if (result.Truncated)
+                    ErrorText = T.F("ErrorDocTruncated", _docImporter.MaxExtractedChars);
             }
-            catch (Exception ex)
+            else
             {
-                ErrorText = T.F("ErrorCouldNotReadCv", ex.Message);
+                // Categorized, localized error; the file path is NOT shown (privacy).
+                ErrorText = LocalizeDocError(result.Error);
             }
+        }
+        catch (Exception)
+        {
+            ErrorText = LocalizeDocError(DocumentImportError.Corrupt);
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
-    private async Task LoadJobAsync()
+    private void UseDocument(ReviewableDocument doc, bool isCv)
     {
-        var dlg = new OpenFileDialog
+        if (doc.TryApply(out string errorKey))
         {
-            Title = T["LoadJdTitle"],
-            Filter = T.F("FileFilter", T["FileFilterText"], T["FileFilterAll"])
-        };
-        if (dlg.ShowDialog() == true)
-        {
-            try
-            {
-                var text = await System.IO.File.ReadAllTextAsync(dlg.FileName);
-                _services.Pipeline.Context = _services.Pipeline.Context.WithJobDescription(text);
-                RecomputeContextStatus();
-            }
-            catch (Exception ex)
-            {
-                ErrorText = T.F("ErrorCouldNotReadJd", ex.Message);
-            }
+            ErrorText = string.Empty;
+            ApplyDocumentToContext(doc, isCv);
         }
+        else
+        {
+            ErrorText = T[errorKey];
+        }
+        UpdateDocState(doc, isCv);
+    }
+
+    private void ClearDocument(ReviewableDocument doc, bool isCv)
+    {
+        doc.Clear(); // removes box text AND stops grounding with it
+        ErrorText = string.Empty;
+        ApplyDocumentToContext(doc, isCv);
+        UpdateDocState(doc, isCv);
+        RaiseDocCommandStates();
     }
 
     private void ApplyConfigToUi()
