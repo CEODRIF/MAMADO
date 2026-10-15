@@ -297,7 +297,7 @@
                                     Background="{StaticResource AwSurfaceBrush}"
                                     BorderBrush="{StaticResource AwLineBrush}" BorderThickness="1" CornerRadius="12"
                                     Margin="0,6,0,0" Padding="0,4">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ScrollViewer Background="Transparent" VerticalScrollBarVisibility="Auto">
                                     <ItemsPresenter/>
                                 </ScrollViewer>
                             </Border>
@@ -308,15 +308,98 @@
         </Setter>
     </Style>
 
-    <!-- ============ checkbox ============ -->
+    <!-- ============ checkbox (fully themed: box, tick, hover, disabled) ============ -->
     <Style x:Key="AwCheckBox" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource AwInkSoftBrush}"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Border x:Name="box" Width="18" Height="18" CornerRadius="5"
+                                Background="{StaticResource AwSurfaceBrush}"
+                                BorderBrush="{StaticResource AwLineStrongBrush}" BorderThickness="1.5"
+                                VerticalAlignment="Center">
+                            <Path x:Name="tick" Data="M 3.5,9.5 L 7.5,13.5 L 14.5,5" Stroke="White"
+                                  StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Visibility="Collapsed"/>
+                        </Border>
+                        <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="box" Property="Background" Value="{StaticResource AwAccentBrush}"/>
+                            <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource AwAccentBrush}"/>
+                            <Setter TargetName="tick" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource AwAccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
-    <!-- ============ expander ============ -->
+    <!-- ============ expander (fully themed header + content area) ============ -->
     <Style x:Key="AwExpander" TargetType="Expander">
         <Setter Property="Foreground" Value="{StaticResource AwInkBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Expander">
+                    <StackPanel>
+                        <ToggleButton x:Name="HeaderToggle" Focusable="True" ClickMode="Press"
+                                      Content="{TemplateBinding Header}"
+                                      IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="hb" Background="Transparent" Padding="2,6" CornerRadius="8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Path x:Name="chev" Grid.Column="0" Data="M 0 0 L 4.5 4.5 L 9 0"
+                                                  Stroke="{StaticResource AwMutedBrush}" StrokeThickness="1.6"
+                                                  VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5"/>
+                                            <ContentPresenter Grid.Column="1" Margin="10,0,0,0"
+                                                              VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="hb" Property="Background" Value="{StaticResource AwSurface2Brush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="chev" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <RotateTransform Angle="180"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <Border x:Name="ContentArea" Visibility="Collapsed">
+                            <ContentPresenter Margin="4,4,4,2"/>
+                        </Border>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="ContentArea" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary>

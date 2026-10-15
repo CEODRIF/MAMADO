@@ -14,7 +14,14 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AssemblyName>AusbildungsWegInterview</AssemblyName>
     <Description>AusbildungsWeg Interview - local-first AI interview assistant (WPF). Windows-only build.</Description>
+    <!-- Windows application icon (exe/taskbar) - multi-size ICO, 16..256. -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Brand logo for the header (pack URI /Assets/AwLogo.png). -->
+    <Resource Include="Assets\AwLogo.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AusbildungsWegInterview.Core\AusbildungsWegInterview.Core.csproj" />

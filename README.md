@@ -184,8 +184,14 @@ for the token map extracted from the site's CSS.
   one resx per language) - no runtime machine translation. The Arabic UI uses
   right-to-left layout (WPF FlowDirection). Both preferences persist in the
   existing config file, and the UI language stays independent of the interview /
-  translation / answer languages. The dark theme reuses the brand palette with
-  dark surfaces (see `Themes/AwTheme.Light.xaml` / `AwTheme.Dark.xaml`).
+  translation / answer languages.
+- **Branding & dark theme**: the header shows the AusbildungsWeg logo
+  (`Assets/AwLogo.png`, committed to the repo, packaged as a WPF resource) and
+  the executable carries the multi-size `Assets/app.ico` (16-256 px). The dark
+  theme is a refined navy/slate variant of the brand palette with layered,
+  distinct surfaces (window < cards < inner panels), fully themed combo popups,
+  check boxes and the Advanced-settings expander — no white/unsurfaced areas
+  (see `Themes/AwTheme.Light.xaml` / `AwTheme.Dark.xaml`).
 
 ### First-run setup (in the app)
 

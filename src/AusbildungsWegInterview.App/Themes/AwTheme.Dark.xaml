@@ -15,45 +15,47 @@
          ============================================================ -->
 
     <!-- palette -->
-    <Color x:Key="AwBackgroundColor">#101120</Color>
-    <Color x:Key="AwInkColor">#F2F3FB</Color>
+    <!-- Refined dark navy/slate: soft (not near-black), layered surfaces,
+         coordinated borders. Contrast tuned for laptop displays. -->
+    <Color x:Key="AwBackgroundColor">#1B1E2E</Color>
+    <Color x:Key="AwInkColor">#F4F5FC</Color>
     <SolidColorBrush x:Key="AwBackgroundBrush" Color="{StaticResource AwBackgroundColor}"/>
-    <SolidColorBrush x:Key="AwSurfaceBrush" Color="#181A2C"/>
-    <SolidColorBrush x:Key="AwSurface2Brush" Color="#212438"/>
-    <SolidColorBrush x:Key="AwInkBrush" Color="#F2F3FB"/>
-    <SolidColorBrush x:Key="AwInkSoftBrush" Color="#C9CBE3"/>
-    <SolidColorBrush x:Key="AwMutedBrush" Color="#9CA0C4"/>
-    <SolidColorBrush x:Key="AwFaintBrush" Color="#6F7397"/>
-    <SolidColorBrush x:Key="AwLineBrush" Color="#262A45"/>
-    <SolidColorBrush x:Key="AwLineStrongBrush" Color="#363B61"/>
-    <SolidColorBrush x:Key="AwAccentBrush" Color="#8577F7"/>
-    <SolidColorBrush x:Key="AwAccentDeepBrush" Color="#6D5DF6"/>
-    <SolidColorBrush x:Key="AwAccentSoftBrush" Color="#2E6D5DF6"/>
+    <SolidColorBrush x:Key="AwSurfaceBrush" Color="#242840"/>
+    <SolidColorBrush x:Key="AwSurface2Brush" Color="#2D3251"/>
+    <SolidColorBrush x:Key="AwInkBrush" Color="#F4F5FC"/>
+    <SolidColorBrush x:Key="AwInkSoftBrush" Color="#D4D6E9"/>
+    <SolidColorBrush x:Key="AwMutedBrush" Color="#A9ADC9"/>
+    <SolidColorBrush x:Key="AwFaintBrush" Color="#8085A8"/>
+    <SolidColorBrush x:Key="AwLineBrush" Color="#353B59"/>
+    <SolidColorBrush x:Key="AwLineStrongBrush" Color="#474E78"/>
+    <SolidColorBrush x:Key="AwAccentBrush" Color="#8B7EF7"/>
+    <SolidColorBrush x:Key="AwAccentDeepBrush" Color="#7466E9"/>
+    <SolidColorBrush x:Key="AwAccentSoftBrush" Color="#338B7EF7"/>
     <SolidColorBrush x:Key="AwCyanBrush" Color="#6F9BFA"/>
     <SolidColorBrush x:Key="AwAiBrush" Color="#A98FF8"/>
-    <SolidColorBrush x:Key="AwSuccessBrush" Color="#3FCF9B"/>
-    <SolidColorBrush x:Key="AwSuccessSoftBrush" Color="#2A3FCF9B"/>
-    <SolidColorBrush x:Key="AwWarningBrush" Color="#E2A65E"/>
-    <SolidColorBrush x:Key="AwWarningSoftBrush" Color="#2AE2A65E"/>
-    <SolidColorBrush x:Key="AwDangerBrush" Color="#F07985"/>
-    <SolidColorBrush x:Key="AwDangerSoftBrush" Color="#2AF07985"/>
-    <SolidColorBrush x:Key="AwDangerHoverBrush" Color="#3AF07985"/>
+    <SolidColorBrush x:Key="AwSuccessBrush" Color="#4CC99B"/>
+    <SolidColorBrush x:Key="AwSuccessSoftBrush" Color="#2E4CC99B"/>
+    <SolidColorBrush x:Key="AwWarningBrush" Color="#E0A55E"/>
+    <SolidColorBrush x:Key="AwWarningSoftBrush" Color="#2EE0A55E"/>
+    <SolidColorBrush x:Key="AwDangerBrush" Color="#EF7C88"/>
+    <SolidColorBrush x:Key="AwDangerSoftBrush" Color="#30EF7C88"/>
+    <SolidColorBrush x:Key="AwDangerHoverBrush" Color="#3EEF7C88"/>
 
     <!-- brand gradients (site neon / headline gradients, 120deg) -->
     <LinearGradientBrush x:Key="AwGradientNeon" StartPoint="0,0.15" EndPoint="1,0.85">
-        <GradientStop Color="#8B7EF8" Offset="0"/>
-        <GradientStop Color="#6F9BFA" Offset="0.55"/>
-        <GradientStop Color="#A98FF8" Offset="1"/>
+        <GradientStop Color="#8073EC" Offset="0"/>
+        <GradientStop Color="#5F8DE8" Offset="0.55"/>
+        <GradientStop Color="#9679EE" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="AwGradientNeonDeep" StartPoint="0,0.15" EndPoint="1,0.85">
-        <GradientStop Color="#7C6DF3" Offset="0"/>
-        <GradientStop Color="#5F8BE8" Offset="0.55"/>
-        <GradientStop Color="#9A7FEC" Offset="1"/>
+        <GradientStop Color="#6F62DC" Offset="0"/>
+        <GradientStop Color="#5280D8" Offset="0.55"/>
+        <GradientStop Color="#8468DE" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="AwGradientHeadline" StartPoint="0,0.2" EndPoint="1,0.8">
-        <GradientStop Color="#6A5AE8" Offset="0"/>
-        <GradientStop Color="#8577F7" Offset="0.48"/>
-        <GradientStop Color="#A98FF8" Offset="1"/>
+        <GradientStop Color="#6F62DC" Offset="0"/>
+        <GradientStop Color="#8073EC" Offset="0.48"/>
+        <GradientStop Color="#9679EE" Offset="1"/>
     </LinearGradientBrush>
 
     <!-- window defaults -->
@@ -297,7 +299,7 @@
                                     Background="{StaticResource AwSurfaceBrush}"
                                     BorderBrush="{StaticResource AwLineBrush}" BorderThickness="1" CornerRadius="12"
                                     Margin="0,6,0,0" Padding="0,4">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ScrollViewer Background="Transparent" VerticalScrollBarVisibility="Auto">
                                     <ItemsPresenter/>
                                 </ScrollViewer>
                             </Border>
@@ -308,15 +310,98 @@
         </Setter>
     </Style>
 
-    <!-- ============ checkbox ============ -->
+    <!-- ============ checkbox (fully themed: box, tick, hover, disabled) ============ -->
     <Style x:Key="AwCheckBox" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource AwInkSoftBrush}"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Border x:Name="box" Width="18" Height="18" CornerRadius="5"
+                                Background="{StaticResource AwSurfaceBrush}"
+                                BorderBrush="{StaticResource AwLineStrongBrush}" BorderThickness="1.5"
+                                VerticalAlignment="Center">
+                            <Path x:Name="tick" Data="M 3.5,9.5 L 7.5,13.5 L 14.5,5" Stroke="White"
+                                  StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Visibility="Collapsed"/>
+                        </Border>
+                        <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="box" Property="Background" Value="{StaticResource AwAccentBrush}"/>
+                            <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource AwAccentBrush}"/>
+                            <Setter TargetName="tick" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource AwAccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
-    <!-- ============ expander ============ -->
+    <!-- ============ expander (fully themed header + content area) ============ -->
     <Style x:Key="AwExpander" TargetType="Expander">
         <Setter Property="Foreground" Value="{StaticResource AwInkBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Expander">
+                    <StackPanel>
+                        <ToggleButton x:Name="HeaderToggle" Focusable="True" ClickMode="Press"
+                                      Content="{TemplateBinding Header}"
+                                      IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="hb" Background="Transparent" Padding="2,6" CornerRadius="8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Path x:Name="chev" Grid.Column="0" Data="M 0 0 L 4.5 4.5 L 9 0"
+                                                  Stroke="{StaticResource AwMutedBrush}" StrokeThickness="1.6"
+                                                  VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5"/>
+                                            <ContentPresenter Grid.Column="1" Margin="10,0,0,0"
+                                                              VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="hb" Property="Background" Value="{StaticResource AwSurface2Brush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="chev" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <RotateTransform Angle="180"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <Border x:Name="ContentArea" Visibility="Collapsed">
+                            <ContentPresenter Margin="4,4,4,2"/>
+                        </Border>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="ContentArea" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary>
