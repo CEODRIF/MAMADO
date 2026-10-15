@@ -128,22 +128,32 @@ public class WhisperCliRecognizerTests
     [Fact]
     public async Task RunWhisper_HangingExecutable_TimesOutClearly()
     {
-        // A shell "executable" that sleeps longer than the recognizer timeout.
+        // A platform-native "executable" that sleeps far longer than the recognizer timeout:
+        //  * POSIX: a shell script (sleep 30)
+        //  * Windows: a .bat using ping (present on every Windows, no console interaction
+        //    needed, ignores the whisper arguments the recognizer appends).
+        // The recognizer launches it, hangs, and must time out cleanly.
         string dir = Path.Combine(Path.GetTempPath(), "awg-hang-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
-        string script = Path.Combine(dir, "hang.sh");
         string model = Path.Combine(dir, "model.bin");
         await File.WriteAllBytesAsync(model, new byte[] { 1 });
-        await File.WriteAllTextAsync(script, "#!/bin/sh\nsleep 30\n");
+
+        string executable;
+        if (OperatingSystem.IsWindows())
+        {
+            executable = Path.Combine(dir, "hang.bat");
+            await File.WriteAllTextAsync(executable, "@echo off\r\nping 127.0.0.1 -n 61 >nul\r\n");
+        }
+        else
+        {
+            executable = Path.Combine(dir, "hang.sh");
+            await File.WriteAllTextAsync(executable, "#!/bin/sh\nsleep 30\n");
+            try { File.SetUnixFileMode(executable, UnixFileMode.UserExecute | UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+            catch { }
+        }
         try
         {
-            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
-            {
-                try { File.SetUnixFileMode(script, UnixFileMode.UserExecute | UnixFileMode.UserRead | UnixFileMode.UserWrite); }
-                catch { }
-            }
-
-            await using var rec = new WhisperCliRecognizer(script, model, timeoutMs: 1000, workDir: dir);
+            await using var rec = new WhisperCliRecognizer(executable, model, timeoutMs: 1000, workDir: dir);
             await rec.PrepareAsync("tiny", null);
 
             // Feed 1 s of (silent) audio so a transcription actually starts; the hang is in the "executable".
