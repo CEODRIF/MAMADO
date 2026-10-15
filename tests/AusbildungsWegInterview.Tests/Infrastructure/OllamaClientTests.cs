@@ -109,18 +109,38 @@ public class OllamaClientTests
     }
 
     [Fact]
-    public async Task Generate_TimesOut_WhenServerHangs()
+    public async Task Generate_RequestTimeout_ThrowsTimeout_NotCancellation()
     {
-        // Server accepts the request but never answers.
+        // Server accepts the request but never answers, and the CALLER did not
+        // cancel. This must surface as an honest OllamaRequestTimeoutException,
+        // not as a plain cancellation (which the UI treats as "stopped").
         using var handler = new HangingHandler();
         using var http = new HttpClient(handler);
         var client = new OllamaClient("http://x", http, 500, requestTimeoutMs: 300);
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.GenerateAsync("m", "p")); // TaskCanceledException is a subclass
+        await Assert.ThrowsAnyAsync<OllamaRequestTimeoutException>(() => client.GenerateAsync("m", "p"));
         sw.Stop();
         // Bounded by the configured request timeout (~300 ms), not by the 300 s client timeout.
         Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5), "Generation should be bounded by the request timeout.");
+    }
+
+    [Fact]
+    public async Task Generate_CallerCancellation_IsOperationCanceled_NotTimeout()
+    {
+        // A caller (Stop / superseded question) cancellation must stay an
+        // OperationCanceledException — it must NOT be reinterpreted as a
+        // request timeout.
+        using var handler = new HangingHandler();
+        using var http = new HttpClient(handler);
+        var client = new OllamaClient("http://x", http, 500, requestTimeoutMs: 30_000);
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        // ThrowsAnyAsync<OperationCanceledException> alone proves the point: a
+        // mis-converted caller cancellation would surface as the (sealed,
+        // TimeoutException-derived) OllamaRequestTimeoutException and FAIL here.
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.GenerateAsync("m", "p", ct: cts.Token));
     }
 }
 

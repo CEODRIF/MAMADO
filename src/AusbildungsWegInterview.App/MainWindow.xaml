@@ -219,7 +219,17 @@
                         </Border>
 
                         <!-- suggested answer (prominent) -->
-                        <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerLabel}" Style="{DynamicResource AwMiniLabel}" Margin="0,10,0,4"/>
+                        <Grid Margin="0,10,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerLabel}" Style="{DynamicResource AwMiniLabel}" Margin="0"/>
+                            <Button Grid.Column="1" Style="{DynamicResource AwButtonGhost}" FontSize="11" Margin="0,0,0,4"
+                                    Command="{Binding CopyAnswerCommand}"
+                                    Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=CopyAnswer}"
+                                    ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=CopyAnswer}"/>
+                        </Grid>
                         <Border Background="{DynamicResource AwAccentSoftBrush}" CornerRadius="12" Padding="0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -236,6 +246,10 @@
                                         <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ProvisionalRefining}" FontSize="10.5" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource AwWarningBrush}"/>
                                     </Border>
+                                    <!-- responsible-use note: a suggestion is never a verified statement -->
+                                    <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerDisclaimer}"
+                                               TextWrapping="Wrap" FontSize="10.5" Foreground="{DynamicResource AwFaintBrush}" Margin="0,7,0,0"
+                                               Visibility="{Binding AnswerIsSuggestion, Converter={StaticResource BoolToVis}}"/>
                                 </StackPanel>
                             </Grid>
                         </Border>

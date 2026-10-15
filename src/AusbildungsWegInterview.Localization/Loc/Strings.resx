@@ -167,4 +167,12 @@
   <data name="ErrorDocTruncated" xml:space="preserve"><value>Only the first {0} characters were imported.</value></data>
   <data name="FileFilterPdf" xml:space="preserve"><value>PDF files (*.pdf)</value></data>
   <data name="FileFilterDocx" xml:space="preserve"><value>Word files (*.docx)</value></data>
+  <data name="AnswerStatusUnavailable" xml:space="preserve"><value>The local AI (Ollama) isn't running, so there's no answer suggestion right now. Start Ollama and try again — transcription and translation keep working.</value></data>
+  <data name="AnswerStatusModelMissing" xml:space="preserve"><value>The Ollama model '{0}' isn't installed on this machine. Run `ollama pull {0}` (or pick another model in settings), then try again.</value></data>
+  <data name="AnswerStatusFailed" xml:space="preserve"><value>Answer generation failed (local Ollama error). Transcription and translation keep working — try the question again.</value></data>
+  <data name="AnswerStatusTimeout" xml:space="preserve"><value>Answer generation timed out. The local model is still busy or too large for this machine — try again, or pick a smaller model.</value></data>
+  <data name="AnswerStatusEmpty" xml:space="preserve"><value>The model returned an empty answer. Try again, or choose a different model.</value></data>
+  <data name="AnswerDisclaimer" xml:space="preserve"><value>Suggestion for review — check it against your own experience before using it in your interview.</value></data>
+  <data name="CopyAnswer" xml:space="preserve"><value>Copy</value></data>
+  <data name="ErrorCopyFailed" xml:space="preserve"><value>Copying to the clipboard failed.</value></data>
 </root>

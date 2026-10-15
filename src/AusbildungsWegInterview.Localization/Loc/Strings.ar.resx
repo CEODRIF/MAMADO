@@ -167,4 +167,12 @@
   <data name="ErrorDocTruncated" xml:space="preserve"><value>تم استيراد أول {0} حرفًا فقط.</value></data>
   <data name="FileFilterPdf" xml:space="preserve"><value>ملفات PDF (*.pdf)</value></data>
   <data name="FileFilterDocx" xml:space="preserve"><value>ملفات Word (*.docx)</value></data>
+  <data name="AnswerStatusUnavailable" xml:space="preserve"><value>الذكاء الاصطناعي المحلي (Ollama) لا يعمل، لذا لا يوجد اقتراح إجابة حاليا. شغّل Ollama وحاول مرة أخرى — النسخ الصوتي والترجمة يستمران في العمل.</value></data>
+  <data name="AnswerStatusModelMissing" xml:space="preserve"><value>نموذج Ollama «{0}» غير مثبّت على هذا الجهاز. شغّل `ollama pull {0}` (أو اختر نموذجًا آخر من الإعدادات) ثم حاول مرة أخرى.</value></data>
+  <data name="AnswerStatusFailed" xml:space="preserve"><value>فشل توليد الإجابة (خطأ في Ollama المحلي). النسخ الصوتي والترجمة يستمران في العمل — أعد طرح السؤال.</value></data>
+  <data name="AnswerStatusTimeout" xml:space="preserve"><value>انتهت مهلة توليد الإجابة. النموذج المحلي ما زال مشغولًا أو كبيرًا جدًا على هذا الجهاز — حاول مرة أخرى أو اختر نموذجًا أصغر.</value></data>
+  <data name="AnswerStatusEmpty" xml:space="preserve"><value>أعاد النموذج إجابة فارغة. حاول مرة أخرى أو اختر نموذجًا آخر.</value></data>
+  <data name="AnswerDisclaimer" xml:space="preserve"><value>اقتراح للمراجعة — قارِنه بخبرتك الشخصية قبل استخدامه في المقابلة.</value></data>
+  <data name="CopyAnswer" xml:space="preserve"><value>نسخ</value></data>
+  <data name="ErrorCopyFailed" xml:space="preserve"><value>فشل النسخ إلى الحافظة.</value></data>
 </root>

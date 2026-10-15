@@ -93,13 +93,27 @@ public sealed class OllamaClient : IOllamaClient
         var json = JsonSerializer.Serialize(payload);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
+        // Linked token: the CALLER's cancellation (Stop / superseded question) must
+        // surface as a plain OperationCanceledException, while a REQUEST TIMEOUT
+        // (caller token untouched) surfaces as OllamaRequestTimeoutException so the
+        // UI can show an honest "generation timed out" status instead of silently
+        // swallowing it like a stop.
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(_requestTimeoutMs);
 
-        var resp = await _http.PostAsync(BaseUrl + "/api/generate", content, timeoutCts.Token).ConfigureAwait(false);
-        resp.EnsureSuccessStatusCode();
+        string body;
+        try
+        {
+            using var resp = await _http.PostAsync(BaseUrl + "/api/generate", content, timeoutCts.Token).ConfigureAwait(false);
+            resp.EnsureSuccessStatusCode();
+            body = await resp.Content.ReadAsStringAsync(timeoutCts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new OllamaRequestTimeoutException(
+                $"Ollama request timed out after {_requestTimeoutMs} ms.");
+        }
 
-        var body = await resp.Content.ReadAsStringAsync(timeoutCts.Token).ConfigureAwait(false);
         try
         {
             using var doc = JsonDocument.Parse(body);

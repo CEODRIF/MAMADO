@@ -296,6 +296,10 @@ public sealed class MainViewModel : ObservableObject
     private bool _isAnswerProvisional;
     public bool IsAnswerProvisional { get => _isAnswerProvisional; private set => Set(ref _isAnswerProvisional, value); }
 
+    /// <summary>True while the panel shows a REAL model suggestion (enables Copy + the review disclaimer).</summary>
+    private bool _answerIsSuggestion;
+    public bool AnswerIsSuggestion { get => _answerIsSuggestion; private set => Set(ref _answerIsSuggestion, value); }
+
     private string _errorText = string.Empty;
     public string ErrorText
     {
@@ -431,6 +435,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand LoadJdCommand { get; }
     public RelayCommand UseJdCommand { get; }
     public RelayCommand ClearJdCommand { get; }
+    public RelayCommand CopyAnswerCommand { get; }
     public RelayCommand ClearErrorCommand { get; }
     public RelayCommand RefreshStatusCommand { get; }
     public RelayCommand ToggleThemeCommand { get; }
@@ -470,6 +475,7 @@ public sealed class MainViewModel : ObservableObject
         LoadJdCommand = new RelayCommand(_ => _ = ImportDocumentAsync(_jdDoc, isCv: false));
         UseJdCommand = new RelayCommand(_ => UseDocument(_jdDoc, isCv: false));
         ClearJdCommand = new RelayCommand(_ => ClearDocument(_jdDoc, isCv: false), _ => !string.IsNullOrEmpty(_jdDoc.Text) || _jdDoc.IsInUse);
+        CopyAnswerCommand = new RelayCommand(_ => CopyAnswer(), _ => AnswerIsSuggestion && !IsBusy);
         ClearErrorCommand = new RelayCommand(_ => ErrorText = string.Empty);
         RefreshStatusCommand = new RelayCommand(_ => _ = RefreshStatusAsync(), _ => !IsBusy);
         ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
@@ -600,10 +606,20 @@ public sealed class MainViewModel : ObservableObject
         });
         _hAnswer = (_, e) => Post(() =>
         {
-            if (e.Suggestion.HasAnswer)
+            // The detected-question panel updates for every emitted suggestion
+            // (real or status): the question itself was genuinely detected.
+            if (!string.IsNullOrWhiteSpace(e.Suggestion.Question))
                 DetectedQuestionText = e.Suggestion.Question;
-            AnswerText = e.Suggestion.Answer;
+            // Honest, LOCALIZED answer line (all four UI languages). A real
+            // suggestion shows the model text; a failed / unavailable generation
+            // shows the localized status line. The raw English message on the
+            // suggestion is log-only and never displayed.
+            AnswerText = e.Suggestion.Status is AnswerStatus.None
+                ? e.Suggestion.Answer
+                : AnswerStatusLocalizer.Localize(T, e.Suggestion);
             IsAnswerProvisional = e.Suggestion.IsProvisional;
+            AnswerIsSuggestion = e.Suggestion.Status is AnswerStatus.None;
+            CopyAnswerCommand?.RaiseCanExecuteChanged();
         });
         _hState = (_, e) => Post(() => UpdateStatus(e.State));
         // Runtime errors are category-localized (all four UI languages); raw
@@ -641,6 +657,23 @@ public sealed class MainViewModel : ObservableObject
         RefreshDevicesCommand.RaiseCanExecuteChanged();
         DownloadModelCommand.RaiseCanExecuteChanged();
         RefreshStatusCommand.RaiseCanExecuteChanged();
+        CopyAnswerCommand.RaiseCanExecuteChanged();
+    }
+
+    /// <summary>Copies the current REAL suggestion to the clipboard (status lines are not copyable).</summary>
+    private void CopyAnswer()
+    {
+        if (!AnswerIsSuggestion)
+            return;
+        try
+        {
+            System.Windows.Clipboard.SetText(AnswerText ?? string.Empty);
+        }
+        catch (Exception)
+        {
+            // Clipboard can be transiently locked by another app — report, don't crash.
+            ErrorText = T["ErrorCopyFailed"];
+        }
     }
 
     private void UpdateStatus(PipelineState state)
@@ -677,6 +710,8 @@ public sealed class MainViewModel : ObservableObject
         TranslationStatusText = string.Empty;
         AnswerText = string.Empty;
         IsAnswerProvisional = false;
+        AnswerIsSuggestion = false;
+        CopyAnswerCommand?.RaiseCanExecuteChanged();
         DetectedQuestionText = string.Empty;
         try
         {

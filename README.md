@@ -30,7 +30,7 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   **≈ 77 MB** (incl. runtime baseline).
 - Argos/opus-mt DE→EN probe (evaluation): **0.16–0.36 s warm** per sentence, ~100 MB per pair.
 
-**Verified by the automated suite (292 tests, cross-platform):**
+**Verified by the automated suite (312 tests, cross-platform):**
 - **Real end-to-end run**: actual JFK speech audio through the complete pipeline
   (real whisper.cpp → question detection → translation → answer), asserting the
   real transcript, a real generated answer, and honest stop semantics.
@@ -69,6 +69,20 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   snapshot/diff test). The answer prompt explicitly marks imported material as
   DATA, not instructions (prompt-injection guard), and missing evidence must be
   acknowledged or given as a *clearly marked template* — never fabricated.
+- **Answer generation reliability (Phase 4)**: every failed/unavailable
+  generation carries a machine `AnswerStatus` (runtime unavailable / model
+  missing / failed / timed out / empty) rendered through a localized status
+  line in all four UI languages — the raw English provider message is log-only
+  and never displayed. A request *timeout* is distinguished from *Stop /
+  superseded* (a hung model yields an honest "timed out" status; a stop stays
+  silent), and a generation that completes in the same instant as Stop is
+  discarded instead of updating the UI after the session ended. Ollama
+  availability + model presence are re-probed while the session runs (default
+  20 s window), so starting Ollama or pulling the model mid-session is picked
+  up without a restart. Status messages are no longer recorded as conversation
+  turns (no English boilerplate in the grounding context). The answer panel
+  shows a review disclaimer and a localized Copy action (real suggestions
+  only).
 - Device-change decision logic (explicit selection kept; default-follow re-opens on the
   new default; lost device → fatal error → bounded pipeline restart).
 - Answer quality regressions: question-specific prompts, language/length respect, bounded
@@ -76,8 +90,9 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   bounded recent-conversation context (a question is never in its own context).
 - Translation providers: whisper `-tr` (real subprocess, English-only honesty), external CLI
   (real subprocess stdin/stdout, unsupported-pair / timeout / echo honesty).
-- Plus all Phase 1/2/3 coverage (pipeline, cancellation, backpressure, Ollama failure modes,
-   document import + review states, redacting logger, config, WAV writer).
+- Plus all Phase 1/2/3/4 coverage (pipeline, cancellation, backpressure, Ollama
+   failure modes + answer statuses/timeouts/recovery, document import + review
+   states, redacting logger, config, WAV writer).
 
 **Requires a Windows machine (Windows 10/11 x64) — NOT verifiable on the Linux build host
 and therefore NOT claimed as verified:**

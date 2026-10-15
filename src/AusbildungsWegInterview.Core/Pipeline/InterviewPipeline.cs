@@ -229,6 +229,11 @@ public sealed class InterviewPipeline : IAsyncDisposable
                 _runCts.Dispose();
                 _runCts = null;
             }
+            if (_answerCts is not null)
+            {
+                _answerCts.Dispose();
+                _answerCts = null;
+            }
             _frameQueue = null;
             lock (_gate)
                 _stopTask = null;
@@ -590,8 +595,10 @@ public sealed class InterviewPipeline : IAsyncDisposable
 
         try
         {
-            // Cancel any in-flight answer for a now-superseded question.
+            // Cancel any in-flight answer for a now-superseded question, and
+            // release the previous token source (no unbounded CTS accumulation).
             _answerCts?.Cancel();
+            _answerCts?.Dispose();
             var answerCts = new CancellationTokenSource();
             _answerCts = answerCts;
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, answerCts.Token);
@@ -608,7 +615,11 @@ public sealed class InterviewPipeline : IAsyncDisposable
                 Level: _config.AnswerLevel);
 
             var suggestion = await _answers.GenerateAsync(request, linked.Token).ConfigureAwait(false);
-            if (suggestion is not null)
+
+            // Stale-result guard: if Stop raced a completing generation (the
+            // response arrived in the same instant the run token fired), drop
+            // the result instead of updating the UI after the session stopped.
+            if (suggestion is not null && !ct.IsCancellationRequested)
             {
                 var emitted = result.IsFinal
                     ? suggestion with { IsProvisional = false }

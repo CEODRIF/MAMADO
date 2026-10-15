@@ -167,4 +167,12 @@
   <data name="ErrorDocTruncated" xml:space="preserve"><value>Nur die ersten {0} Zeichen wurden importiert.</value></data>
   <data name="FileFilterPdf" xml:space="preserve"><value>PDF-Dateien (*.pdf)</value></data>
   <data name="FileFilterDocx" xml:space="preserve"><value>Word-Dateien (*.docx)</value></data>
+  <data name="AnswerStatusUnavailable" xml:space="preserve"><value>Die lokale KI (Ollama) läuft nicht, daher gibt es vorerst keinen Antwortvorschlag. Starte Ollama und versuche es erneut – Transkription und Übersetzung funktionieren weiter.</value></data>
+  <data name="AnswerStatusModelMissing" xml:space="preserve"><value>Das Ollama-Modell „{0}“ ist auf diesem Computer nicht installiert. Führe `ollama pull {0}` aus (oder wähle in den Einstellungen ein anderes Modell) und versuche es erneut.</value></data>
+  <data name="AnswerStatusFailed" xml:space="preserve"><value>Die Antwortgenerierung ist fehlgeschlagen (lokaler Ollama-Fehler). Transkription und Übersetzung funktionieren weiter – stelle die Frage erneut.</value></data>
+  <data name="AnswerStatusTimeout" xml:space="preserve"><value>Die Antwortgenerierung hat die Zeit überschritten. Das lokale Modell ist noch beschäftigt oder für diesen Computer zu groß – versuche es erneut oder wähle ein kleineres Modell.</value></data>
+  <data name="AnswerStatusEmpty" xml:space="preserve"><value>Das Modell hat eine leere Antwort geliefert. Versuche es erneut oder wähle ein anderes Modell.</value></data>
+  <data name="AnswerDisclaimer" xml:space="preserve"><value>Vorschlag zur Prüfung – vergleiche ihn mit deiner eigenen Erfahrung, bevor du ihn im Interview verwendest.</value></data>
+  <data name="CopyAnswer" xml:space="preserve"><value>Kopieren</value></data>
+  <data name="ErrorCopyFailed" xml:space="preserve"><value>Das Kopieren in die Zwischenablage ist fehlgeschlagen.</value></data>
 </root>

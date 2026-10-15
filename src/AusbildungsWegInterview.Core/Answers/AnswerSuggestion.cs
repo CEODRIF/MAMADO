@@ -13,7 +13,14 @@ public sealed record AnswerSuggestion(
     string Language,
     bool IsProvisional,
     string? Model,
-    double? LatencyMs)
+    double? LatencyMs,
+    AnswerStatus Status = AnswerStatus.None)
 {
-    public bool HasAnswer => !string.IsNullOrWhiteSpace(Answer);
+    /// <summary>
+    /// True only for a REAL model suggestion. Status outcomes (unavailable,
+    /// model missing, failed, timeout, empty) carry a raw log message in
+    /// <see cref="Answer"/> but are NOT answers — they must not be recorded as
+    /// conversation turns or shown as copyable content.
+    /// </summary>
+    public bool HasAnswer => Status is AnswerStatus.None && !string.IsNullOrWhiteSpace(Answer);
 }

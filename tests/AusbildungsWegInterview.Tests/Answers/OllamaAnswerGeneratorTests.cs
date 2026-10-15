@@ -205,4 +205,130 @@ public class OllamaAnswerGeneratorTests
         Assert.Contains("do NOT fabricate", prompt);
         Assert.Contains("template", prompt); // missing evidence => acknowledge or marked template
     }
+
+    // ---- Phase 4: machine status codes (localized by AnswerStatusLocalizer in the UI) ----
+
+    [Fact]
+    public async Task Success_HasStatusNone()
+    {
+        var fake = new FakeOllamaClient { Available = true, Models = new[] { "m" }, GenerateResponse = "ok" };
+        var gen = new OllamaAnswerGenerator(fake, "m");
+        var s = await gen.GenerateAsync(Req());
+        Assert.Equal(AnswerStatus.None, s.Status);
+    }
+
+    [Fact]
+    public async Task Unavailable_HasRuntimeUnavailableStatus_AndSkipsModel()
+    {
+        var fake = new FakeOllamaClient { Available = false, GenerateResponse = "NOPE" };
+        var gen = new OllamaAnswerGenerator(fake, "m");
+        var s = await gen.GenerateAsync(Req());
+        Assert.Equal(AnswerStatus.RuntimeUnavailable, s.Status);
+        Assert.Empty(fake.Prompts);
+        Assert.DoesNotContain("NOPE", s.Answer);
+    }
+
+    [Fact]
+    public async Task MissingModel_HasModelMissingStatus_AndCarriesModelName()
+    {
+        var fake = new FakeOllamaClient { Available = true, Models = Array.Empty<string>() };
+        var gen = new OllamaAnswerGenerator(fake, "llama3.1:8b");
+        var s = await gen.GenerateAsync(Req());
+        Assert.Equal(AnswerStatus.ModelMissing, s.Status);
+        Assert.Equal("llama3.1:8b", s.Model); // the localizer substitutes it into {0}
+        Assert.Empty(fake.Prompts);
+    }
+
+    [Fact]
+    public async Task RequestTimeout_HasGenerationTimeoutStatus()
+    {
+        var fake = new FakeOllamaClient
+        {
+            Available = true,
+            Models = new[] { "m" },
+            GenerateException = new AusbildungsWegInterview.Infrastructure.Ollama.OllamaRequestTimeoutException("timed out")
+        };
+        var gen = new OllamaAnswerGenerator(fake, "m");
+        var s = await gen.GenerateAsync(Req());
+        Assert.Equal(AnswerStatus.GenerationTimeout, s.Status);
+        Assert.Empty(fake.Prompts);
+    }
+
+    [Fact]
+    public async Task GenericFailure_HasGenerationFailedStatus()
+    {
+        var fake = new FakeOllamaClient
+        {
+            Available = true,
+            Models = new[] { "m" },
+            GenerateException = new System.InvalidOperationException("http 500")
+        };
+        var gen = new OllamaAnswerGenerator(fake, "m");
+        var s = await gen.GenerateAsync(Req());
+        Assert.Equal(AnswerStatus.GenerationFailed, s.Status);
+    }
+
+    [Fact]
+    public async Task EmptyResponse_HasEmptyResponseStatus()
+    {
+        var fake = new FakeOllamaClient { Available = true, Models = new[] { "m" }, GenerateResponse = "   " };
+        var gen = new OllamaAnswerGenerator(fake, "m");
+        var s = await gen.GenerateAsync(Req());
+        Assert.Equal(AnswerStatus.EmptyResponse, s.Status);
+        Assert.False(s.HasAnswer);
+    }
+
+    // ---- Phase 4: availability re-probing during a session (no restart needed) ----
+
+    [Fact]
+    public async Task OllamaStartedMidSession_IsPickedUp_OnNextQuestion()
+    {
+        var fake = new FakeOllamaClient { Available = false, Models = new[] { "m" }, GenerateResponse = "I am new." };
+        var gen = new OllamaAnswerGenerator(fake, "m", availabilityRecheckMs: 0); // force re-probe each generation
+
+        var first = await gen.GenerateAsync(Req());
+        Assert.Equal(AnswerStatus.RuntimeUnavailable, first.Status);
+
+        fake.Available = true; // user started Ollama
+        var second = await gen.GenerateAsync(Req());
+
+        Assert.Equal(AnswerStatus.None, second.Status);
+        Assert.Equal("I am new.", second.Answer);
+        Assert.Single(fake.Prompts);
+    }
+
+    [Fact]
+    public async Task ModelPulledMidSession_IsPickedUp_OnNextQuestion()
+    {
+        var fake = new FakeOllamaClient { Available = true, Models = Array.Empty<string>(), GenerateResponse = "ready." };
+        var gen = new OllamaAnswerGenerator(fake, "m", availabilityRecheckMs: 0);
+
+        var first = await gen.GenerateAsync(Req());
+        Assert.Equal(AnswerStatus.ModelMissing, first.Status);
+
+        fake.Models = new[] { "m" }; // user ran: ollama pull m
+        var second = await gen.GenerateAsync(Req());
+
+        Assert.Equal(AnswerStatus.None, second.Status);
+        Assert.Equal("ready.", second.Answer);
+        Assert.Single(fake.Prompts);
+    }
+
+    [Fact]
+    public async Task Availability_IsCached_WithinRecheckInterval()
+    {
+        // Default recheck window (20 s): a second generation right after the
+        // first must NOT re-probe (no probe storm on every partial/final).
+        var fake = new FakeOllamaClient { Available = true, Models = new[] { "m" }, GenerateResponse = "ok" };
+        var gen = new OllamaAnswerGenerator(fake, "m");
+
+        await gen.GenerateAsync(Req());
+        await gen.GenerateAsync(Req());
+
+        Assert.Equal(1, fake.AvailableProbeCount);
+        Assert.Equal(1, fake.ModelProbeCount);
+    }
+
+    private static AnswerRequest Req()
+        => new("Why this Ausbildung?", null, CandidateContext.Empty, AnswerLength.Normal, "de");
 }

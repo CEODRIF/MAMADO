@@ -325,6 +325,43 @@ public class InterviewPipelineTests
     }
 
     [Fact]
+    public async Task Stop_DiscardsAnswerThatCompletesAfterCancellation()
+    {
+        // Stale-result guard: a model that responds in the SAME INSTANT Stop
+        // fires (its completion outlives the run-token cancellation) must not
+        // update the UI after the session has stopped.
+        var capture = new NoopAudioCapture();
+        var speech = new ScriptedSpeechRecognizer(TranscriptionResult.Partial("What is your greatest strength?"));
+        var answers = new MockAnswerGenerator
+        {
+            Generator = async (req, _) =>
+            {
+                await Task.Delay(300); // outlives the Stop cancellation; token deliberately not observed
+                return new AnswerSuggestion(req.QuestionOriginal, "STALE_ANSWER", req.Length, req.AnswerLanguage, false, "mock", 1.0);
+            }
+        };
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, new MockTranslator(), answers, new QuestionDetector(),
+            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000, MinQuestionChars = 8 });
+
+        var answerSuggs = new List<AnswerSuggestion>();
+        pipeline.AnswerUpdated += (_, e) => { lock (answerSuggs) answerSuggs.Add(e.Suggestion); };
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(16000));
+        await WaitUntilAsync(() => { lock (answers.Requests) return answers.Requests.Count >= 1; });
+
+        var sw = Stopwatch.StartNew();
+        await pipeline.StopAsync(); // cancels the run while the "model" is still busy
+        sw.Stop();
+
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+        Assert.True(sw.ElapsedMilliseconds < 5000, $"Stop must not hang on the in-flight answer (took {sw.ElapsedMilliseconds} ms).");
+        lock (answerSuggs)
+            Assert.Empty(answerSuggs); // the stale result must never reach the UI after Stop
+    }
+
+    [Fact]
     public async Task Stop_CancelsInFlightTranscription_Promptly()
     {
         var capture = new NoopAudioCapture();

@@ -167,4 +167,12 @@
   <data name="ErrorDocTruncated" xml:space="preserve"><value>Seuls les {0} premiers caractères ont été importés.</value></data>
   <data name="FileFilterPdf" xml:space="preserve"><value>Fichiers PDF (*.pdf)</value></data>
   <data name="FileFilterDocx" xml:space="preserve"><value>Fichiers Word (*.docx)</value></data>
+  <data name="AnswerStatusUnavailable" xml:space="preserve"><value>L'IA locale (Ollama) ne fonctionne pas : aucune suggestion de réponse pour l'instant. Démarrez Ollama et réessayez — la transcription et la traduction continuent de fonctionner.</value></data>
+  <data name="AnswerStatusModelMissing" xml:space="preserve"><value>Le modèle Ollama « {0} » n'est pas installé sur cet ordinateur. Exécutez `ollama pull {0}` (ou choisissez un autre modèle dans les réglages), puis réessayez.</value></data>
+  <data name="AnswerStatusFailed" xml:space="preserve"><value>La génération de la réponse a échoué (erreur locale Ollama). La transcription et la traduction continuent de fonctionner — posez à nouveau la question.</value></data>
+  <data name="AnswerStatusTimeout" xml:space="preserve"><value>La génération de la réponse a expiré. Le modèle local est encore occupé ou trop lourd pour cette machine — réessayez ou choisissez un modèle plus petit.</value></data>
+  <data name="AnswerStatusEmpty" xml:space="preserve"><value>Le modèle a renvoyé une réponse vide. Réessayez ou choisissez un autre modèle.</value></data>
+  <data name="AnswerDisclaimer" xml:space="preserve"><value>Suggestion à vérifier — comparez-la à votre propre expérience avant de l'utiliser dans votre entretien.</value></data>
+  <data name="CopyAnswer" xml:space="preserve"><value>Copier</value></data>
+  <data name="ErrorCopyFailed" xml:space="preserve"><value>La copie dans le presse-papiers a échoué.</value></data>
 </root>

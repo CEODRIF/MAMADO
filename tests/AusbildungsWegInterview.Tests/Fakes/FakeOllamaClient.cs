@@ -14,9 +14,18 @@ public sealed class FakeOllamaClient : IOllamaClient
     /// <summary>When set, GenerateAsync throws this (simulates Ollama error / timeout).</summary>
     public Exception? GenerateException { get; set; }
 
+    // Probe counters (availability / model checks) — let tests verify how often
+    // a consumer re-probes the server (staleness/recheck behavior).
+    private readonly object _probeGate = new();
+    public int AvailableProbeCount { get { lock (_probeGate) return _availableProbeCount; } }
+    public int ModelProbeCount { get { lock (_probeGate) return _modelProbeCount; } }
+    private int _availableProbeCount;
+    private int _modelProbeCount;
+
     public Task<bool> IsAvailableAsync(CancellationToken ct = default)
     {
         Task.Yield();
+        lock (_probeGate) _availableProbeCount++;
         return Task.FromResult(Available);
     }
 
@@ -28,6 +37,7 @@ public sealed class FakeOllamaClient : IOllamaClient
 
     public Task<bool> ModelAvailableAsync(string model, CancellationToken ct = default)
     {
+        lock (_probeGate) _modelProbeCount++;
         bool ok = Available && (Models.Contains(model, StringComparer.OrdinalIgnoreCase)
             || Models.Any(m => m.StartsWith(model, StringComparison.OrdinalIgnoreCase) && m.Length > model.Length));
         return Task.FromResult(ok);
