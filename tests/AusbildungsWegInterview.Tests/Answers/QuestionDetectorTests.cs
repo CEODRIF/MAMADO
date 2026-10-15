@@ -50,12 +50,43 @@ public class QuestionDetectorTests
         => Assert.False(D.IsSufficient(text, 8, isFinal: false));
 
     [Fact]
-    public void Statement_FinalizedAndLongEnough_IsSufficient()
-        => Assert.True(D.IsSufficient("Ich bin sehr motiviert und lerne schnell.", 8, isFinal: true));
+    public void Statement_Finalized_WithoutInterrogativeCue_IsNotAQuestion()
+        => Assert.False(D.IsSufficient("Ich bin sehr motiviert und lerne schnell.", 8, isFinal: true));
 
     [Fact]
     public void Final_LongEnough_IsSufficient()
         => Assert.True(D.IsSufficient("Tell me about yourself", 8, isFinal: true));
+
+    // Phase 2: finalized segments must carry an interrogative cue. The old
+    // "final + long enough = question" behavior answered the interviewer's
+    // statements and fillers, which is exactly what this must not do.
+    [Theory]
+    [InlineData("Okay, super, weiter.")]
+    [InlineData("Ja genau, das klingt gut.")]
+    [InlineData("Ich bin sehr motiviert und lerne schnell.")]
+    [InlineData("Thank you for your time today.")]
+    [InlineData("Merci beaucoup pour votre disponibilité.")]
+    [InlineData("شكراً جزيلاً على وقتك.")]
+    public void FinalizedStatementsAndFillers_AreNotQuestions(string text)
+        => Assert.False(D.IsSufficient(text, 8, isFinal: true));
+
+    // Imperative / no-interrogative-word interview questions in the four
+    // supported languages must still be recognized (recall, not just precision).
+    [Theory]
+    [InlineData("Sagen Sie mir von Ihrer letzten Erfahrung")]
+    [InlineData("Erzaehlen sie mir von einem Projekt")]
+    [InlineData("Beschreiben Sie eine schwierige Situation")]
+    [InlineData("Where do you see yourself in five years")]
+    [InlineData("Describe your last project")]
+    [InlineData("Walk me through your experience")]
+    [InlineData("Parlez de votre dernier projet")]
+    [InlineData("Decrivez une situation difficile")]
+    [InlineData("Où vous voyez-vous dans cinq ans")]
+    [InlineData("حدثني عن نفسك")]
+    [InlineData("اشرح لي مهارتك")]
+    [InlineData("أخبرني عن مشروع عملت عليه")]
+    public void ImperativeQuestions_StillDetected(string text)
+        => Assert.True(D.IsSufficient(text, 8, isFinal: true), text);
 
     [Fact]
     public void Final_BelowMinChars_NotSufficient()

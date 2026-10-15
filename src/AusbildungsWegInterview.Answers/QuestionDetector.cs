@@ -4,11 +4,17 @@ namespace AusbildungsWegInterview.Answers;
 
 /// <summary>
 /// Practical, multilingual question detector that works on INCOMPLETE transcript
-/// segments. It distinguishes an interview question from an ordinary statement or
-/// an incomplete fragment, and is deliberately conservative for provisional text:
-///  * A "?" (ASCII or Arabic "؟") or a known question phrase is sufficient at any length.
-///  * A finalized segment that is long enough is treated as answerable.
-///  * A provisional segment additionally needs an interrogative word.
+/// segments. It distinguishes a genuine interview question from an ordinary
+/// statement, filler, or an incomplete fragment:
+///  * A "?" (ASCII or Arabic "؟") is a question cue at any length.
+///  * A known question phrase (interrogative or imperative interview pattern)
+///    is a question cue in all four supported languages (DE/EN/FR/AR).
+///  * An interrogative word ("why/warum/pourquoi/لماذا", ...) is a cue for
+///    provisional text and, for finalized text, a second-level cue.
+///  * A finalized segment WITHOUT any interrogative cue is treated as a
+///    statement, NOT as a question: the transcript stays visible, translation
+///    keeps working, but no answer is generated (the interviewer's fillers and
+///    remarks must not trigger suggestions).
 ///
 /// Deterministic and fast; a model-based detector can replace it via IQuestionDetector.
 /// </summary>
@@ -23,19 +29,26 @@ public sealed class QuestionDetector : IQuestionDetector
         // French
         "pourquoi", "comment", "quel", "quelle", "quels", "quelles", "quand", "qui", "combien",
         // Arabic
-        "لماذا", "كيف", "ماذا", "متى", "من", "مَن", "ما"
+        "لماذا", "كيف", "ماذا", "متى", "من", "مَن", "ما", "هل"
     };
 
     private static readonly string[] Phrases =
     {
         // English
-        "could you", "can you", "tell me about", "what do you", "why do you", "what would", "why should",
-        // German
-        "koennen sie", "können sie", "erzaehlen sie", "erzählen sie", "was ist", "warum wollen", "wie sind",
-        // French
-        "qu'est-ce que", "qu est ce que", "pouvez-vous", "pouvez vous", "parlez-moi", "est-ce que",
+        "could you", "can you", "would you", "tell me", "talk to me about", "talk about",
+        "walk me through", "describe", "explain", "give me", "where do you see", "what are you looking for",
+        "what do you", "why do you", "what would", "why should",
+        // German (incl. unaccented variants ASR commonly produces)
+        "koennen sie", "können sie", "erzaehlen sie", "erzählen sie", "sagen sie", "reden sie", "sprechen sie",
+        "beschreiben sie", "nennen sie", "erzaehl mir", "erzähl mir", "sagen sie mir", "wie ist es",
+        "wie sieht es", "wo stehen sie", "wo sehen sie", "was erwartet", "was ist", "warum wollen", "wie sind",
+        // French (incl. unaccented variants)
+        "qu'est-ce que", "qu est ce que", "pouvez-vous", "pouvez vous", "parlez-moi", "parlez de",
+        "parle-moi", "decrivez", "décrivez", "expliquez", "racontez", "est-ce que", "ou vous voyez",
+        "où vous voyez", "pourquoi avez",
         // Arabic
-        "هل", "ما رأيك", "لماذا تريد", "حدثني"
+        "هل", "ما رأيك", "لماذا تريد", "حدثني", "أخبرني", "اخبرني", "اشرح لي", "صف لي", "عن نفسك",
+        "ما هو", "ما هي", "كيف ترى"
     };
 
     public bool IsSufficient(string transcript, int minChars, bool isFinal)
@@ -47,13 +60,16 @@ public sealed class QuestionDetector : IQuestionDetector
         if (text.Length < minChars)
             return false;
 
+        // Strong cues: question mark or a known question phrase (any state).
         if (text.Contains('?') || text.Contains('؟'))
             return true;
         if (HasPhrase(text))
             return true;
-        if (isFinal)
-            return true; // finalized + long enough
-        return HasWord(text);   // provisional: require an interrogative cue
+
+        // Weaker cue: an interrogative word. Required for provisional text;
+        // for finalized text it is what separates a question from a plain
+        // statement/filler — no cue, no answer.
+        return HasWord(text);
     }
 
     private static bool HasPhrase(string normalized)

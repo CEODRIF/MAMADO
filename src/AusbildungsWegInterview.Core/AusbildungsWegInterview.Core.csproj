@@ -15,4 +15,9 @@
     </Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Lets the test suite reach internal helpers (e.g. InterviewPipeline.NormalizeForDedup). -->
+    <InternalsVisibleTo Include="AusbildungsWegInterview.Tests" />
+  </ItemGroup>
+
 </Project>

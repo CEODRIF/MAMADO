@@ -133,4 +133,18 @@
   <data name="ErrorWhisperTimeout" xml:space="preserve"><value>La transcription a pris trop de temps et a été arrêtée.</value></data>
   <data name="ErrorOllama" xml:space="preserve"><value>L'assistant IA local (Ollama) a signalé une erreur. Vérifiez qu'il est en cours d'exécution avec le modèle configuré.</value></data>
   <data name="ErrorRuntime" xml:space="preserve"><value>Une erreur est survenue lors du traitement de l'audio.</value></data>
+
+  <!-- Statuts honnêtes de traduction (un par code TranslationStatus ; jamais simulés) -->
+  <data name="TranslStatusPassThrough" xml:space="preserve"><value>La traduction est désactivée — le texte original est affiché.</value></data>
+  <data name="TranslStatusEcho" xml:space="preserve"><value>Le moteur a renvoyé le texte inchangé (ce n'est pas une traduction).</value></data>
+  <data name="TranslStatusProviderUnavailable" xml:space="preserve"><value>Le moteur de traduction (Ollama) est indisponible — le texte original est affiché.</value></data>
+  <data name="TranslStatusProviderFailed" xml:space="preserve"><value>La traduction a échoué — le texte original est affiché.</value></data>
+  <data name="TranslStatusNoOutput" xml:space="preserve"><value>Aucune traduction n'a été produite — le texte original est affiché.</value></data>
+  <data name="TranslStatusNeedsSource" xml:space="preserve"><value>Ce moteur exige une langue source fixée — choisissez la langue de l'entretien pour traduire.</value></data>
+  <data name="TranslStatusPairNotSupported" xml:space="preserve"><value>La paire {0} → {1} n'est pas couverte par le modèle configuré — téléchargez ce modèle ou utilisez Ollama.</value></data>
+  <data name="TranslStatusCliLaunch" xml:space="preserve"><value>La CLI de traduction n'a pas pu être lancée — vérifiez le chemin dans les paramètres avancés.</value></data>
+  <data name="TranslStatusCliTimeout" xml:space="preserve"><value>La traduction a pris trop de temps — le texte original est affiché.</value></data>
+  <data name="TranslStatusCliError" xml:space="preserve"><value>La CLI de traduction a signalé une erreur — le texte original est affiché.</value></data>
+  <data name="TranslStatusWhisperEnglishOnly" xml:space="preserve"><value>La traduction whisper ne prend en charge que l'anglais — utilisez Ollama pour la langue cible {0}.</value></data>
+  <data name="TranslStatusWhisperEngine" xml:space="preserve"><value>Le moteur vocal actif ne prend pas en charge le mode de traduction whisper — définissez le chemin whisper CLI ou utilisez Ollama.</value></data>
 </root>

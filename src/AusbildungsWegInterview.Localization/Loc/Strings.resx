@@ -133,4 +133,18 @@
   <data name="ErrorWhisperTimeout" xml:space="preserve"><value>The transcription took too long and was stopped.</value></data>
   <data name="ErrorOllama" xml:space="preserve"><value>The local AI assistant (Ollama) reported an error. Check that it is running with the configured model.</value></data>
   <data name="ErrorRuntime" xml:space="preserve"><value>Something went wrong while processing the audio.</value></data>
+
+  <!-- Honest translation status lines (one per TranslationStatus code; never faked) -->
+  <data name="TranslStatusPassThrough" xml:space="preserve"><value>Translation is disabled — the original text is shown.</value></data>
+  <data name="TranslStatusEcho" xml:space="preserve"><value>The engine returned the text unchanged (it is not a translation).</value></data>
+  <data name="TranslStatusProviderUnavailable" xml:space="preserve"><value>The translation engine (Ollama) is unavailable — the original text is shown.</value></data>
+  <data name="TranslStatusProviderFailed" xml:space="preserve"><value>Translation failed — the original text is shown.</value></data>
+  <data name="TranslStatusNoOutput" xml:space="preserve"><value>No translation was produced — the original text is shown.</value></data>
+  <data name="TranslStatusNeedsSource" xml:space="preserve"><value>This engine needs a pinned source language — set the interview language to enable translation.</value></data>
+  <data name="TranslStatusPairNotSupported" xml:space="preserve"><value>The pair {0} → {1} is not covered by the configured model — download that model or use Ollama.</value></data>
+  <data name="TranslStatusCliLaunch" xml:space="preserve"><value>The translation CLI could not be launched — check the executable path in Advanced settings.</value></data>
+  <data name="TranslStatusCliTimeout" xml:space="preserve"><value>The translation timed out — the original text is shown.</value></data>
+  <data name="TranslStatusCliError" xml:space="preserve"><value>The translation CLI reported an error — the original text is shown.</value></data>
+  <data name="TranslStatusWhisperEnglishOnly" xml:space="preserve"><value>whisper translation supports English only — use Ollama for the target language {0}.</value></data>
+  <data name="TranslStatusWhisperEngine" xml:space="preserve"><value>The active speech engine does not support whisper translate mode — set the whisper CLI path or use Ollama.</value></data>
 </root>

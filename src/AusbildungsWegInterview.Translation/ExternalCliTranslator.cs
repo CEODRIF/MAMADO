@@ -62,12 +62,14 @@ public sealed class ExternalCliTranslator : ITranslator
         // No auto-detection in a standalone MT model: it needs a concrete source.
         if (src == "auto")
             return Task.FromResult(new TranslationResult(text, string.Empty, src, targetLanguage, false, ProviderName,
-                "External CLI needs a pinned source language (set the recognition language) - original shown (not translated)"));
+                "External CLI needs a pinned source language (set the recognition language) - original shown (not translated)",
+                TranslationStatus.NeedsPinnedSource));
 
         string tgt = targetLanguage.Trim().ToLowerInvariant();
         if (_supportedPairs.Count > 0 && !_supportedPairs.Contains(src + "-" + tgt))
             return Task.FromResult(new TranslationResult(text, string.Empty, src, tgt, false, ProviderName,
-                $"Pair {src}→{tgt} is not covered by the configured model(s) [{string.Join(", ", _supportedPairs)}] - download the model for this pair or use Ollama"));
+                $"Pair {src}→{tgt} is not covered by the configured model(s) [{string.Join(", ", _supportedPairs)}] - download the model for this pair or use Ollama",
+                TranslationStatus.PairNotSupported));
 
         return TranslateViaCliAsync(text, src, tgt, ct);
     }
@@ -103,7 +105,8 @@ public sealed class ExternalCliTranslator : ITranslator
         catch (System.ComponentModel.Win32Exception ex)
         {
             return new TranslationResult(text, string.Empty, src, tgt, false, ProviderName,
-                "Could not launch the translation CLI (incompatible binary?): " + ex.Message);
+                "Could not launch the translation CLI (incompatible binary?): " + ex.Message,
+                TranslationStatus.CliLaunchFailed);
         }
 
         using (proc)
@@ -125,22 +128,27 @@ public sealed class ExternalCliTranslator : ITranslator
                 {
                     TryKill(proc);
                     return new TranslationResult(text, string.Empty, src, tgt, false, ProviderName,
-                        $"Translation timed out after {_timeoutMs / 1000}s - original shown (not translated)");
+                        $"Translation timed out after {_timeoutMs / 1000}s - original shown (not translated)",
+                        TranslationStatus.CliTimeout);
                 }
 
                 await proc.WaitForExitAsync(timeoutCts.Token).ConfigureAwait(false);
                 string stderr = await stderrTask.ConfigureAwait(false);
 
                 if (string.IsNullOrWhiteSpace(line))
-                    return new TranslationResult(text, string.Empty, src, tgt, false, ProviderName,
-                        proc.ExitCode == 0
-                            ? "Translation produced no output - original shown (not translated)"
-                            : $"Translation CLI exited with code {proc.ExitCode}. {Truncate(stderr.Trim(), 300)}");
+                    return proc.ExitCode == 0
+                        ? new TranslationResult(text, string.Empty, src, tgt, false, ProviderName,
+                            "Translation produced no output - original shown (not translated)",
+                            TranslationStatus.NoOutput)
+                        : new TranslationResult(text, string.Empty, src, tgt, false, ProviderName,
+                            $"Translation CLI exited with code {proc.ExitCode}. {Truncate(stderr.Trim(), 300)}",
+                            TranslationStatus.CliError);
 
                 line = line.Trim();
                 if (string.Equals(line, text.Trim(), StringComparison.Ordinal))
                     return new TranslationResult(text, line, src, tgt, false, ProviderName,
-                        "Text returned unchanged by the engine (not a translation)");
+                        "Text returned unchanged by the engine (not a translation)",
+                        TranslationStatus.Echo);
 
                 return new TranslationResult(text, line, src, tgt, false, ProviderName);
             }
@@ -152,7 +160,8 @@ public sealed class ExternalCliTranslator : ITranslator
             catch (Exception ex)
             {
                 return new TranslationResult(text, string.Empty, src, tgt, false, ProviderName,
-                    "Translation failed - original shown (not translated): " + ex.Message);
+                    "Translation failed - original shown (not translated): " + ex.Message,
+                    TranslationStatus.CliError);
             }
         }
     }

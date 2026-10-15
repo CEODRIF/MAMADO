@@ -30,7 +30,7 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   **≈ 77 MB** (incl. runtime baseline).
 - Argos/opus-mt DE→EN probe (evaluation): **0.16–0.36 s warm** per sentence, ~100 MB per pair.
 
-**Verified by the automated suite (220 tests, cross-platform):**
+**Verified by the automated suite (263 tests, cross-platform):**
 - **Real end-to-end run**: actual JFK speech audio through the complete pipeline
   (real whisper.cpp → question detection → translation → answer), asserting the
   real transcript, a real generated answer, and honest stop semantics.
@@ -41,6 +41,21 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
 - **Localized runtime errors**: every pipeline / capture / whisper / Ollama failure is
   category-mapped to a short message in all four UI languages (en/de/fr/ar); raw
   exception text (which can contain local file paths) is never shown.
+- **Question detection & translation (Phase 2)**: a finalized segment is only treated
+  as a question when it carries an interrogative cue (question mark, question phrase,
+  or interrogative word — DE/EN/FR/AR, incl. imperative patterns like "Sagen Sie
+  mir…", "Tell me about…", "Parlez de…", "حدثني عن…"). Interviewer statements and
+  fillers are still transcribed and translated, but never answered. Repeated finalized
+  questions are not re-answered (normalized repeat memory, case/punctuation/Arabic
+  orthography insensitive), and a final text identical to the already-answered
+  provisional text is refined in place without a new LLM call. Translation dedup keeps
+  identical segment text from being re-requested; the final-segment translation path is
+  cancellation-aware (Stop cancels it).
+- **Honest, localized translation status**: every translation outcome carries a
+  machine-readable status code (pass-through, echo, provider unavailable/failed, no
+  output, pinned-source required, pair not supported, CLI launch/timeout/error,
+  whisper English-only/engine-unsupported) rendered as a short line in all four UI
+  languages; the raw English provider message is log-only and never displayed.
 - Device-change decision logic (explicit selection kept; default-follow re-opens on the
   new default; lost device → fatal error → bounded pipeline restart).
 - Answer quality regressions: question-specific prompts, language/length respect, bounded

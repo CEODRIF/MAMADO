@@ -442,6 +442,157 @@ public class InterviewPipelineTests
     }
 
     [Fact]
+    public async Task DuplicateFinalizedQuestion_NotReAnswered()
+    {
+        // Two separate segments containing the SAME question (different case /
+        // punctuation, as ASR repeats look like): answered once, not twice.
+        var capture = new NoopAudioCapture();
+        var speech = new ScriptedSpeechRecognizer(
+            TranscriptionResult.Final("What is your name?"),
+            TranscriptionResult.Final("what is your name"));
+        var answers = new MockAnswerGenerator();
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, new MockTranslator(), answers, new QuestionDetector(),
+            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000 });
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(16000));
+        pipeline.EnqueueAudio(NonSilent(16000));
+        await WaitUntilAsync(() => { lock (answers.Requests) return answers.Requests.Count >= 1; });
+        await pipeline.StopAsync();
+        await Task.Delay(150); // give an incorrect second generation a chance to show up
+
+        lock (answers.Requests)
+            Assert.Single(answers.Requests); // the repeat was deduplicated
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+    }
+
+    [Fact]
+    public async Task FinalSameTextAsProvisional_RefinesWithoutNewGeneration()
+    {
+        // The final text is identical to the provisional text that already
+        // produced an answer: the existing suggestion must be re-emitted as
+        // final (UI flips provisional -> final) WITHOUT a second LLM call.
+        var capture = new NoopAudioCapture();
+        var speech = new ScriptedSpeechRecognizer(
+            TranscriptionResult.Partial("What is your greatest strength?"),
+            TranscriptionResult.Final("What is your greatest strength?"));
+        var answers = new MockAnswerGenerator();
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, new MockTranslator(), answers, new QuestionDetector(),
+            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000 });
+
+        var answerSuggs = new List<AnswerSuggestion>();
+        pipeline.AnswerUpdated += (_, e) => { lock (answerSuggs) answerSuggs.Add(e.Suggestion); };
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(16000));
+        pipeline.EnqueueAudio(NonSilent(16000));
+
+        await WaitUntilAsync(() =>
+        {
+            lock (answerSuggs)
+                return answerSuggs.Count >= 1 && !answerSuggs[answerSuggs.Count - 1].IsProvisional;
+        });
+        await pipeline.StopAsync();
+        await Task.Delay(100);
+
+        lock (answers.Requests)
+            Assert.Single(answers.Requests); // exactly one generation for both rounds
+        lock (answerSuggs)
+        {
+            Assert.True(answerSuggs.Count >= 2, "provisional + finalized suggestion expected");
+            Assert.False(answerSuggs[answerSuggs.Count - 1].IsProvisional, "last suggestion must be final");
+        }
+    }
+
+    [Fact]
+    public async Task FinalTranslation_IsCancellationAware()
+    {
+        // Silence-driven finalization triggers the FINAL translation. A Stop
+        // during that translation must cancel it (the final path used to run
+        // with CancellationToken.None and could outlive the stop).
+        var capture = new NoopAudioCapture();
+        // Process queue empty (no partials); the segment is finalized by trailing
+        // silence, which pops the scripted final text.
+        var speech = new ScriptedSpeechRecognizer(
+            Array.Empty<TranscriptionResult>(),
+            new[] { "What is your name?" });
+        var translator = new CancellationObservingTranslator();
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, translator, new MockAnswerGenerator(), new QuestionDetector(),
+            new AppConfiguration
+            {
+                ChunkSeconds = 0.5,
+                TargetSampleRate = 16000,
+                SilenceFinalizeSeconds = 0.8
+            });
+
+        var translations = new List<TranslationResult>();
+        pipeline.TranslationUpdated += (_, e) => { lock (translations) translations.Add(e.Result); };
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(16000)); // speech chunk (no partial)
+        pipeline.EnqueueAudio(new AudioFrame(new byte[16000], 16000)); // silence
+        pipeline.EnqueueAudio(new AudioFrame(new byte[16000], 16000)); // silence -> finalizes segment
+        await WaitUntilAsync(() => translator.InFlightCount == 1); // final translation in flight
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await pipeline.StopAsync();
+        sw.Stop();
+
+        Assert.True(sw.ElapsedMilliseconds < 2000, $"Stop must cancel the in-flight final translation (took {sw.ElapsedMilliseconds} ms).");
+        Assert.True(translator.Tokens.Count > 0 && translator.Tokens[0].IsCancellationRequested,
+            "The final-translation token must be the run token (cancellation-aware).");
+        Assert.Equal(0, translator.InFlightCount);
+        lock (translations)
+            Assert.Empty(translations); // the killed translation emitted nothing
+        Assert.Equal(PipelineState.Stopped, pipeline.State);
+    }
+
+    [Theory]
+    [InlineData("de")]   // ASR-detected language is used as the translation source
+    [InlineData(null)]   // no detection: source stays null (provider uses "auto" / configured pin)
+    public async Task TranslationReceivesDetectedLanguage(string? language)
+    {
+        var capture = new NoopAudioCapture();
+        var speech = new ScriptedSpeechRecognizer(TranscriptionResult.Final("What is your name?", language));
+        var translator = new MockTranslator();
+        await using var pipeline = new InterviewPipeline(
+            capture, speech, translator, new MockAnswerGenerator(), new QuestionDetector(),
+            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000 });
+
+        await pipeline.StartAsync();
+        pipeline.EnqueueAudio(NonSilent(16000));
+        await WaitUntilAsync(() => { lock (translator.TranslatedDetails) return translator.TranslatedDetails.Count >= 1; });
+        await pipeline.StopAsync();
+
+        lock (translator.TranslatedDetails)
+            Assert.Equal(language, translator.TranslatedDetails[0].Source);
+    }
+
+    [Theory]
+    [InlineData("Was ist dein Name?", "was ist dein name")]
+    [InlineData("  was   IST dein name  ", "was ist dein name")]
+    [InlineData("What is your name?", "what is your name")]
+    [InlineData("What is your name", "what is your name")]
+    public void NormalizeForDedup_IgnoresCasePunctuationAndWhitespace(string input, string expected)
+        => Assert.Equal(expected, InterviewPipeline.NormalizeForDedup(input));
+
+    [Fact]
+    public void NormalizeForDedup_UnifiesArabicOrthographicVariants()
+    {
+        // Hamza variants (أ/إ/آ → ا) and the question mark must not change the identity.
+        Assert.Equal(
+            InterviewPipeline.NormalizeForDedup("هل تريد أن تتحدث عن نفسك؟"),
+            InterviewPipeline.NormalizeForDedup("هل تريد ان تتحدث عن نفسك"));
+        // Diacritics are dropped.
+        Assert.Equal(
+            InterviewPipeline.NormalizeForDedup("ما هو هدفك؟"),
+            InterviewPipeline.NormalizeForDedup("ما هو هدفك"));
+    }
+
+    [Fact]
     public async Task Cancellation_SuppressesObsoleteAnswer()
     {
         var capture = new NoopAudioCapture();
@@ -590,6 +741,42 @@ internal sealed class CancellationObservingRecognizer : ISpeechRecognizer
         => Task.FromResult(TranscriptionResult.Empty);
 
     public void Reset() { }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}
+
+/// <summary>
+/// Translator that blocks inside TranslateAsync until its token is cancelled
+/// (simulates a slow in-flight final translation, e.g. a long Ollama call).
+/// </summary>
+internal sealed class CancellationObservingTranslator : ITranslator
+{
+    public int InFlightCount { get; private set; }
+    public List<CancellationToken> Tokens { get; } = new();
+    public string ProviderName => "cancellation-observing";
+
+    public Task PrepareAsync(string? sourceLanguage, string targetLanguage, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task<TranslationResult> TranslateAsync(
+        string text, string? sourceLanguage, string targetLanguage, CancellationToken ct = default)
+    {
+        lock (Tokens)
+            Tokens.Add(ct);
+        InFlightCount++;
+        return Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(Timeout.Infinite, ct).ConfigureAwait(false);
+                return new TranslationResult(text, "x", sourceLanguage ?? "auto", targetLanguage, false, ProviderName);
+            }
+            finally
+            {
+                InFlightCount--;
+            }
+        });
+    }
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 

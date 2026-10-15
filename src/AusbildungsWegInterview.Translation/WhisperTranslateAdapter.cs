@@ -34,11 +34,13 @@ public sealed class WhisperTranslateAdapter : ITranslator
 
         if (!targetLanguage.Equals("en", StringComparison.OrdinalIgnoreCase))
             return new TranslationResult(text, string.Empty, src, targetLanguage, false, ProviderName,
-                $"whisper translation supports English only - use Ollama for target '{targetLanguage}'");
+                $"whisper translation supports English only - use Ollama for target '{targetLanguage}'",
+                TranslationStatus.WhisperEnglishOnly);
 
         if (_segment is null)
             return new TranslationResult(text, string.Empty, src, "en", false, ProviderName,
-                "The active speech engine does not support whisper translate mode - set the whisper CLI path or use Ollama");
+                "The active speech engine does not support whisper translate mode - set the whisper CLI path or use Ollama",
+                TranslationStatus.WhisperEngineUnsupported);
 
         string? translated;
         try
@@ -56,12 +58,14 @@ public sealed class WhisperTranslateAdapter : ITranslator
 
         if (string.IsNullOrWhiteSpace(translated))
             return new TranslationResult(text, string.Empty, src, "en", false, ProviderName,
-                "No translation produced - original text shown (not translated)");
+                "No translation produced - original text shown (not translated)",
+                TranslationStatus.NoOutput);
 
         // Source already English → whisper echoes the original: say so, don't label it translated.
         if (string.Equals(translated.Trim(), text.Trim(), StringComparison.Ordinal))
             return new TranslationResult(text, translated, src, "en", false, ProviderName,
-                "Text returned unchanged (source already English - not a translation)");
+                "Text returned unchanged (source already English - not a translation)",
+                TranslationStatus.Echo);
 
         return new TranslationResult(text, translated, src, "en", false, ProviderName);
     }

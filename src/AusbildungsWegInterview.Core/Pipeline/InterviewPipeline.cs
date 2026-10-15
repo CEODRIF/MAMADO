@@ -53,7 +53,13 @@ public sealed class InterviewPipeline : IAsyncDisposable
     private double _silentSeconds;
     private string _lastTranslationKey = string.Empty;
     private bool _answeredInRound;
+    private string? _lastAnsweredText;     // exact text already answered in the current segment
+    private AnswerSuggestion? _lastSuggestion; // that answer (to finalize in place, without a new LLM call)
     private readonly List<string> _recentTurns = new();
+
+    // Session-scoped duplicate-question memory (worker thread only, bounded).
+    private readonly Queue<string> _answeredQuestions = new();
+    private const int MaxAnsweredQuestions = 5;
 
     // Capture lifecycle (shared: capture thread + control thread)
     private volatile bool _userStopping;
@@ -123,9 +129,12 @@ public sealed class InterviewPipeline : IAsyncDisposable
         _activeSegment = false;
         _silentSeconds = 0;
         _answeredInRound = false;
+        _lastAnsweredText = null;
+        _lastSuggestion = null;
         _lastTranslationKey = string.Empty;
         _lastTranslation = null;
         _recentTurns.Clear();
+        _answeredQuestions.Clear();
         _chunker.Reset();
         LastError = null;
 
@@ -402,6 +411,8 @@ public sealed class InterviewPipeline : IAsyncDisposable
             _activeSegment = true;
             _silentSeconds = 0;
             _answeredInRound = false;
+            _lastAnsweredText = null;
+            _lastSuggestion = null;
             _lastTranslationKey = string.Empty;
             _lastTranslation = null;
             _speech.Reset();
@@ -472,12 +483,15 @@ public sealed class InterviewPipeline : IAsyncDisposable
             ReportError(ex, isFatal: false);
         }
 
-        if (final is not null && !string.IsNullOrWhiteSpace(final.Text))
+        // Cancellation-aware: a Stop during finalization must cancel the final
+        // translation/answer too (previously these ran with CancellationToken.None
+        // and could outlive the stop, updating the UI after "Stopped").
+        if (final is not null && !string.IsNullOrWhiteSpace(final.Text) && !ct.IsCancellationRequested)
         {
             var f = final.IsFinal ? final : final with { Kind = TranscriptKind.Final };
             EmitTranscript(f);
-            await TranslateIncrementallyAsync(f, CancellationToken.None).ConfigureAwait(false);
-            await MaybeAnswerAsync(f, CancellationToken.None).ConfigureAwait(false);
+            await TranslateIncrementallyAsync(f, ct).ConfigureAwait(false);
+            await MaybeAnswerAsync(f, ct).ConfigureAwait(false);
         }
 
         FinalizeSegment();
@@ -488,6 +502,8 @@ public sealed class InterviewPipeline : IAsyncDisposable
         _activeSegment = false;
         _silentSeconds = 0;
         _answeredInRound = false;
+        _lastAnsweredText = null;
+        _lastSuggestion = null;
         _lastTranslationKey = string.Empty;
         _lastTranslation = null;
         _speech.Reset();
@@ -542,7 +558,32 @@ public sealed class InterviewPipeline : IAsyncDisposable
         if (!sufficient)
             return;
 
-        // Provisional answer only once per question; final answer always refines it.
+        string? normalized = result.IsFinal ? NormalizeForDedup(result.Text) : null;
+
+        // Duplicate-question protection (finalized questions only):
+        //  1) the same question (normalized) was already answered in a recent
+        //     segment — interviewer repeat or ASR re-segmentation. The existing
+        //     answer is still on screen; a second generation is wasted work.
+        if (result.IsFinal && IsRecentlyAnswered(normalized!))
+            return;
+
+        //  2) the FINAL text is identical to the provisional text that was
+        //     already answered in this segment: finalize the existing suggestion
+        //     in place (UI flips provisional -> final) without a new LLM call.
+        if (result.IsFinal && _lastSuggestion is not null &&
+            string.Equals(result.Text, _lastAnsweredText, StringComparison.Ordinal))
+        {
+            var finalized = _lastSuggestion with { IsProvisional = false };
+            AnswerUpdated?.Invoke(this, new AnswerUpdatedEventArgs(finalized));
+            if (finalized.HasAnswer)
+            {
+                RememberTurn(result.Text, finalized.Answer);
+                RememberAnsweredQuestion(normalized!);
+            }
+            return;
+        }
+
+        // Provisional answer only once per question; final answer otherwise refines it.
         bool shouldGenerate = result.IsFinal || !_answeredInRound;
         if (!shouldGenerate)
             return;
@@ -574,8 +615,15 @@ public sealed class InterviewPipeline : IAsyncDisposable
                     : suggestion with { IsProvisional = true };
                 AnswerUpdated?.Invoke(this, new AnswerUpdatedEventArgs(emitted));
 
+                // Remember for the in-segment refine path (case  2) above.
+                _lastAnsweredText = result.Text;
+                _lastSuggestion = emitted;
+
                 if (result.IsFinal && emitted.HasAnswer)
+                {
                     RememberTurn(result.Text, emitted.Answer);
+                    RememberAnsweredQuestion(normalized!);
+                }
             }
 
             _answeredInRound = !result.IsFinal;
@@ -588,6 +636,60 @@ public sealed class InterviewPipeline : IAsyncDisposable
         {
             ReportError(ex, isFatal: false);
         }
+    }
+
+    private bool IsRecentlyAnswered(string normalized)
+    {
+        if (string.IsNullOrEmpty(normalized))
+            return false;
+        lock (_answeredQuestions)
+            return _answeredQuestions.Contains(normalized);
+    }
+
+    private void RememberAnsweredQuestion(string normalized)
+    {
+        if (string.IsNullOrEmpty(normalized))
+            return;
+        lock (_answeredQuestions)
+        {
+            if (_answeredQuestions.Contains(normalized))
+                return;
+            _answeredQuestions.Enqueue(normalized);
+            while (_answeredQuestions.Count > MaxAnsweredQuestions)
+                _answeredQuestions.Dequeue();
+        }
+    }
+
+    /// <summary>
+    /// Normalizes a question for REPEAT DETECTION only (never for display):
+    /// case, punctuation, and whitespace are ignored, and common Arabic
+    /// orthographic variants are unified (hamza forms, ta-marbuta, alif-maqsura,
+    /// diacritics), so "Was ist dein Name?" / "was ist dein name" / "Was ist
+    /// dein Name" dedupe together. A deliberate heuristic — it catches literal
+    /// repeats, not paraphrases.
+    /// </summary>
+    internal static string NormalizeForDedup(string text)
+    {
+        var sb = new System.Text.StringBuilder(text.Length);
+        foreach (var ch in text)
+        {
+            if (ch is '?' or '؟' or '!' or '.' or ',' or ';' or ':' or '-' or '—' or '(' or ')' or '"' or '\'')
+                continue;
+            if (!char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch))
+                continue;
+
+            char c = ch switch
+            {
+                'أ' or 'إ' or 'آ' => 'ا',
+                'ة' => 'ه',
+                'ى' => 'ي',
+                >= '\u064B' and <= '\u0652' => '\u0000', // Arabic diacritics
+                _ => ch
+            };
+            if (c != '\u0000')
+                sb.Append(char.ToLowerInvariant(c));
+        }
+        return string.Join(' ', sb.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 
     private IReadOnlyList<string> SnapshotRecentTurns()

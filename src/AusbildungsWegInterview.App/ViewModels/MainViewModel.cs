@@ -492,7 +492,12 @@ public sealed class MainViewModel : ObservableObject
         _hTranslation = (_, e) => Post(() =>
         {
             TranslationText = e.Result.HasText ? e.Result.TargetText : string.Empty;
-            TranslationStatusText = e.Result.StatusMessage ?? string.Empty;
+            // Honest, LOCALIZED status (all four UI languages). A genuine
+            // translation shows no status line; the raw English StatusMessage
+            // on the result is log-only and never displayed.
+            TranslationStatusText = e.Result.IsTranslated
+                ? string.Empty
+                : TranslationStatusLocalizer.Localize(T, e.Result);
         });
         _hAnswer = (_, e) => Post(() =>
         {

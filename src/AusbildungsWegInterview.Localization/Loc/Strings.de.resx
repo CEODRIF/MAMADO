@@ -133,4 +133,18 @@
   <data name="ErrorWhisperTimeout" xml:space="preserve"><value>Die Transkription hat zu lange gedauert und wurde abgebrochen.</value></data>
   <data name="ErrorOllama" xml:space="preserve"><value>Der lokale KI-Assistent (Ollama) hat einen Fehler gemeldet. Prüfen Sie, ob er mit dem konfigurierten Modell läuft.</value></data>
   <data name="ErrorRuntime" xml:space="preserve"><value>Beim Verarbeiten des Audios ist etwas schiefgelaufen.</value></data>
+
+  <!-- Ehrliche Übersetzungs-Statuszeilen (eine pro TranslationStatus-Code; nie vorgegeben) -->
+  <data name="TranslStatusPassThrough" xml:space="preserve"><value>Die Übersetzung ist deaktiviert — es wird der Originaltext angezeigt.</value></data>
+  <data name="TranslStatusEcho" xml:space="preserve"><value>Die Engine hat den Text unverändert zurückgegeben (keine Übersetzung).</value></data>
+  <data name="TranslStatusProviderUnavailable" xml:space="preserve"><value>Die Übersetzungs-Engine (Ollama) ist nicht verfügbar — es wird der Originaltext angezeigt.</value></data>
+  <data name="TranslStatusProviderFailed" xml:space="preserve"><value>Die Übersetzung ist fehlgeschlagen — es wird der Originaltext angezeigt.</value></data>
+  <data name="TranslStatusNoOutput" xml:space="preserve"><value>Es wurde keine Übersetzung erzeugt — es wird der Originaltext angezeigt.</value></data>
+  <data name="TranslStatusNeedsSource" xml:space="preserve"><value>Diese Engine braucht eine feste Ausgangssprache — legen Sie die Interview-Sprache fest, um zu übersetzen.</value></data>
+  <data name="TranslStatusPairNotSupported" xml:space="preserve"><value>Das Sprachpaar {0} → {1} wird vom konfigurierten Modell nicht abgedeckt — laden Sie dieses Modell herunter oder nutzen Sie Ollama.</value></data>
+  <data name="TranslStatusCliLaunch" xml:space="preserve"><value>Die Übersetzungs-CLI konnte nicht gestartet werden — prüfen Sie den Pfad in den erweiterten Einstellungen.</value></data>
+  <data name="TranslStatusCliTimeout" xml:space="preserve"><value>Die Übersetzung hat zu lange gedauert — es wird der Originaltext angezeigt.</value></data>
+  <data name="TranslStatusCliError" xml:space="preserve"><value>Die Übersetzungs-CLI hat einen Fehler gemeldet — es wird der Originaltext angezeigt.</value></data>
+  <data name="TranslStatusWhisperEnglishOnly" xml:space="preserve"><value>whisper-Übersetzung unterstützt nur Englisch — nutzen Sie Ollama für die Zielsprache {0}.</value></data>
+  <data name="TranslStatusWhisperEngine" xml:space="preserve"><value>Die aktive Sprache-Engine unterstützt den whisper-Übersetzungsmodus nicht — legen Sie den whisper-CLI-Pfad fest oder nutzen Sie Ollama.</value></data>
 </root>

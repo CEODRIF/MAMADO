@@ -42,7 +42,8 @@ public sealed class OllamaTranslator : ITranslator
 
         if (!_available)
             return new TranslationResult(text, string.Empty, src, targetLanguage, false, ProviderName,
-                "Ollama unavailable - original text shown (not translated)");
+                "Ollama unavailable - original text shown (not translated)",
+                TranslationStatus.ProviderUnavailable);
 
         var prompt =
             "Translate the following text. Output ONLY the translation, no explanations or quotes.\n" +
@@ -62,18 +63,21 @@ public sealed class OllamaTranslator : ITranslator
         catch
         {
             return new TranslationResult(text, string.Empty, src, targetLanguage, false, ProviderName,
-                "Translation failed - original text shown (not translated)");
+                "Translation failed - original text shown (not translated)",
+                TranslationStatus.ProviderFailed);
         }
 
         translated = (translated ?? string.Empty).Trim();
         if (translated.Length == 0)
             return new TranslationResult(text, string.Empty, src, targetLanguage, false, ProviderName,
-                "No translation produced - original text shown (not translated)");
+                "No translation produced - original text shown (not translated)",
+                TranslationStatus.NoOutput);
 
         // Never falsely label unchanged text as translated (same language, model echo, ...).
         if (string.Equals(translated, text.Trim(), StringComparison.Ordinal))
             return new TranslationResult(text, translated, src, targetLanguage, false, ProviderName,
-                "Text returned unchanged by the model (not a translation)");
+                "Text returned unchanged by the model (not a translation)",
+                TranslationStatus.Echo);
 
         return new TranslationResult(text, translated, src, targetLanguage, false, ProviderName);
     }

@@ -133,4 +133,18 @@
   <data name="ErrorWhisperTimeout" xml:space="preserve"><value>استغرق النسخ وقتًا طويلًا جدًا فتم إيقافه.</value></data>
   <data name="ErrorOllama" xml:space="preserve"><value>أبلغ مساعد الذكاء الاصطناعي المحلي (Ollama) عن خطأ. تحقق من أنه يعمل بالنموذج المُعد.</value></data>
   <data name="ErrorRuntime" xml:space="preserve"><value>حدث خطأ أثناء معالجة الصوت.</value></data>
+
+  <!-- حالات الترجمة الصادقة (حالة واحدة لكل رمز TranslationStatus؛ لا يتم تزييف أي منها) -->
+  <data name="TranslStatusPassThrough" xml:space="preserve"><value>الترجمة معطلة — يُعرض النص الأصلي.</value></data>
+  <data name="TranslStatusEcho" xml:space="preserve"><value>أعاد المحرك النص دون تغيير (ليس ترجمة).</value></data>
+  <data name="TranslStatusProviderUnavailable" xml:space="preserve"><value>محرك الترجمة (Ollama) غير متاح — يُعرض النص الأصلي.</value></data>
+  <data name="TranslStatusProviderFailed" xml:space="preserve"><value>فشل الترجمة — يُعرض النص الأصلي.</value></data>
+  <data name="TranslStatusNoOutput" xml:space="preserve"><value>لم تُنتَج أي ترجمة — يُعرض النص الأصلي.</value></data>
+  <data name="TranslStatusNeedsSource" xml:space="preserve"><value>يتطلب هذا المحرك لغة مصدر محددة — حدد لغة المقابلة لتفعيل الترجمة.</value></data>
+  <data name="TranslStatusPairNotSupported" xml:space="preserve"><value>لا يغطي النموذج المُعد زوج {0} ← {1} — نزّل ذلك النموذج أو استخدم Ollama.</value></data>
+  <data name="TranslStatusCliLaunch" xml:space="preserve"><value>تعذر تشغيل أداة الترجمة — تحقق من المسار في الإعدادات المتقدمة.</value></data>
+  <data name="TranslStatusCliTimeout" xml:space="preserve"><value>انتهت مهلة الترجمة — يُعرض النص الأصلي.</value></data>
+  <data name="TranslStatusCliError" xml:space="preserve"><value>أبلغت أداة الترجمة عن خطأ — يُعرض النص الأصلي.</value></data>
+  <data name="TranslStatusWhisperEnglishOnly" xml:space="preserve"><value>ترجمة whisper تدعم الإنجليزية فقط — استخدم Ollama للغة الهدف {0}.</value></data>
+  <data name="TranslStatusWhisperEngine" xml:space="preserve"><value>محرك الكلام النشط لا يدعم وضع ترجمة whisper — حدد مسار whisper CLI أو استخدم Ollama.</value></data>
 </root>

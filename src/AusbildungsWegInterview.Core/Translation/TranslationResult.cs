@@ -11,7 +11,8 @@ public sealed record TranslationResult(
     string TargetLanguage,
     bool IsProvisional,
     string? Provider,
-    string? StatusMessage = null)
+    string? StatusMessage = null,
+    TranslationStatus? Status = null)
 {
     public bool HasText => !string.IsNullOrWhiteSpace(TargetText);
 
@@ -27,5 +28,5 @@ public sealed record TranslationResult(
     /// (e.g. "Ollama unavailable — showing original", "Translation disabled
     /// (pass-through)"). Null when a real translation was produced.
     /// </summary>
-    public string? Status => StatusMessage;
+    public string? StatusText => StatusMessage;
 }
