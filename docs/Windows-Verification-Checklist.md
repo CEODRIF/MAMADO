@@ -95,6 +95,17 @@ Legend:
 - [ ] **[Win]** Relaunch → settings, language, theme, device, and model paths restored from `config.json`; imported CV/JD are **gone** (in-memory by design) and must be re-imported.
 - [ ] **[Manual]** Repeat launch/exit 5× → no growing memory, no lock files, no "config corrupt" prompt.
 
+## 15. Compact window, interview mode & access code
+- [ ] **[Win]** Window opens centered at a fixed 1000 × 700 (DIPs); **no resize border, no maximize button**; content fits without clipping at 100 % and 125 % DPI scaling.
+- [ ] **[Manual]** Proportions/typography read as compact and professional in both themes (no cramped or orphaned panels, no layout jumps while typing in any field).
+- [ ] **[Win]** On **Start** (successful): nav rail collapses to *Interview* only; header Settings/Logs shortcuts, device picker, refresh, access-code card, answer controls, and document card disappear; question/translation trios, answer trio, live transcript, health pills, and **Stop** remain visible.
+- [ ] **[Win]** While on the **Settings** or **Documents** page, press Start → view switches to Interview; after **Stop** the previous page is shown again with all selections intact (language, CEFR, device, theme, document review boxes).
+- [ ] **[Manual]** The Start→interview and Stop→full-shell transitions are smooth and subtle: no flicker, no white flash, no mid-page scroll position.
+- [ ] **[Win]** OS "Show animations" preference OFF (reduced motion) → transitions still work (instant is acceptable); ON → no jank.
+- [ ] **[Win]** Access code: typing `abcd1234efgh5678` → auto-formats to `ABCD-1234-EFGH-5678` (upper-cased, grouped); pasting `abc-1234 defg 5678` → same; pasting 20 characters → first 16 kept; invalid symbols (e.g. `!@#`) are dropped; deleting a dash rejoins the groups.
+- [ ] **[Manual]** Access-code feedback is clear and localized (de/fr/ar): empty → "not entered", partial → "n of 16", complete → "format complete"; the honesty note is visible (formatting only — authorizes nothing).
+- [ ] **[Auto]** Formatter behavior: normalize/format/idempotence/state/strict-format tests (`AccessCodeFormatterTests`); fixed-window + mode-wiring XAML contract (`WindowBehaviorTests`); session armed/disarm state machine (`InterviewOverlayControllerTests`).
+
 ## Sign-off
 | Area | Result (pass/fail/n.a.) | Notes |
 |---|---|---|

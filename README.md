@@ -18,13 +18,40 @@ suggestions** grounded in your CV and the job description with a local
 
 ## Current status
 
-The automated suite currently has **384 passing tests**
-(`dotnet test -c Release` → 384/384, `dotnet build -c Release`
+The automated suite currently has **424 passing tests**
+(`dotnet test -c Release` → 424/424, `dotnet build -c Release --no-incremental`
 0 warnings / 0 errors, `dotnet format --verify-no-changes` clean).
-Latest recorded validation: the MAMADO-UI-redesign merge (this state),
-Linux build host, 2026-10-17. The per-phase sections below are
+Latest recorded validation: the Apple-quality UI refinement (this state),
+Linux build host, 2026-10-17 — including the real whisper.cpp end-to-end
+runs (JFK clip). The per-phase sections below are
 **historical milestone records** (suite size and benchmarks as of each
 phase) and are not kept updated.
+
+## Status — Apple-quality UI refinement (compact window, interview mode, access code)
+
+- **Compact fixed window**: 1000 × 700 DIU, centered, `ResizeMode="NoResize"`
+  (no manual resize / maximize; DPI scaling via WPF's DIU model).
+- **Minimal active-interview mode**: on a SUCCESSFUL start the shell collapses
+  to the interview essentials (question/translation + answer trios, live
+  transcript, health pills, Stop); setup surfaces (nav items, header shortcuts,
+  device picker, refresh, access-code card, answer controls, document card)
+  are hidden without losing state; the previous page is restored on session
+  end; scroll resets on the transition; reduced-motion respected. Driven by
+  the existing tested `InterviewOverlayController` (mode + armed-session
+  semantics); its corner-geometry API stays available but is not applied
+  (the window stays fixed by design).
+- **Access code**: `XXXX-XXXX-XXXX-XXXX` input with automatic grouping for
+  typing/paste/editing (`AccessCodeFormatter`, pure + unit-tested), localized
+  progress feedback in all four UI languages, and an explicit honesty note:
+  formatting only — no secret, no backend, no persistence, no logging, no
+  transmission; it authorizes nothing.
+- **Tests**: `AccessCodeFormatterTests` (normalize/format/state/idempotence),
+  `WindowBehaviorTests` (WPF-free guard: NoResize + fixed compact size,
+  interview-mode wiring present, Stop/Start visibility contracts), plus the
+  standing catalog/theme/privacy suites.
+- Windows-only verification (window chrome, mode transition feel, DPI
+  scaling, reduced motion) is deferred to
+  `docs/Windows-Verification-Checklist.md`.
 
 ## Status — MAMADO UI redesign (navigation shell, language panel trios, answer controls)
 
@@ -321,6 +348,42 @@ navigation rail. Theme tokens live in
 `src/AusbildungsWegInterview.App/Themes/AwTheme.Light.xaml` /
 `AwTheme.Dark.xaml` — Light and Dark define the identical set of resource keys
 and every referenced resource is defined (verified by a WPF-free test).
+
+**Compact, fixed-size window.** The window opens centered at a fixed
+**1000 × 700** device-independent pixels (laptop-friendly at 100 % DPI,
+scaled automatically with the OS DPI setting) with `ResizeMode="NoResize"` —
+no manual resizing, no maximize. Typographic scale, spacing, and the subtle
+glass borders/rounded corners come from the shared theme tokens (no per-view
+magic numbers, no extra effects).
+
+**Minimal active-interview mode.** Before Start, the full shell is available.
+When a start ACTUALLY succeeds (the `InterviewOverlayController` session is
+armed), the app switches to the focused interview interface: the navigation
+rail shows only *Interview*, the header setup shortcuts, the device picker,
+refresh, the access-code card, the answer controls, and the document-context
+card are hidden — while the live content (question/translation trios,
+suggested-answer trio with generating chip, live transcript, health pills)
+and the **Stop** button stay visible. The hidden controls are only
+`Visibility`-collapsed: no state is destroyed, the previous page is restored
+when the session ends (stop, fault, or failed start), and the scroll position
+returns to the top on the transition. The mode is driven by the existing
+WPF-free `InterviewOverlayController` state machine (its corner-geometry
+targets remain available for future overlay variants but are not applied —
+the window itself stays fixed by design). Reduced-motion preference
+(`MotionPreference`) is respected by the transition wiring.
+
+**Access code.** The Interview page has an access-code field formatted as
+`XXXX-XXXX-XXXX-XXXX` (letters A–Z and digits 0–9): typing, pasting, and
+editing are auto-normalized and grouped into four blocks of four
+(`AccessCodeFormatter`, pure + unit-tested); the field shows localized
+progress feedback (empty / n of 16 / complete). **Honesty by design: this is
+input formatting only.** No universal secret is hardcoded, the code is not
+checked against any backend, it does not authorize or unlock anything, and it
+is never persisted, logged, or transmitted (the UI says so). Secure
+authorization, if ever added, would additionally need: server-side
+verification of per-user codes (or verifiable signed tokens), tamper-proof
+local storage (e.g. DPAPI) or hardware-bound storage, an offline/grace
+policy, and rate limiting — none of which is present today.
 
 - **Navigation rail** (left, 94 px): Interview / Documents / Settings (top) and
   Logs / Feedback (bottom), with the brand logo above the items.
@@ -701,6 +764,16 @@ rebuilds the speech pipeline automatically (your CV/JD context is preserved).
   runtime, live device plug/unplug and the published win-x64 launch all require a
   Windows machine (see Status). Everything else — including the real whisper.cpp
   end-to-end pipeline — is verified in the automated suite.
+- **Compact window / interview mode / access code — Windows-only feel checks.**
+  The fixed 1000 × 700 NoResize window, the Start→interview-mode content
+  transition (and its DPI scaling, reduced-motion behavior, and the
+  auto-formatting access-code field) are guarded by WPF-free tests
+  (`WindowBehaviorTests`, `AccessCodeFormatterTests`,
+  `InterviewOverlayControllerTests`), but the visual/interaction verification
+  itself is on `docs/Windows-Verification-Checklist.md` (§15).
+- **Access code is formatting-only by design** — it does not authorize
+  anything and no authorization backend exists; see the *Access code* section
+  under *Interface* for what secure authorization would require.
 - **Ollama latency not measured** on the build host (no Ollama installed); the
   README/benchmark docs label Ollama timings as estimates.
 - Translation engine coverage is pair-dependent and reported honestly: whisper
