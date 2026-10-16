@@ -7,6 +7,7 @@
 
   <data name="TitleApp" xml:space="preserve"><value>AusbildungsWeg Interview</value></data>
   <data name="Subtitle" xml:space="preserve"><value>مساعد مقابلات محلي - لا يغادر أي شيء جهازك</value></data>
+  <data name="OverlayHeading" xml:space="preserve"><value>مقابلة مباشرة</value></data>
 
   <data name="StatusReady" xml:space="preserve"><value>جاهز</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>جارٍ تحميل النماذج…</value></data>

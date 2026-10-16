@@ -56,6 +56,26 @@
         <GradientStop Color="#9B7BF7" Offset="1"/>
     </LinearGradientBrush>
 
+    <!-- Vision glass layers (same key set as the dark theme; light values). -->
+    <LinearGradientBrush x:Key="AwGlassBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#CCFFFFFF" Offset="0"/>
+        <GradientStop Color="#A6F7F8FE" Offset="0.22"/>
+        <GradientStop Color="#99F4F5FC" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AwGlassDeepBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#80FFFFFF" Offset="0"/>
+        <GradientStop Color="#59FFFFFF" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="AwLumenBrush" Color="#2E5847E8"/>
+    <SolidColorBrush x:Key="AwLumenStrongBrush" Color="#805847E8"/>
+    <Color x:Key="AwShadowColor">#26000000</Color>
+    <DropShadowEffect x:Key="AwShadow" Color="#26000000" BlurRadius="14" ShadowDepth="2" Direction="270"/>
+    <RadialGradientBrush x:Key="AwAmbientGlow" GradientOrigin="0.5,0" Center="0.5,0" RadiusX="0.95" RadiusY="0.8">
+        <GradientStop Color="#1F7367F6" Offset="0"/>
+        <GradientStop Color="#125F8DE8" Offset="0.45"/>
+        <GradientStop Color="#00000000" Offset="1"/>
+    </RadialGradientBrush>
+
     <!-- window defaults -->
     <Style TargetType="Window">
         <Setter Property="Background" Value="{StaticResource AwBackgroundBrush}"/>
@@ -84,20 +104,23 @@
 
     <!-- surfaces -->
     <Style x:Key="AwCard" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource AwSurfaceBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource AwLineBrush}"/>
+        <Setter Property="Background" Value="{StaticResource AwGlassBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AwLumenBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="16"/>
         <Setter Property="Padding" Value="14"/>
+        <Setter Property="Effect" Value="{StaticResource AwShadow}"/>
     </Style>
     <Style x:Key="AwPanel" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource AwSurface2Brush}"/>
+        <Setter Property="Background" Value="{StaticResource AwGlassDeepBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AwLumenBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="Padding" Value="10"/>
     </Style>
     <Style x:Key="AwChip" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource AwSurface2Brush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource AwLineBrush}"/>
+        <Setter Property="Background" Value="{StaticResource AwGlassDeepBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AwLumenBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="999"/>
         <Setter Property="Padding" Value="10,4"/>
@@ -113,7 +136,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="bd" CornerRadius="12" Background="{StaticResource AwGradientNeon}">
+                    <Border x:Name="bd" CornerRadius="12" Background="{StaticResource AwGradientNeon}"
+                            Effect="{StaticResource AwShadow}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0"/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -133,8 +157,8 @@
     </Style>
 
     <Style x:Key="AwButtonSecondary" TargetType="Button">
-        <Setter Property="Background" Value="{StaticResource AwSurfaceBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource AwLineStrongBrush}"/>
+        <Setter Property="Background" Value="{StaticResource AwGlassDeepBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AwLumenBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource AwInkBrush}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Height" Value="38"/>
@@ -295,8 +319,8 @@
                                StaysOpen="False" Focusable="False">
                             <Border MinWidth="{TemplateBinding ActualWidth}" MaxHeight="240"
                                     Background="{StaticResource AwSurfaceBrush}"
-                                    BorderBrush="{StaticResource AwLineBrush}" BorderThickness="1" CornerRadius="12"
-                                    Margin="0,6,0,0" Padding="0,4">
+                                    BorderBrush="{StaticResource AwLumenStrongBrush}" BorderThickness="1" CornerRadius="12"
+                                    Margin="0,6,0,0" Padding="0,4" Effect="{StaticResource AwShadow}">
                                 <ScrollViewer Background="Transparent" VerticalScrollBarVisibility="Auto">
                                     <ItemsPresenter/>
                                 </ScrollViewer>

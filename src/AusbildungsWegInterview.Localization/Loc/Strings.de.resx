@@ -7,6 +7,7 @@
 
   <data name="TitleApp" xml:space="preserve"><value>AusbildungsWeg Interview</value></data>
   <data name="Subtitle" xml:space="preserve"><value>Lokaler Interview-Begleiter - nichts verlässt Ihren PC</value></data>
+  <data name="OverlayHeading" xml:space="preserve"><value>Live-Interview</value></data>
 
   <data name="StatusReady" xml:space="preserve"><value>Bereit</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>Modelle werden geladen…</value></data>

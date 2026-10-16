@@ -256,7 +256,15 @@ public sealed class MainViewModel : ObservableObject
     public bool AlwaysOnTop
     {
         get => _alwaysOnTop;
-        set { if (Set(ref _alwaysOnTop, value)) { _services.Config.AlwaysOnTop = value; SaveConfig(); } }
+        set
+        {
+            if (Set(ref _alwaysOnTop, value))
+            {
+                _services.Config.AlwaysOnTop = value;
+                SaveConfig();
+                OnPropertyChanged(nameof(IsTopmost));
+            }
+        }
     }
 
     // ---- display state (private set + auto-notify) ----
@@ -497,6 +505,30 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand RefreshStatusCommand { get; }
     public RelayCommand ToggleThemeCommand { get; }
 
+    // ---- compact interview overlay (Vision Pro-style floating mode) ----
+    /// <summary>
+    /// WPF-free overlay state machine (mode transitions, corner placement,
+    /// work-area clamping, size bounds). The window code-behind applies the
+    /// targets and animates them; the view model drives the SESSION semantics
+    /// (start must have actually succeeded before the compact transition).
+    /// </summary>
+    public InterviewOverlayController Overlay { get; }
+
+    /// <summary>Mirrors <see cref="Overlay.Mode"/> for XAML visibility bindings.</summary>
+    public bool IsInterviewMode { get; private set; }
+
+    /// <summary>Window.Topmost: the user's AlwaysOnTop setting OR interview mode.</summary>
+    public bool IsTopmost => AlwaysOnTop || IsInterviewMode;
+
+    /// <summary>One-shot transitions are skipped when the OS prefers reduced motion.</summary>
+    public bool AnimationsEnabled { get; }
+
+    /// <summary>Raised on the UI thread AFTER the pipeline start actually succeeded (compact mode may begin).</summary>
+    public event EventHandler? InterviewStarted;
+
+    /// <summary>Raised when the interview session ends (stop, fault, or start failure).</summary>
+    public event EventHandler? InterviewSessionEnded;
+
     // ---- pipeline event wiring (unsubscribed on rebuild) ----
     private EventHandler<TranscriptUpdatedEventArgs>? _hTranscript;
     private EventHandler<TranslationUpdatedEventArgs>? _hTranslation;
@@ -506,10 +538,18 @@ public sealed class MainViewModel : ObservableObject
     private EventHandler<CaptureErrorEventArgs>? _hError;
     private InterviewPipeline? _wiredPipeline;
 
-    public MainViewModel(AppServices services, Dispatcher dispatcher)
+    public MainViewModel(AppServices services, Dispatcher dispatcher, InterviewOverlayController? overlay = null)
     {
         _services = services;
         _dispatcher = dispatcher;
+        Overlay = overlay ?? new InterviewOverlayController();
+        AnimationsEnabled = !MotionPreference.IsReduced;
+        Overlay.ModeChanged += (_, _) =>
+        {
+            IsInterviewMode = Overlay.Mode == OverlayMode.Interview;
+            OnPropertyChanged(nameof(IsInterviewMode));
+            OnPropertyChanged(nameof(IsTopmost));
+        };
 
         // UI language + theme are restored from the persisted configuration.
         Loc = new LocalizationManager(_services.Config.UiLanguage);
@@ -751,7 +791,17 @@ public sealed class MainViewModel : ObservableObject
 
     private void UpdateStatus(PipelineState state)
     {
-        IsListening = state is PipelineState.Listening or PipelineState.Processing;
+        bool wasListening = IsListening;
+        bool nowListening = state is PipelineState.Listening or PipelineState.Processing;
+        IsListening = nowListening;
+        // A session that leaves the listening/processing states (stopped,
+        // faulted, stopping) ends the interview overlay: the user must get
+        // back to the main window (where any error is fully visible).
+        if (wasListening && !nowListening)
+        {
+            Overlay.DisarmSession();
+            InterviewSessionEnded?.Invoke(this, EventArgs.Empty);
+        }
         StatusText = state switch
         {
             PipelineState.Preparing => T["StatusPreparing"],
@@ -792,10 +842,15 @@ public sealed class MainViewModel : ObservableObject
         {
             SaveConfig();
             await _services.Pipeline.StartAsync();
+            // The compact interview transition is only allowed for a start
+            // that ACTUALLY succeeded — the window listens for this event.
+            Overlay.ArmSession();
+            InterviewStarted?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
         {
             IsListening = false; // never claim "listening" after a failed start
+            Overlay.DisarmSession();
             ShowRuntimeError(ex);
             StatusText = T["StatusFaulted"];
             StatusBrush = StatusFaultBrush;
@@ -809,9 +864,11 @@ public sealed class MainViewModel : ObservableObject
     private async Task StopAsync()
     {
         IsBusy = true;
+        bool ok = false;
         try
         {
             await _services.Pipeline.StopAsync();
+            ok = true;
         }
         catch (Exception ex)
         {
@@ -821,6 +878,11 @@ public sealed class MainViewModel : ObservableObject
         {
             IsListening = false;
             IsBusy = false;
+            if (ok)
+            {
+                Overlay.DisarmSession();
+                InterviewSessionEnded?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
 
