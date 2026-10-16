@@ -135,7 +135,7 @@ dotnet test -c Release
 **Verified in this repository (automated, cross-platform test host = Linux):**
 - The solution and all 8 projects build (Release, 0 warnings / 0 errors).
   The Windows-only projects (App, Audio) compile via `EnableWindowsTargeting`.
-- **141 unit + integration tests pass** (`dotnet test -c Release`), covering:
+- **371 unit + integration tests pass** (`dotnet test -c Release`), covering:
   - Real **whisper.cpp integration**: a genuine `whisper-cli` subprocess run
     against `ggml-tiny.bin` correctly transcribes the `jfk.wav` speech sample
     (auto-detected language: English), produces marked *partial* results, and
