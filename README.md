@@ -16,6 +16,18 @@ suggestions** grounded in your CV and the job description with a local
 
 ---
 
+## Current status
+
+The automated suite currently has **371 passing tests**
+(`dotnet test -c Release` → 371/371, `dotnet build -c Release`
+0 warnings / 0 errors, `dotnet format --verify-no-changes` clean).
+Latest recorded validation: commit `2207f28`, Linux build host,
+2026-10-16. The per-phase sections below are **historical milestone
+records** (suite size and benchmarks as of each phase) and are not
+kept updated.
+
+---
+
 ## Status — Phase 3 (Windows integration, performance, local translation & release packaging)
 
 **Measured on the build host** (Intel Xeon Platinum, 2 vCPU, 4 GB RAM, Linux x64, CPU-only —
@@ -135,7 +147,7 @@ dotnet test -c Release
 **Verified in this repository (automated, cross-platform test host = Linux):**
 - The solution and all 8 projects build (Release, 0 warnings / 0 errors).
   The Windows-only projects (App, Audio) compile via `EnableWindowsTargeting`.
-- **371 unit + integration tests pass** (`dotnet test -c Release`), covering:
+- **141 unit + integration tests pass** (`dotnet test -c Release`), covering:
   - Real **whisper.cpp integration**: a genuine `whisper-cli` subprocess run
     against `ggml-tiny.bin` correctly transcribes the `jfk.wav` speech sample
     (auto-detected language: English), produces marked *partial* results, and
