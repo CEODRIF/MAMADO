@@ -238,4 +238,10 @@
   <data name="FeedbackPrivacyBody" xml:space="preserve"><value>Nur Systemaudio (Loopback des gewählten Ausgabegeräts) — das Mikrofon wird nie geöffnet. Nichts wird gesendet: Transkription, Übersetzung und Antworten laufen lokal. Audio, Transkripte, Dokumente und Antworten werden standardmäßig nicht gespeichert.</value></data>
   <data name="FeedbackProject" xml:space="preserve"><value>Projektseite</value></data>
   <data name="WaveformIdle" xml:space="preserve"><value>Kein Audio</value></data>
+  <data name="AccessHeading" xml:space="preserve"><value>Zugangscode</value></data>
+  <data name="AccessHint" xml:space="preserve"><value>Format: XXXX-XXXX-XXXX-XXXX (Buchstaben A–Z und Ziffern 0–9).</value></data>
+  <data name="AccessStateEmpty" xml:space="preserve"><value>Noch nicht eingegeben.</value></data>
+  <data name="AccessStatePartial" xml:space="preserve"><value>{0} von 16 Zeichen eingegeben.</value></data>
+  <data name="AccessStateValid" xml:space="preserve"><value>Das Zugangscode-Format ist vollständig.</value></data>
+  <data name="AccessNote" xml:space="preserve"><value>Dieses Feld prüft nur das Codeformat auf diesem Gerät. Es wird nichts freigeschaltet, und der Code wird nie gespeichert, protokolliert oder weitergegeben.</value></data>
 </root>

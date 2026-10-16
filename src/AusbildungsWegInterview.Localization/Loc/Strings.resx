@@ -238,4 +238,10 @@
   <data name="FeedbackPrivacyBody" xml:space="preserve"><value>System audio only (loopback of the selected output device) — the microphone is never opened. Nothing is sent anywhere: transcription, translation and answers run locally. Audio, transcripts, documents and answers are not persisted by default.</value></data>
   <data name="FeedbackProject" xml:space="preserve"><value>Project page</value></data>
   <data name="WaveformIdle" xml:space="preserve"><value>No audio</value></data>
+  <data name="AccessHeading" xml:space="preserve"><value>Access code</value></data>
+  <data name="AccessHint" xml:space="preserve"><value>Format: XXXX-XXXX-XXXX-XXXX (letters A–Z and digits 0–9).</value></data>
+  <data name="AccessStateEmpty" xml:space="preserve"><value>Not entered yet.</value></data>
+  <data name="AccessStatePartial" xml:space="preserve"><value>{0} of 16 characters entered.</value></data>
+  <data name="AccessStateValid" xml:space="preserve"><value>Access code format is complete.</value></data>
+  <data name="AccessNote" xml:space="preserve"><value>This field only checks the code format on this device. It does not authorize anything, and the code is never stored, logged, or sent anywhere.</value></data>
 </root>

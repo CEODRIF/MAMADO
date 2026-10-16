@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:AusbildungsWegInterview.App.ViewModels"
         Title="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TitleApp}"
-        Width="1200" Height="840" MinWidth="960" MinHeight="640"
-        ResizeMode="CanResize" WindowStartupLocation="CenterScreen"
+        Width="1000" Height="700"
+        ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
         FlowDirection="{Binding IsRtl, Converter={StaticResource BoolToFlowDirection}}"
         Topmost="{Binding IsTopmost}"
         Background="{DynamicResource AwShellBackgroundBrush}">
@@ -47,7 +47,9 @@
                            Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
                 </Border>
 
-                <ListBox DockPanel.Dock="Top" ItemsSource="{Binding NavPrimary}" SelectedItem="{Binding SelectedNav}"
+                <!-- VisibleNavPrimary: interview mode shows ONLY the Interview
+                     entry; the other items stay in NavPrimary (state preserved). -->
+                <ListBox DockPanel.Dock="Top" ItemsSource="{Binding VisibleNavPrimary}" SelectedItem="{Binding SelectedNav}"
                          Background="Transparent" BorderThickness="0" Focusable="False"
                          ItemContainerStyle="{DynamicResource AwNavItem}">
                     <ListBox.ItemTemplate>
@@ -62,7 +64,8 @@
 
                 <ListBox DockPanel.Dock="Bottom" ItemsSource="{Binding NavSecondary}" SelectedItem="{Binding SelectedNav}"
                          Background="Transparent" BorderThickness="0" Focusable="False" Margin="0,0,0,14"
-                         ItemContainerStyle="{DynamicResource AwNavItem}">
+                         ItemContainerStyle="{DynamicResource AwNavItem}"
+                         Visibility="{Binding IsInterviewMode, Converter={StaticResource InverseBoolToVis}}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel>
@@ -177,18 +180,22 @@
                             </StackPanel>
                         </Border>
 
-                        <Button Style="{DynamicResource AwIconButton}" Content="&#xE713;"
-                                Command="{Binding SelectPageCommand}" CommandParameter="settings"
-                                ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=NavSettings}"/>
-                        <Button Style="{DynamicResource AwIconButton}" Content="&#xE81C;" Margin="4,0,0,0"
-                                Command="{Binding SelectPageCommand}" CommandParameter="logs"
-                                ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=NavLogs}"/>
+                        <!-- header shortcuts to setup pages: hidden in interview mode -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                    Visibility="{Binding IsInterviewMode, Converter={StaticResource InverseBoolToVis}}">
+                            <Button Style="{DynamicResource AwIconButton}" Content="&#xE713;"
+                                    Command="{Binding SelectPageCommand}" CommandParameter="settings"
+                                    ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=NavSettings}"/>
+                            <Button Style="{DynamicResource AwIconButton}" Content="&#xE81C;" Margin="4,0,0,0"
+                                    Command="{Binding SelectPageCommand}" CommandParameter="logs"
+                                    ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=NavLogs}"/>
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- = pages = -->
-            <ScrollViewer Background="{DynamicResource AwShellGradientBrush}"
+            <ScrollViewer Background="{DynamicResource AwShellGradientBrush}" x:Name="PageScroller"
                           Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="18,14">
                 <StackPanel>
 
@@ -205,6 +212,25 @@
 
                     <!-- ==================== INTERVIEW page ==================== -->
                     <StackPanel Visibility="{Binding IsInterviewPage, Converter={StaticResource BoolToVis}}">
+
+                        <!-- access code (formatting only — see AccessNote; hidden in interview mode) -->
+                        <Border Style="{DynamicResource AwGlassCard}" Margin="0,0,0,14"
+                                Visibility="{Binding IsInterviewMode, Converter={StaticResource InverseBoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AccessHeading}"
+                                           Style="{DynamicResource AwSectionLabel}"/>
+                                <TextBox Text="{Binding AccessCode, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{DynamicResource AwTextBox}"
+                                         AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AccessHeading}"
+                                         FontFamily="Consolas" FontSize="15" MaxLength="19"
+                                         TextAlignment="Center"/>
+                                <TextBlock Text="{Binding AccessCodeStateText}" FontSize="11" Margin="0,6,0,0"
+                                           Foreground="{DynamicResource AwMutedBrush}"/>
+                                <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AccessNote}"
+                                           FontSize="10.5" TextWrapping="Wrap" Margin="0,6,0,0"
+                                           Foreground="{DynamicResource AwFaintBrush}"/>
+                            </StackPanel>
+                        </Border>
 
                         <!-- listening card -->
                         <Border Style="{DynamicResource AwGlassCard}" Margin="0,0,0,14">
@@ -269,21 +295,25 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" MinWidth="180">
+                                    <!-- device picker + refresh are SETUP controls: hidden in interview mode -->
                                     <ComboBox ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding SelectedOutputDevice}"
                                                             AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OutputDevice}"
                                               Style="{DynamicResource AwComboBox}"
-                                              ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OutputDevice}"/>
+                                              ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OutputDevice}"
+                                              Visibility="{Binding IsInterviewMode, Converter={StaticResource InverseBoolToVis}}"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0" HorizontalAlignment="Right">
                                         <Button Style="{DynamicResource AwButtonPrimary}" Command="{Binding StartCommand}"
                                                 Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=StartListening}"
                                                 Visibility="{Binding IsListening, Converter={StaticResource InverseBoolToVis}}"/>
+                                        <!-- Stop stays clearly visible and reachable in interview mode -->
                                         <Button Style="{DynamicResource AwButtonDanger}" Command="{Binding StopCommand}"
                                                 Content="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Stop}"
                                                 Visibility="{Binding IsListening, Converter={StaticResource BoolToVis}}"/>
                                         <Button Style="{DynamicResource AwButtonGhost}" Margin="8,0,0,0"
                                                 Command="{Binding RefreshDevicesCommand}" Content="&#xE72C;"
                                                 FontFamily="Segoe MDL2 Assets"
-                                                ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Refresh}"/>
+                                                ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Refresh}"
+                                                Visibility="{Binding IsInterviewMode, Converter={StaticResource InverseBoolToVis}}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Grid>
@@ -378,8 +408,9 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <!-- answer controls: real re-generation + real settings -->
-                        <Border Style="{DynamicResource AwGlassCard}" Margin="6,6,6,14" Padding="12">
+                        <!-- answer controls: real re-generation + real settings (setup: hidden in interview mode) -->
+                        <Border Style="{DynamicResource AwGlassCard}" Margin="6,6,6,14" Padding="12"
+                                Visibility="{Binding IsInterviewMode, Converter={StaticResource InverseBoolToVis}}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -424,8 +455,9 @@
                             </Grid>
                         </Border>
 
-                        <!-- document context (resume / job description / notes) -->
-                        <Border Style="{DynamicResource AwGlassCard}" Margin="6,0,6,14">
+                        <!-- document context (resume / job description / notes) — setup: hidden in interview mode -->
+                        <Border Style="{DynamicResource AwGlassCard}" Margin="6,0,6,14"
+                                Visibility="{Binding IsInterviewMode, Converter={StaticResource InverseBoolToVis}}">
                             <StackPanel>
                             <Grid>
                                 <Grid.ColumnDefinitions>

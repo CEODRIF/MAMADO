@@ -692,14 +692,70 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>Window.Topmost: the user's AlwaysOnTop setting OR interview mode.</summary>
     public bool IsTopmost => AlwaysOnTop || IsInterviewMode;
 
+    /// <summary>
+    /// Primary navigation-rail items. In interview (active-session) mode only
+    /// the Interview entry is visible — the other entries are NOT removed from
+    /// <see cref="NavPrimary"/> (state is preserved; the pre-session page is
+    /// restored when the session ends).
+    /// </summary>
+    public IEnumerable<NavigationItem> VisibleNavPrimary
+        => IsInterviewMode ? NavPrimary.Where(i => i.Key == "interview") : NavPrimary;
+
     /// <summary>One-shot transitions are skipped when the OS prefers reduced motion.</summary>
     public bool AnimationsEnabled { get; }
+
+    // ---- access code (INPUT FORMATTING ONLY — not an authorization mechanism) ----
+    private string _accessCode = string.Empty;
+
+    /// <summary>
+    /// The entered access code, always in canonical display form
+    /// (XXXX-XXXX-XXXX-XXXX, uppercase A–Z0–9, max 16 characters). The setter
+    /// normalizes typing, paste, and editing through AccessCodeFormatter.
+    /// The value is held in memory only — never persisted, never logged,
+    /// never sent anywhere, and it authorizes nothing.
+    /// </summary>
+    public string AccessCode
+    {
+        get => _accessCode;
+        set
+        {
+            string formatted = AccessCodeFormatter.FormatInput(value);
+            if (!Set(ref _accessCode, formatted))
+                return;
+            UpdateAccessCodeStateText();
+        }
+    }
+
+    private string _accessCodeStateText = string.Empty;
+
+    /// <summary>Localized progress/validity feedback for the access-code field.</summary>
+    public string AccessCodeStateText { get => _accessCodeStateText; private set => Set(ref _accessCodeStateText, value); }
+
+    private void UpdateAccessCodeStateText()
+        => AccessCodeStateText = AccessCodeFormatter.State(_accessCode) switch
+        {
+            AccessCodeState.Empty => T["AccessStateEmpty"],
+            AccessCodeState.Partial => T.F("AccessStatePartial", AccessCodeFormatter.Length(_accessCode)),
+            _ => T["AccessStateValid"]
+        };
 
     /// <summary>Raised on the UI thread AFTER the pipeline start actually succeeded.</summary>
     public event EventHandler? InterviewStarted;
 
     /// <summary>Raised when the interview session ends (stop, fault, or start failure).</summary>
     public event EventHandler? InterviewSessionEnded;
+
+    /// <summary>Page the user was on before the interview session started (restored on session end).</summary>
+    private NavigationItem? _navBeforeInterview;
+
+    private void RestoreInterviewNav()
+    {
+        if (_navBeforeInterview is not { } prev)
+            return;
+        _navBeforeInterview = null;
+        if (_selectedNav is null || _selectedNav.Key != prev.Key)
+            SelectedNav = prev;
+    }
 
     // ---- pipeline event wiring (unsubscribed on rebuild) ----
     private EventHandler<TranscriptUpdatedEventArgs>? _hTranscript;
@@ -724,7 +780,12 @@ public sealed class MainViewModel : ObservableObject
             IsInterviewMode = Overlay.Mode == OverlayMode.Interview;
             OnPropertyChanged(nameof(IsInterviewMode));
             OnPropertyChanged(nameof(IsTopmost));
+            OnPropertyChanged(nameof(VisibleNavPrimary));
         };
+
+        // When the interview session ends, return the user to the page they
+        // were on before Start (nav state was preserved, not destroyed).
+        InterviewSessionEnded += (_, _) => RestoreInterviewNav();
 
         // UI language + theme are restored from the persisted configuration.
         Loc = new LocalizationManager(_services.Config.UiLanguage);
@@ -793,6 +854,8 @@ public sealed class MainViewModel : ObservableObject
             NavSecondary.Add(item);
         _selectedNav = NavItems[0];
 
+        UpdateAccessCodeStateText();
+
         CvChip = new DocumentChipViewModel("cv", RemoveDocumentBySlot);
         JdChip = new DocumentChipViewModel("jd", RemoveDocumentBySlot);
         NotesChip = new DocumentChipViewModel("notes", RemoveDocumentBySlot);
@@ -842,6 +905,7 @@ public sealed class MainViewModel : ObservableObject
         RecomputeContextStatus();
         UpdateAllDocStates();
         ReLocalizeDynamicStrings();
+        UpdateAccessCodeStateText();
         AppVersionText = T.F("FeedbackVersion", AppVersion);
 
         // Shell strings: navigation labels + the language panels' captions and
@@ -1315,6 +1379,11 @@ public sealed class MainViewModel : ObservableObject
             // Session semantics: only a start that ACTUALLY succeeded arms the
             // interview session (the merged workstream's overlay contract).
             Overlay.ArmSession();
+            // Minimal interview mode: focus on the Interview page (remember
+            // the previous page for the restore on session end).
+            _navBeforeInterview = _selectedNav;
+            if (!IsInterviewPage)
+                SelectedNav = NavItems.FirstOrDefault(i => i.Key == "interview") ?? _selectedNav;
             InterviewStarted?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
