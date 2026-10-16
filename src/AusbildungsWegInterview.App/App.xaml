@@ -17,5 +17,7 @@
         <local:InverseBoolToVisConverter x:Key="InverseBoolToVis"/>
         <local:BoolToFlowDirectionConverter x:Key="BoolToFlowDirection"/>
         <local:LocKeyConverter x:Key="LocKey"/>
+        <local:LevelToHeightConverter x:Key="LevelToHeight"/>
+        <local:PickerOptionEqualsConverter x:Key="PickerEquals"/>
     </Application.Resources>
 </Application>

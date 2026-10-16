@@ -67,7 +67,13 @@ public class LocalizationTests
     private static readonly HashSet<string> LegitimatelySameAsEnglish = new()
     {
         "de|TitleApp", "de|LiveHeading", "de|FileFilter", "de|SpeechEngineCli", "de|LengthNormal",
-        "fr|TitleApp", "fr|FileFilter", "fr|LengthNormal", "fr|Style",
+        "fr|TitleApp", "fr|FileFilter", "fr|LengthNormal",
+        "fr|AutoDevice",
+        "de|FeedbackVersion", "fr|FeedbackVersion",
+        // genuine loanwords / product terms: identical by language, not a missing translation
+        "de|NavInterview", "de|NavFeedback", "de|QOriginal",
+        "fr|NavDocuments", "fr|QOriginal",
+        "fr|DocChipMetaPages", "fr|Style",
         "ar|TitleApp", "ar|FileFilter"
     };
 

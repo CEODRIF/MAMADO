@@ -404,4 +404,125 @@
         </Setter>
     </Style>
 
+
+    <!-- ===================== MAMADO shell (dark navy glass + neon blue) ===================== -->
+    <SolidColorBrush x:Key="AwShellBackgroundBrush" Color="#FF070C1C"/>
+    <LinearGradientBrush x:Key="AwShellGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF0A1128" Offset="0"/>
+        <GradientStop Color="#FF121C3C" Offset="0.55"/>
+        <GradientStop Color="#FF0B1330" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AwGlassPanelBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#D2182B4E" Offset="0"/>
+    <GradientStop Color="#B0121A34" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="AwGlassBorderBrush" Color="#3D4A6FA8"/>
+    <SolidColorBrush x:Key="AwNavRailBrush" Color="#B30A1124"/>
+    <SolidColorBrush x:Key="AwNavHoverBrush" Color="#2E3B82F6"/>
+    <SolidColorBrush x:Key="AwNavSelectedBrush" Color="#4D3B82F6"/>
+    <SolidColorBrush x:Key="AwNeonBrush" Color="#FF5AA9FF"/>
+    <SolidColorBrush x:Key="AwNeonSoftBrush" Color="#334C9AFF"/>
+    <SolidColorBrush x:Key="AwNeonDeepBrush" Color="#FF2563EB"/>
+    <LinearGradientBrush x:Key="AwWaveBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#FF7FD8FF" Offset="0"/>
+        <GradientStop Color="#FF3B82F6" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AwMicRingBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF6FB4FF" Offset="0"/>
+        <GradientStop Color="#FF8B5CF6" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="AwChipBrush" Color="#CC16203C"/>
+    <SolidColorBrush x:Key="AwSegmentedSelectedBrush" Color="#FF2563EB"/>
+    <SolidColorBrush x:Key="AwSegmentedIdleBrush" Color="#14FFFFFF"/>
+    <SolidColorBrush x:Key="AwPillReadyBrush" Color="#FF22C55E"/>
+    <SolidColorBrush x:Key="AwPillWarnBrush" Color="#FFF59E0B"/>
+    <SolidColorBrush x:Key="AwPillFaultBrush" Color="#FFEF4444"/>
+    <SolidColorBrush x:Key="AwPillOffBrush" Color="#FF64748B"/>
+    <DropShadowEffect x:Key="AwNeonGlow" Color="#FF3B82F6" BlurRadius="26" ShadowDepth="0" Opacity="0.6"/>
+    <DropShadowEffect x:Key="AwPanelShadow" Color="#FF02040C" BlurRadius="22" ShadowDepth="6" Opacity="0.55"/>
+
+    <Style x:Key="AwGlassCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource AwGlassPanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AwGlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="Effect" Value="{StaticResource AwPanelShadow}"/>
+    </Style>
+
+    <Style x:Key="AwNavGlyph" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{StaticResource AwNeonBrush}"/>
+    </Style>
+
+    <Style x:Key="AwNavCaption" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Margin" Value="0,6,0,0"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{StaticResource AwMutedBrush}"/>
+    </Style>
+
+    <Style x:Key="AwNavItem" TargetType="ListBoxItem">
+        <Setter Property="Padding" Value="0,12"/>
+        <Setter Property="Margin" Value="8,4"/>
+        <Setter Property="Foreground" Value="{StaticResource AwMutedBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="12" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AwNavHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AwNavSelectedBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource AwInkBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AwPillBorder" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource AwChipBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AwGlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="12,6"/>
+    </Style>
+
+    <Style x:Key="AwSegmented" TargetType="RadioButton">
+        <Setter Property="Padding" Value="16,6"/>
+        <Setter Property="Margin" Value="2,0"/>
+        <Setter Property="Foreground" Value="{StaticResource AwMutedBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Bd" Background="{StaticResource AwSegmentedIdleBrush}" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AwNavHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AwSegmentedSelectedBrush}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

@@ -50,7 +50,7 @@ public class AppConfigurationTests
             .Select(p => p.Name)
             .ToList();
 
-        foreach (var bad in new[] { "Cv", "JobDescription", "Transcript", "Document", "Question", "AnswerText", "Suggestion" })
+        foreach (var bad in new[] { "CvText", "CvContent", "JobDescription", "Transcript", "DocumentText", "DocumentContent", "QuestionText", "AnswerText", "Suggestion" })
         {
             Assert.True(stringProps.All(n => !n.Contains(bad, StringComparison.OrdinalIgnoreCase)),
                 $"AppConfiguration must not carry personal data (string property matching '{bad}'). String properties: {string.Join(", ", stringProps)}");

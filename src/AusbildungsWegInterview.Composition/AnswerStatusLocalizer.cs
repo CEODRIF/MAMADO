@@ -12,14 +12,21 @@ namespace AusbildungsWegInterview.App;
 public static class AnswerStatusLocalizer
 {
     public static string Localize(LocalizationManager loc, AnswerSuggestion suggestion)
+        => suggestion is null ? string.Empty : Localize(loc, suggestion.Status, suggestion.Model);
+
+    /// <summary>
+    /// Localizes a bare status code (used by the answer language panels, which
+    /// carry the machine code without a whole suggestion).
+    /// </summary>
+    public static string Localize(LocalizationManager loc, AnswerStatus status, string? model = null)
     {
-        if (suggestion is null || suggestion.Status is AnswerStatus.None)
+        if (status is AnswerStatus.None)
             return string.Empty;
 
-        return suggestion.Status switch
+        return status switch
         {
             AnswerStatus.RuntimeUnavailable => loc["AnswerStatusUnavailable"],
-            AnswerStatus.ModelMissing => loc.F("AnswerStatusModelMissing", suggestion.Model ?? "…"),
+            AnswerStatus.ModelMissing => loc.F("AnswerStatusModelMissing", model ?? "…"),
             AnswerStatus.GenerationFailed => loc["AnswerStatusFailed"],
             AnswerStatus.GenerationTimeout => loc["AnswerStatusTimeout"],
             AnswerStatus.EmptyResponse => loc["AnswerStatusEmpty"],

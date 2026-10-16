@@ -107,6 +107,7 @@
   <data name="SpeechEngineNative" xml:space="preserve"><value>whisper.cpp native library</value></data>
   <data name="SpeechModelReady" xml:space="preserve"><value>ready</value></data>
   <data name="SpeechSetupLine" xml:space="preserve"><value>Speech: {0} | model '{1}': {2}</value></data>
+  <data name="SpeechModel" xml:space="preserve"><value>Speech model</value></data>
   <data name="SpeechModelMissing" xml:space="preserve"><value>MISSING - download it or set the model path</value></data>
   <data name="SpeechStatusUnknown" xml:space="preserve"><value>Speech engine: status unknown</value></data>
 
@@ -176,4 +177,55 @@
   <data name="AnswerGenerating" xml:space="preserve"><value>Generating answer…</value></data>
   <data name="CopyAnswer" xml:space="preserve"><value>Copy</value></data>
   <data name="ErrorCopyFailed" xml:space="preserve"><value>Copying to the clipboard failed.</value></data>
+  <data name="NavInterview" xml:space="preserve"><value>Interview</value></data>
+  <data name="NavDocuments" xml:space="preserve"><value>Documents</value></data>
+  <data name="NavSettings" xml:space="preserve"><value>Settings</value></data>
+  <data name="NavLogs" xml:space="preserve"><value>Logs</value></data>
+  <data name="NavFeedback" xml:space="preserve"><value>Feedback</value></data>
+  <data name="AppTagline" xml:space="preserve"><value>AI Interview Copilot</value></data>
+  <data name="StatusWhisper" xml:space="preserve"><value>Whisper (Local)</value></data>
+  <data name="StatusOllama" xml:space="preserve"><value>Ollama (Local)</value></data>
+  <data name="StatusTranslation" xml:space="preserve"><value>Translation</value></data>
+  <data name="PillReady" xml:space="preserve"><value>Ready</value></data>
+  <data name="PillUnavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="PillModelMissing" xml:space="preserve"><value>Model missing</value></data>
+  <data name="PillUnknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="PillOff" xml:space="preserve"><value>Off</value></data>
+  <data name="ListeningHeading" xml:space="preserve"><value>Listening…</value></data>
+  <data name="ListeningSub" xml:space="preserve"><value>Detecting interviewer question</value></data>
+  <data name="IdleHeading" xml:space="preserve"><value>Stopped</value></data>
+  <data name="IdleSub" xml:space="preserve"><value>Press Start to listen to the system audio</value></data>
+  <data name="AutoDevice" xml:space="preserve"><value>Auto</value></data>
+  <data name="QOriginal" xml:space="preserve"><value>Original</value></data>
+  <data name="QTranslation" xml:space="preserve"><value>Translation</value></data>
+  <data name="AnswerSectionHeading" xml:space="preserve"><value>AI Suggested Answer</value></data>
+  <data name="PanelPending" xml:space="preserve"><value>Waiting for the final answer…</value></data>
+  <data name="PanelUnavailable" xml:space="preserve"><value>Not translated — the local engine did not return a translation.</value></data>
+  <data name="BtnShorter" xml:space="preserve"><value>Shorter</value></data>
+  <data name="BtnLonger" xml:space="preserve"><value>Longer</value></data>
+  <data name="BtnRegenerate" xml:space="preserve"><value>Regenerate</value></data>
+  <data name="AnswerStyleLabel" xml:space="preserve"><value>Answer style:</value></data>
+  <data name="DocContextHint" xml:space="preserve"><value>Add your resume, job description, or notes to get more relevant answers.</value></data>
+  <data name="BtnAddDocument" xml:space="preserve"><value>Add Document</value></data>
+  <data name="DocChipAdded" xml:space="preserve"><value>Added</value></data>
+  <data name="DocChipMetaPages" xml:space="preserve"><value>{0} · {1} pages</value></data>
+  <data name="DocChipMetaChars" xml:space="preserve"><value>{0} · {1:N0} characters</value></data>
+  <data name="DocChipRemove" xml:space="preserve"><value>Remove</value></data>
+  <data name="DocNotesHeading" xml:space="preserve"><value>Interview notes</value></data>
+  <data name="LoadNotesTitle" xml:space="preserve"><value>Select interview notes (PDF, DOCX, TXT)</value></data>
+  <data name="DocumentsHint" xml:space="preserve"><value>Documents stay in memory for this session — review the text, then press Use.</value></data>
+  <data name="ContextNotesLoaded" xml:space="preserve"><value>Interview notes loaded (kept local only).</value></data>
+  <data name="LogsHint" xml:space="preserve"><value>Local application log. Interview content, transcripts and documents are never written here.</value></data>
+  <data name="LogsRefresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="LogsEmpty" xml:space="preserve"><value>No log entries yet.</value></data>
+  <data name="LogsUnavailable" xml:space="preserve"><value>Log file not available.</value></data>
+  <data name="SettingsHint" xml:space="preserve"><value>All settings stay on this machine. Speech and engine changes apply after Stop.</value></data>
+  <data name="FeedbackHint" xml:space="preserve"><value>This is a local, offline-first assistant. Report problems with a diagnostics snapshot — it never includes your documents or transcripts.</value></data>
+  <data name="FeedbackVersion" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="FeedbackCopyDiagnostics" xml:space="preserve"><value>Copy diagnostics</value></data>
+  <data name="FeedbackDiagnosticsCopied" xml:space="preserve"><value>Diagnostics copied to the clipboard.</value></data>
+  <data name="FeedbackPrivacyTitle" xml:space="preserve"><value>Privacy</value></data>
+  <data name="FeedbackPrivacyBody" xml:space="preserve"><value>System audio only (loopback of the selected output device) — the microphone is never opened. Nothing is sent anywhere: transcription, translation and answers run locally. Audio, transcripts, documents and answers are not persisted by default.</value></data>
+  <data name="FeedbackProject" xml:space="preserve"><value>Project page</value></data>
+  <data name="WaveformIdle" xml:space="preserve"><value>No audio</value></data>
 </root>

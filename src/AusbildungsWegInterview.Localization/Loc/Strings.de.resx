@@ -107,6 +107,7 @@
   <data name="SpeechEngineNative" xml:space="preserve"><value>whisper.cpp Native-Bibliothek</value></data>
   <data name="SpeechModelReady" xml:space="preserve"><value>bereit</value></data>
   <data name="SpeechSetupLine" xml:space="preserve"><value>Sprache: {0} | Modell '{1}': {2}</value></data>
+  <data name="SpeechModel" xml:space="preserve"><value>Sprachmodell</value></data>
   <data name="SpeechModelMissing" xml:space="preserve"><value>FEHLT - herunterladen oder Modell-Pfad setzen</value></data>
   <data name="SpeechStatusUnknown" xml:space="preserve"><value>Sprachengine: Status unbekannt</value></data>
 
@@ -176,4 +177,55 @@
   <data name="AnswerGenerating" xml:space="preserve"><value>Antwort wird generiert …</value></data>
   <data name="CopyAnswer" xml:space="preserve"><value>Kopieren</value></data>
   <data name="ErrorCopyFailed" xml:space="preserve"><value>Das Kopieren in die Zwischenablage ist fehlgeschlagen.</value></data>
+  <data name="NavInterview" xml:space="preserve"><value>Interview</value></data>
+  <data name="NavDocuments" xml:space="preserve"><value>Dokumente</value></data>
+  <data name="NavSettings" xml:space="preserve"><value>Einstellungen</value></data>
+  <data name="NavLogs" xml:space="preserve"><value>Protokolle</value></data>
+  <data name="NavFeedback" xml:space="preserve"><value>Feedback</value></data>
+  <data name="AppTagline" xml:space="preserve"><value>KI-Interview-Copilot</value></data>
+  <data name="StatusWhisper" xml:space="preserve"><value>Whisper (lokal)</value></data>
+  <data name="StatusOllama" xml:space="preserve"><value>Ollama (lokal)</value></data>
+  <data name="StatusTranslation" xml:space="preserve"><value>Übersetzung</value></data>
+  <data name="PillReady" xml:space="preserve"><value>Bereit</value></data>
+  <data name="PillUnavailable" xml:space="preserve"><value>Nicht verfügbar</value></data>
+  <data name="PillModelMissing" xml:space="preserve"><value>Modell fehlt</value></data>
+  <data name="PillUnknown" xml:space="preserve"><value>Unbekannt</value></data>
+  <data name="PillOff" xml:space="preserve"><value>Aus</value></data>
+  <data name="ListeningHeading" xml:space="preserve"><value>Ich höre zu …</value></data>
+  <data name="ListeningSub" xml:space="preserve"><value>Erkenne die Frage des Interviewers</value></data>
+  <data name="IdleHeading" xml:space="preserve"><value>Gestoppt</value></data>
+  <data name="IdleSub" xml:space="preserve"><value>Start drücken, um das Systemaudio mitzuhören</value></data>
+  <data name="AutoDevice" xml:space="preserve"><value>Automatisch</value></data>
+  <data name="QOriginal" xml:space="preserve"><value>Original</value></data>
+  <data name="QTranslation" xml:space="preserve"><value>Übersetzung</value></data>
+  <data name="AnswerSectionHeading" xml:space="preserve"><value>KI-Antwortvorschlag</value></data>
+  <data name="PanelPending" xml:space="preserve"><value>Warte auf die endgültige Antwort …</value></data>
+  <data name="PanelUnavailable" xml:space="preserve"><value>Nicht übersetzt — die lokale Engine hat keine Übersetzung geliefert.</value></data>
+  <data name="BtnShorter" xml:space="preserve"><value>Kürzer</value></data>
+  <data name="BtnLonger" xml:space="preserve"><value>Länger</value></data>
+  <data name="BtnRegenerate" xml:space="preserve"><value>Neu erzeugen</value></data>
+  <data name="AnswerStyleLabel" xml:space="preserve"><value>Antwortstil:</value></data>
+  <data name="DocContextHint" xml:space="preserve"><value>Füge Lebenslauf, Stellenbeschreibung oder Notizen hinzu, um passendere Antworten zu erhalten.</value></data>
+  <data name="BtnAddDocument" xml:space="preserve"><value>Dokument hinzufügen</value></data>
+  <data name="DocChipAdded" xml:space="preserve"><value>Hinzugefügt</value></data>
+  <data name="DocChipMetaPages" xml:space="preserve"><value>{0} · {1} Seiten</value></data>
+  <data name="DocChipMetaChars" xml:space="preserve"><value>{0} · {1:N0} Zeichen</value></data>
+  <data name="DocChipRemove" xml:space="preserve"><value>Entfernen</value></data>
+  <data name="DocNotesHeading" xml:space="preserve"><value>Interview-Notizen</value></data>
+  <data name="LoadNotesTitle" xml:space="preserve"><value>Interview-Notizen auswählen (PDF, DOCX, TXT)</value></data>
+  <data name="DocumentsHint" xml:space="preserve"><value>Dokumente bleiben nur in dieser Sitzung im Speicher — prüfe den Text, dann „Verwenden“ drücken.</value></data>
+  <data name="ContextNotesLoaded" xml:space="preserve"><value>Interview-Notizen geladen (nur lokal).</value></data>
+  <data name="LogsHint" xml:space="preserve"><value>Lokales Anwendungsprotokoll. Interview-Inhalte, Transkripte und Dokumente werden hier nie gespeichert.</value></data>
+  <data name="LogsRefresh" xml:space="preserve"><value>Aktualisieren</value></data>
+  <data name="LogsEmpty" xml:space="preserve"><value>Noch keine Protokolleinträge.</value></data>
+  <data name="LogsUnavailable" xml:space="preserve"><value>Protokolldatei nicht verfügbar.</value></data>
+  <data name="SettingsHint" xml:space="preserve"><value>Alle Einstellungen bleiben auf diesem Rechner. Sprach- und Engine-Änderungen gelten nach dem Stoppen.</value></data>
+  <data name="FeedbackHint" xml:space="preserve"><value>Dies ist ein lokaler, offline-orientierter Assistent. Melde Probleme mit einer Diagnose-Zusammenfassung — sie enthält nie deine Dokumente oder Transkripte.</value></data>
+  <data name="FeedbackVersion" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="FeedbackCopyDiagnostics" xml:space="preserve"><value>Diagnose kopieren</value></data>
+  <data name="FeedbackDiagnosticsCopied" xml:space="preserve"><value>Diagnose in die Zwischenablage kopiert.</value></data>
+  <data name="FeedbackPrivacyTitle" xml:space="preserve"><value>Datenschutz</value></data>
+  <data name="FeedbackPrivacyBody" xml:space="preserve"><value>Nur Systemaudio (Loopback des gewählten Ausgabegeräts) — das Mikrofon wird nie geöffnet. Nichts wird gesendet: Transkription, Übersetzung und Antworten laufen lokal. Audio, Transkripte, Dokumente und Antworten werden standardmäßig nicht gespeichert.</value></data>
+  <data name="FeedbackProject" xml:space="preserve"><value>Projektseite</value></data>
+  <data name="WaveformIdle" xml:space="preserve"><value>Kein Audio</value></data>
 </root>
