@@ -13,6 +13,10 @@
          Windows-only binary; it cannot run off-Windows). -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AssemblyName>AusbildungsWegInterview</AssemblyName>
+    <!-- User-facing file metadata (Windows file properties). The internal
+         AssemblyName stays unchanged — only the display brand is renamed. -->
+    <AssemblyTitle>AusbildungsWeg Interview</AssemblyTitle>
+    <Product>AusbildungsWeg Interview</Product>
     <Description>AusbildungsWeg Interview - local-first AI interview assistant (WPF). Windows-only build.</Description>
     <!-- Windows application icon (exe/taskbar) - multi-size ICO, 16..256. -->
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>

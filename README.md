@@ -30,7 +30,7 @@ phase) and are not kept updated.
 
 The WPF shell was redesigned around a left navigation rail (Interview /
 Documents / Settings / Logs / Feedback) and the dark-navy glass theme with neon
-accents (light theme available). See [Interface](#interface-mamado-redesign)
+accents (light theme available). See [Interface](#interface-ausbildungsweig-interview-shell)
 for the page-by-page description.
 
 Design note: a concurrent workstream had landed a different (Vision
@@ -313,7 +313,7 @@ Or publish a Windows executable:
 dotnet publish src/AusbildungsWegInterview.App -c Release -r win-x64 --self-contained false
 ```
 
-### Interface (MAMADO redesign)
+### Interface (AusbildungsWeg Interview shell)
 
 The window is a dark-navy glass shell (light theme available, selectable in
 Settings): neon-blue accents, rounded/glowing panels, Segoe UI, and a left
