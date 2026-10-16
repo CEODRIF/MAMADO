@@ -30,7 +30,7 @@ full data: [benchmarks/RESULTS.md](benchmarks/RESULTS.md)):
   **≈ 77 MB** (incl. runtime baseline).
 - Argos/opus-mt DE→EN probe (evaluation): **0.16–0.36 s warm** per sentence, ~100 MB per pair.
 
-**Verified by the automated suite (320 tests, cross-platform):**
+**Verified by the automated suite (320 tests at this milestone, cross-platform):**
 - **Real end-to-end run**: actual JFK speech audio through the complete pipeline
   (real whisper.cpp → question detection → translation → answer), asserting the
   real transcript, a real generated answer, and honest stop semantics.
