@@ -14,4 +14,10 @@
     <ProjectReference Include="..\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Subprocess lifecycle tests in the test project read the internal
+         BuildProcessStartInfo seams. -->
+    <InternalsVisibleTo Include="AusbildungsWegInterview.Tests" />
+  </ItemGroup>
+
 </Project>

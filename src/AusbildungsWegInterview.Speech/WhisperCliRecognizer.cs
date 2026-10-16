@@ -155,26 +155,7 @@ public sealed class WhisperCliRecognizer : ISpeechRecognizer, ISegmentTranslator
         string prefix = Path.Combine(_workDir, translate ? "segment-tr" : "segment");
         WavWriter.Write16BitMono(wavPath, _audio.ToArray(), _sampleRate);
 
-        var psi = new ProcessStartInfo
-        {
-            FileName = _executable,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
-        psi.ArgumentList.Add("-m"); psi.ArgumentList.Add(_modelPath);
-        psi.ArgumentList.Add("-f"); psi.ArgumentList.Add(wavPath);
-        if (!string.IsNullOrEmpty(Language))
-        {
-            psi.ArgumentList.Add("-l"); psi.ArgumentList.Add(Language);
-        }
-        if (translate)
-            psi.ArgumentList.Add("-tr"); // translate mode: source (auto or -l) → English
-        psi.ArgumentList.Add("-oj");
-        psi.ArgumentList.Add("-of"); psi.ArgumentList.Add(prefix);
-        psi.ArgumentList.Add("-t"); psi.ArgumentList.Add(_threads.ToString());
-        psi.ArgumentList.Add("-np"); // no prints (keeps stdout quiet)
+        var psi = BuildProcessStartInfo(wavPath, prefix, translate);
 
         Process proc;
         try
@@ -294,6 +275,37 @@ public sealed class WhisperCliRecognizer : ISpeechRecognizer, ISegmentTranslator
             _audio.RemoveRange(0, drop);
             _audioSeconds = maxBytes / (double)(_sampleRate * 2);
         }
+    }
+
+    /// <summary>
+    /// The exact launch configuration for the whisper.cpp subprocess. Extracted as
+    /// a test seam so the launch flags and argument line are covered by regression
+    /// tests without spawning a process. (A hard-exit child-kill guarantee is
+    /// provided by App.OnExit's bounded teardown + the cancellation kill path.)
+    /// </summary>
+    internal ProcessStartInfo BuildProcessStartInfo(string wavPath, string prefix, bool translate)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = _executable,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        psi.ArgumentList.Add("-m"); psi.ArgumentList.Add(_modelPath);
+        psi.ArgumentList.Add("-f"); psi.ArgumentList.Add(wavPath);
+        if (!string.IsNullOrEmpty(Language))
+        {
+            psi.ArgumentList.Add("-l"); psi.ArgumentList.Add(Language);
+        }
+        if (translate)
+            psi.ArgumentList.Add("-tr"); // translate mode: source (auto or -l) → English
+        psi.ArgumentList.Add("-oj");
+        psi.ArgumentList.Add("-of"); psi.ArgumentList.Add(prefix);
+        psi.ArgumentList.Add("-t"); psi.ArgumentList.Add(_threads.ToString());
+        psi.ArgumentList.Add("-np"); // no prints (keeps stdout quiet)
+        return psi;
     }
 
     private static string? NormalizeLanguage(string? language)

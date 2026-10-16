@@ -74,7 +74,13 @@ public sealed class ExternalCliTranslator : ITranslator
         return TranslateViaCliAsync(text, src, tgt, ct);
     }
 
-    private async Task<TranslationResult> TranslateViaCliAsync(string text, string src, string tgt, CancellationToken ct)
+    /// <summary>
+    /// The exact launch configuration for the translation subprocess. Extracted as
+    /// a test seam so the launch flags and argument line are covered by regression
+    /// tests without spawning a process. (A hard-exit child-kill guarantee is
+    /// provided by App.OnExit's bounded teardown + the cancellation kill path.)
+    /// </summary>
+    internal ProcessStartInfo BuildProcessStartInfo(string src, string tgt)
     {
         var psi = new ProcessStartInfo
         {
@@ -95,6 +101,12 @@ public sealed class ExternalCliTranslator : ITranslator
             foreach (var a in SplitArgs(args))
                 psi.ArgumentList.Add(a);
         }
+        return psi;
+    }
+
+    private async Task<TranslationResult> TranslateViaCliAsync(string text, string src, string tgt, CancellationToken ct)
+    {
+        var psi = BuildProcessStartInfo(src, tgt);
 
         Process proc;
         try
