@@ -48,8 +48,8 @@
                 </Border>
 
                 <ListBox DockPanel.Dock="Top" ItemsSource="{Binding NavPrimary}" SelectedItem="{Binding SelectedNav}"
-                         Background="Transparent" BorderThickness="0" Focusable="False">
-                    ItemContainerStyle="{DynamicResource AwNavItem}"
+                         Background="Transparent" BorderThickness="0" Focusable="False"
+                         ItemContainerStyle="{DynamicResource AwNavItem}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel>
@@ -61,8 +61,8 @@
                 </ListBox>
 
                 <ListBox DockPanel.Dock="Bottom" ItemsSource="{Binding NavSecondary}" SelectedItem="{Binding SelectedNav}"
-                         Background="Transparent" BorderThickness="0" Focusable="False" Margin="0,0,0,14">
-                    ItemContainerStyle="{DynamicResource AwNavItem}"
+                         Background="Transparent" BorderThickness="0" Focusable="False" Margin="0,0,0,14"
+                         ItemContainerStyle="{DynamicResource AwNavItem}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel>
