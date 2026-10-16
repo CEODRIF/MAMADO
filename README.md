@@ -180,12 +180,28 @@ dotnet run --project src/AusbildungsWegInterview.App -c Release
 ### To build & run the app (Windows)
 - **Windows 10 or 11** (x64)
 - **.NET 8.0 SDK** (or the .NET 8 Desktop Runtime for a published build)
-- **whisper.cpp** (either mode, your choice — see below):
-  1. *CLI mode (recommended, easiest):* a `whisper-cli` executable + a model
-     file. Build instructions: [Setting up whisper.cpp](#setting-up-whispercpp).
-  2. *Native-library mode:* a `libwhisper` build next to the app (advanced).
-- (Optional) **Ollama** for answer suggestions + LLM translation:
-  <https://ollama.com/download/windows>
+- **Live transcription (core feature)** needs two things:
+  1. The pinned native whisper runtime — **bundled with the published
+     package**. If it is ever missing, rebuild it with
+     `scripts\build-whisper.ps1` (needs Git, CMake and a MinGW-w64 x64
+     toolchain, e.g. MSYS2) and re-publish.
+  2. One speech model (`ggml-tiny/base/small/medium.bin`) — downloaded
+     explicitly in Settings, or copied to
+     `%LOCALAPPDATA%\AusbildungsWegInterview\models`.
+- *(Alternative)* **CLI mode:** a `whisper-cli`/`main.exe` executable + a
+  model file; set its path in *Advanced settings*. Build instructions:
+  [Setting up whisper.cpp](#setting-up-whispercpp).
+- *(Optional)* **Ollama** for AI answers + AI translation:
+  <https://ollama.com/download/windows> and one pulled model (default
+  `llama3.1:8b`).
+- *(Optional)* **External-CLI translation** (e.g. mariannet + its models;
+  default supported pairs `de-en`, `en-de`, extendable) — path in *Advanced
+  settings*.
+
+At startup the app shows a **Setup** card listing exactly which
+prerequisites are still missing (native runtime, speech model, Ollama) with
+the concrete next step for each line; it disappears when everything is in
+place and refreshes with the status button in the header.
 
 ### To run the automated tests (any OS with the .NET 8 SDK)
 - `dotnet test` runs the full cross-platform suite on Windows, macOS, or Linux.

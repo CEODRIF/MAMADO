@@ -245,6 +245,17 @@
                 <ScrollViewer Background="{DynamicResource AwBackgroundBrush}" VerticalScrollBarVisibility="Auto" Padding="0">
                     <StackPanel Margin="16">
 
+                        <!-- setup status: shown until every prerequisite is in place (Phase 2) -->
+                        <Border Style="{DynamicResource AwCard}" Margin="0,0,0,12"
+                                Visibility="{Binding SetupHasIssues, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=SetupHeading}"
+                                           Style="{DynamicResource AwSectionLabel}" Foreground="{DynamicResource AwWarningBrush}" Margin="0,0,0,6"/>
+                                <TextBlock Text="{Binding SetupIssuesText}" TextWrapping="Wrap" FontSize="12"
+                                           Foreground="{DynamicResource AwInkSoftBrush}" LineHeight="20"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- explicit capture indicator: system audio only, never the microphone -->
                         <Border Background="{DynamicResource AwSuccessSoftBrush}" CornerRadius="12" Padding="12,8"
                                 Margin="0,0,0,12"

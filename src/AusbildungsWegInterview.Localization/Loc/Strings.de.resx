@@ -8,6 +8,11 @@
   <data name="TitleApp" xml:space="preserve"><value>AusbildungsWeg Interview</value></data>
   <data name="Subtitle" xml:space="preserve"><value>Lokaler Interview-Begleiter - nichts verlässt Ihren PC</value></data>
   <data name="OverlayHeading" xml:space="preserve"><value>Live-Interview</value></data>
+  <data name="SetupRuntimeMissing" xml:space="preserve"><value>Die lokale Whisper-Laufzeit fehlt. Führen Sie scripts\build-whisper.ps1 aus (benötigt Git, CMake und MinGW-w64 x64) und starten Sie die App neu.</value></data>
+  <data name="SetupRuntimeMismatch" xml:space="preserve"><value>Die Whisper-Laufzeitversion {0} passt nicht zum fixierten Build. Neu erstellen mit scripts\build-whisper.ps1 und neu starten.</value></data>
+  <data name="SetupModelMissing" xml:space="preserve"><value>Das Sprachmodell wurde noch nicht heruntergeladen. Nutzen Sie die Schaltfläche „Herunterladen" unter „Erweitert".</value></data>
+  <data name="SetupOllamaOffline" xml:space="preserve"><value>Ollama läuft nicht (optional). Starten Sie es, um KI-Antworten und KI-Übersetzung zu aktivieren.</value></data>
+  <data name="SetupOllamaModelMissing" xml:space="preserve"><value>Ollama läuft, aber das Modell {0} fehlt. Ausführen: ollama pull {0}</value></data>
 
   <data name="StatusReady" xml:space="preserve"><value>Bereit</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>Modelle werden geladen…</value></data>

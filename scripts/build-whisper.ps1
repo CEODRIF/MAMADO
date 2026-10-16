@@ -30,6 +30,16 @@ $repoUrl = "https://github.com/ggml-org/whisper.cpp"
 
 if (-not $OutputDir) { $OutputDir = Join-Path $repo "native\win-x64" }
 
+# ---- preflight: fail fast with actionable install instructions ---------------
+$missing = @()
+foreach ($tool in @("git", "cmake")) {
+    if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { $missing += $tool }
+}
+if (-not (Get-Command "g++" -ErrorAction SilentlyContinue)) { $missing += "g++ (MinGW-w64 x64)" }
+if ($missing.Count -gt 0) {
+    throw ("Missing tool(s) on PATH: {0}.`nInstall them first, e.g.:`n  winget install --id Git.Git`n  winget install --id Kitware.CMake`n  winget install --id MSYS2.MSYS2    # then inside MSYS2: pacman -S mingw-w64-x86_64-gcc`nThen REOPEN this PowerShell session so the new tools are on PATH, and run this script again." -f ($missing -join ", "))
+}
+
 # ---- source: pinned checkout (fetched once, reused afterwards) ---------------
 if (-not $SourceDir) { $SourceDir = Join-Path $repo "..\tools\whisper.cpp" }
 $SourceDir = (Resolve-Path -ErrorAction SilentlyContinue $SourceDir)

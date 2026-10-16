@@ -12,6 +12,7 @@ using AusbildungsWegInterview.Core.Speech;
 using AusbildungsWegInterview.Core.Translation;
 using AusbildungsWegInterview.Infrastructure.Documents;
 using AusbildungsWegInterview.Localization;
+using AusbildungsWegInterview.Speech;
 
 namespace AusbildungsWegInterview.App.ViewModels;
 
@@ -365,6 +366,9 @@ public sealed class MainViewModel : ObservableObject
 
         if (_lastAnswerSuggestion is { Status: not AnswerStatus.None })
             AnswerText = AnswerStatusLocalizer.Localize(T, _lastAnswerSuggestion);
+
+        if (_lastSetupReport is not null)
+            RenderSetupReport(_lastSetupReport);
     }
 
     private string _aiStatusText = string.Empty;
@@ -372,6 +376,24 @@ public sealed class MainViewModel : ObservableObject
 
     private string _speechSetupStatus = string.Empty;
     public string SpeechSetupStatus { get => _speechSetupStatus; private set => Set(ref _speechSetupStatus, value); }
+
+    // ---- first-run prerequisite diagnostics (Phase 2) ----
+    /// <summary>Latest raw report, kept so a UI-language change can re-render the lines.</summary>
+    private RuntimeReport? _lastSetupReport;
+
+    private bool _setupHasIssues;
+    /// <summary>True when any prerequisite line must be shown (missing/mismatched
+    /// runtime or model, or Ollama not running).</summary>
+    public bool SetupHasIssues { get => _setupHasIssues; private set => Set(ref _setupHasIssues, value); }
+
+    private string _setupIssuesText = string.Empty;
+    /// <summary>One localized "⚠ …" line per failing prerequisite; empty when all is well.</summary>
+    public string SetupIssuesText { get => _setupIssuesText; private set => Set(ref _setupIssuesText, value); }
+
+    // Last Ollama probe results (filled by RefreshStatusAsync) — the diagnostics
+    // panel must never re-probe Ollama on its own.
+    private bool _lastOllamaAvailable;
+    private bool _lastOllamaModelOk;
 
     private string _contextStatus = string.Empty;
     public string ContextStatus { get => _contextStatus; private set => Set(ref _contextStatus, value); }
@@ -903,6 +925,7 @@ public sealed class MainViewModel : ObservableObject
             _services.RebuildPipeline();
             WirePipeline();
             UpdateSpeechSetupStatus();
+            UpdateSetupDiagnostics(); // engine/model config may have changed
         }
         catch (Exception ex)
         {
@@ -935,6 +958,56 @@ public sealed class MainViewModel : ObservableObject
         {
             SpeechSetupStatus = T["SpeechStatusUnknown"];
         }
+    }
+
+    /// <summary>
+    /// (Re)runs the first-run prerequisite check: cheap synchronous native
+    /// runtime probe, speech-model existence, and the LAST Ollama probe
+    /// results. The pure state decisions live in WPF-free
+    /// <see cref="RuntimeDiagnostics"/> (unit-tested); localization happens
+    /// here so every UI language re-renders correctly.
+    /// </summary>
+    private void UpdateSetupDiagnostics()
+    {
+        try
+        {
+            var runtime = WhisperRuntimeProbe.Probe();
+            var c = _services.Config;
+            string modelPath = !string.IsNullOrWhiteSpace(c.WhisperModelPath)
+                ? c.WhisperModelPath!
+                : _services.Models.ResolvePath(c.WhisperModel);
+            var report = RuntimeDiagnostics.Build(
+                runtime.State, runtime.FoundVersion,
+                System.IO.File.Exists(modelPath),
+                _lastOllamaAvailable, _lastOllamaModelOk);
+            _lastSetupReport = report;
+            RenderSetupReport(report);
+        }
+        catch
+        {
+            // The diagnostics panel must never take the UI down: hide it.
+            _lastSetupReport = null;
+            SetupHasIssues = false;
+            SetupIssuesText = string.Empty;
+        }
+    }
+
+    private void RenderSetupReport(RuntimeReport report)
+    {
+        var lines = new List<string>(3);
+        if (report.Runtime.State == SetupItemState.Missing)
+            lines.Add(T["SetupRuntimeMissing"]);
+        else if (report.Runtime.State == SetupItemState.Mismatch)
+            lines.Add(T.F("SetupRuntimeMismatch", report.Runtime.Detail ?? "?"));
+        if (report.SpeechModel.State == SetupItemState.Missing)
+            lines.Add(T["SetupModelMissing"]);
+        if (report.Ollama.State == SetupItemState.OptionalUnavailable)
+            lines.Add(T["SetupOllamaOffline"]);
+        else if (report.Ollama.State == SetupItemState.Missing)
+            lines.Add(T.F("SetupOllamaModelMissing", _services.Config.OllamaModel));
+
+        SetupHasIssues = lines.Count > 0;
+        SetupIssuesText = string.Join("\n", lines.Select(l => "⚠ " + l));
     }
 
     private void SaveConfig()
@@ -985,17 +1058,22 @@ public sealed class MainViewModel : ObservableObject
                 AiStatusText = modelOk
                     ? T.F("AiModelReady", _services.Config.OllamaModel)
                     : T.F("AiModelMissing", _services.Config.OllamaModel);
+                _lastOllamaModelOk = modelOk;
             }
+            _lastOllamaAvailable = available;
         }
         catch
         {
             AiStatusText = T["AiStatusUnknown"];
+            _lastOllamaAvailable = false;
+            _lastOllamaModelOk = false;
         }
         finally
         {
             IsBusy = false;
         }
         UpdateWhisperModelStatus();
+        UpdateSetupDiagnostics();
     }
 
     private void UpdateWhisperModelStatus()
@@ -1022,6 +1100,7 @@ public sealed class MainViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            UpdateSetupDiagnostics(); // the model line must reflect the outcome
         }
     }
 

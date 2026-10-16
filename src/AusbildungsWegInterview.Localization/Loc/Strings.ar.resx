@@ -8,6 +8,11 @@
   <data name="TitleApp" xml:space="preserve"><value>AusbildungsWeg Interview</value></data>
   <data name="Subtitle" xml:space="preserve"><value>مساعد مقابلات محلي - لا يغادر أي شيء جهازك</value></data>
   <data name="OverlayHeading" xml:space="preserve"><value>مقابلة مباشرة</value></data>
+  <data name="SetupRuntimeMissing" xml:space="preserve"><value>وحدة تشغيل Whisper المحلية غير موجودة. شغّل scripts\build-whisper.ps1 (يتطلب Git وCMake وMinGW-w64 x64) ثم أعد تشغيل التطبيق.</value></data>
+  <data name="SetupRuntimeMismatch" xml:space="preserve"><value>إصدار وحدة تشغيل Whisper {0} غير مطابق للبناء المثبت. أعد بناؤه عبر scripts\build-whisper.ps1 ثم أعد التشغيل.</value></data>
+  <data name="SetupModelMissing" xml:space="preserve"><value>نموذج الصوت لم يُحمَّل بعد. استخدم زر «تنزيل» في الإعدادات المتقدمة.</value></data>
+  <data name="SetupOllamaOffline" xml:space="preserve"><value>Ollama غير يعمل (اختياري). شغّله لتفعيل الإجابات بالذكاء الاصطناعي والترجمة.</value></data>
+  <data name="SetupOllamaModelMissing" xml:space="preserve"><value>Ollama يعمل لكن النموذج {0} غير محمّل. نفّذ: ollama pull {0}</value></data>
 
   <data name="StatusReady" xml:space="preserve"><value>جاهز</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>جارٍ تحميل النماذج…</value></data>

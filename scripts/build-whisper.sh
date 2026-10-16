@@ -25,6 +25,18 @@ repo_url="https://github.com/ggml-org/whisper.cpp"
 source_dir="${1:-$repo/../tools/whisper.cpp}"
 output_dir="${2:-$repo/native/linux-x64}"
 
+# ---- preflight: fail fast with actionable install instructions -------------
+missing=()
+command -v git >/dev/null 2>&1 || missing+=("git")
+command -v cmake >/dev/null 2>&1 || missing+=("cmake")
+{ command -v g++ >/dev/null 2>&1 || command -v c++ >/dev/null 2>&1; } || missing+=("g++/c++")
+if [ "${#missing[@]}" -gt 0 ]; then
+    echo "Missing tool(s): ${missing[*]}" >&2
+    echo "  Debian/Ubuntu: sudo apt-get install git cmake g++" >&2
+    echo "  macOS:         brew install git cmake" >&2
+    exit 1
+fi
+
 if [ -d "$source_dir/.git" ]; then
     git -C "$source_dir" checkout --quiet "$PIN_SHA"
     git -C "$source_dir" submodule update --init --recursive --quiet

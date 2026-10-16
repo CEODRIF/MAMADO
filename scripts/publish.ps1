@@ -46,6 +46,21 @@ $nativeDlls = @(Get-ChildItem $NativeDir -File -ErrorAction SilentlyContinue)
 if ($nativeDlls.Count -ge 1) {
     foreach ($d in $nativeDlls) { Copy-Item $d.FullName $outDir -Force }
     Write-Host ("==> Bundled {0} native runtime DLL(s) from {1}" -f $nativeDlls.Count, $NativeDir) -ForegroundColor Green
+
+    # Verify the FULL dependency set — a partial copy still fails at load time
+    # (libwhisper needs its ggml siblings, which need the MinGW runtime).
+    $have = $nativeDlls.Name
+    $partial = @()
+    if (-not ($have | Where-Object { $_ -eq "whisper.dll" -or $_ -eq "libwhisper.dll" })) {
+        $partial += "whisper.dll/libwhisper.dll"
+    }
+    foreach ($d in @("ggml.dll","ggml-base.dll","ggml-cpu.dll","libgcc_s_seh-1.dll","libstdc++-6.dll","libwinpthread-1.dll","libgomp-1.dll")) {
+        if ($have -notcontains $d) { $partial += $d }
+    }
+    if ($partial.Count -gt 0) {
+        Write-Host ("WARNING: staged runtime is INCOMPLETE - missing: {0}" -f ($partial -join ", ")) -ForegroundColor Red
+        Write-Host "         Re-run scripts\build-whisper.ps1 (it stages the full set) and publish again." -ForegroundColor Red
+    }
 } else {
     Write-Host "WARNING: no native whisper runtime found in $NativeDir." -ForegroundColor Red
     Write-Host "         Run scripts\build-whisper.ps1 first, or pass -NativeDir." -ForegroundColor Red

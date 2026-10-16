@@ -8,6 +8,11 @@
   <data name="TitleApp" xml:space="preserve"><value>AusbildungsWeg Interview</value></data>
   <data name="Subtitle" xml:space="preserve"><value>Assistant d'entretien local - rien ne quitte votre PC</value></data>
   <data name="OverlayHeading" xml:space="preserve"><value>Entretien en direct</value></data>
+  <data name="SetupRuntimeMissing" xml:space="preserve"><value>Le moteur Whisper local est manquant. Exécutez scripts\build-whisper.ps1 (nécessite Git, CMake et MinGW-w64 x64), puis relancez l'application.</value></data>
+  <data name="SetupRuntimeMismatch" xml:space="preserve"><value>La version du moteur Whisper {0} ne correspond pas au build verrouillé. Reconstruisez-le avec scripts\build-whisper.ps1 puis relancez.</value></data>
+  <data name="SetupModelMissing" xml:space="preserve"><value>Le modèle de parole n'a pas encore été téléchargé. Utilisez le bouton « Télécharger » dans les paramètres avancés.</value></data>
+  <data name="SetupOllamaOffline" xml:space="preserve"><value>Ollama ne tourne pas (optionnel). Lancez-le pour activer les réponses IA et la traduction IA.</value></data>
+  <data name="SetupOllamaModelMissing" xml:space="preserve"><value>Ollama tourne, mais le modèle {0} n'est pas installé. Exécutez : ollama pull {0}</value></data>
 
   <data name="StatusReady" xml:space="preserve"><value>Prêt</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>Chargement des modèles…</value></data>
