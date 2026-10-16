@@ -126,7 +126,8 @@
   <data name="ErrorDeviceReopen" xml:space="preserve"><value>Le périphérique audio par défaut a changé, mais la capture n'a pas pu être rouverte.</value></data>
   <data name="ErrorWhisperExeMissing" xml:space="preserve"><value>L'exécutable whisper.cpp est introuvable. Définissez un chemin valide dans les paramètres avancés.</value></data>
   <data name="ErrorWhisperModelMissing" xml:space="preserve"><value>Le fichier de modèle vocal est introuvable. Cliquez sur Télécharger (action explicite) ou définissez un chemin de modèle valide.</value></data>
-  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>La bibliothèque d'exécution locale whisper n'est pas disponible sur cet appareil. Compilez whisper.cpp et placez la bibliothèque partagée à côté de l'application.</value></data>
+  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>Le runtime local whisper (whisper.cpp) est manquant. Reconstruisez le package avec le runtime natif (scripts\build-whisper.ps1) ou exécutez ce script puis relancez l'application.</value></data>
+  <data name="ErrorWhisperVersionMismatch" xml:space="preserve"><value>La version du runtime whisper n'est pas compatible avec cette application (construite pour la version verrouillée). Reconstruisez le runtime avec scripts\build-whisper.ps1.</value></data>
   <data name="ErrorModelPrepare" xml:space="preserve"><value>Impossible de préparer les modèles vocaux locaux. Vérifiez les paramètres vocaux dans « Avancé ».</value></data>
   <data name="ErrorUnknownModel" xml:space="preserve"><value>Le modèle vocal configuré n'est pas reconnu. Choisissez tiny, base, small ou medium.</value></data>
   <data name="ErrorWhisperRun" xml:space="preserve"><value>whisper.cpp a échoué pendant la transcription. Vérifiez l'exécutable et le modèle dans les paramètres avancés.</value></data>

@@ -126,7 +126,8 @@
   <data name="ErrorDeviceReopen" xml:space="preserve"><value>The default audio device changed, but capture could not be re-opened.</value></data>
   <data name="ErrorWhisperExeMissing" xml:space="preserve"><value>The whisper.cpp executable is missing. Set a valid path in Advanced settings.</value></data>
   <data name="ErrorWhisperModelMissing" xml:space="preserve"><value>The speech model file is missing. Press Download (an explicit action) or set a valid model path.</value></data>
-  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>The local whisper runtime library is not available on this machine. Build whisper.cpp and place the shared library next to the app.</value></data>
+  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>The local whisper runtime (whisper.cpp) is missing. Rebuild the distribution package with the native runtime (scripts\build-whisper.ps1) or run that script and restart the app.</value></data>
+  <data name="ErrorWhisperVersionMismatch" xml:space="preserve"><value>The whisper runtime version is not compatible with this app (it was built for the pinned version). Rebuild the runtime with scripts\build-whisper.ps1.</value></data>
   <data name="ErrorModelPrepare" xml:space="preserve"><value>The local speech models could not be prepared. Check the speech settings in Advanced.</value></data>
   <data name="ErrorUnknownModel" xml:space="preserve"><value>The configured speech model is not recognized. Choose tiny, base, small or medium.</value></data>
   <data name="ErrorWhisperRun" xml:space="preserve"><value>whisper.cpp failed while transcribing. Check the executable and model in Advanced settings.</value></data>

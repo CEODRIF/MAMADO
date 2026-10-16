@@ -1,4 +1,5 @@
 using AusbildungsWegInterview.Localization;
+using AusbildungsWegInterview.Speech;
 using Xunit;
 
 namespace AusbildungsWegInterview.Tests.Localization;
@@ -32,7 +33,8 @@ public class SpeechErrorLocalizerTests
             (new FileNotFoundException("whisper.cpp executable not found at 'C:\\tools\\whisper-cli.exe'. Build whisper.cpp (or install it) and set the executable path in settings.", "C:\\tools\\whisper-cli.exe"), "ErrorWhisperExeMissing"),
             (new FileNotFoundException("whisper.cpp model not found at 'C:\\models\\ggml-base.bin'. Use the app's model downloader or set a model path.", "C:\\models\\ggml-base.bin"), "ErrorWhisperModelMissing"),
             (new FileNotFoundException("Whisper model not found: 'C:\\models\\ggml-base.bin'. Use the app's model downloader to fetch it explicitly.", "C:\\models\\ggml-base.bin"), "ErrorWhisperModelMissing"),
-            (new InvalidOperationException("The native whisper runtime (libwhisper) is not available on this machine. Build whisper.cpp and place the shared library next to the app to enable transcription."), "ErrorNativeLibMissing"),
+            (new WhisperRuntimeMissingException(), "ErrorNativeLibMissing"),
+            (new WhisperVersionMismatchException("1.9", "1.5.0"), "ErrorWhisperVersionMismatch"),
             (new InvalidOperationException("Failed to initialize the whisper.cpp model (returned null context)."), "ErrorModelPrepare"),
             (new ArgumentException("Unknown model 'huge-v3'.", "name"), "ErrorUnknownModel"),
             // Runtime errors

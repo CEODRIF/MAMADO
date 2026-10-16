@@ -31,6 +31,33 @@ public class WhisperCppRecognizerTests
     }
 
     [Fact]
+    public void Prepare_ModelPresentButNoRuntime_ThrowsActionableError()
+    {
+        // Deterministic "missing runtime" path: a model file exists, but no
+        // libwhisper/whisper.dll is resolvable in the test environment. The
+        // recognizer must fail LOUDLY with an actionable, localized-category
+        // error — never silently return empty transcripts.
+        string? previous = WhisperNative.LibraryOverridePath;
+        string tmp = Path.Combine(Path.GetTempPath(), $"aw-model-{Guid.NewGuid():N}.bin");
+        File.WriteAllBytes(tmp, new byte[] { 1, 2, 3, 4 });
+        try
+        {
+            WhisperNative.LibraryOverridePath = Path.Combine(Path.GetTempPath(), "aw-nonexistent-override.dll");
+            var rec = new WhisperCppRecognizer(tmp);
+            var ex = Assert.Throws<WhisperRuntimeMissingException>(() =>
+                rec.PrepareAsync("tiny", null).GetAwaiter().GetResult());
+            Assert.False(rec.IsReady);
+            Assert.Contains("whisper runtime library", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("build-whisper", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            WhisperNative.LibraryOverridePath = previous;
+            File.Delete(tmp);
+        }
+    }
+
+    [Fact]
     public async Task Process_NotReady_ReturnsEmpty()
     {
         var rec = new WhisperCppRecognizer("/nonexistent/base.bin");

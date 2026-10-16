@@ -5,7 +5,7 @@ The package under test: `AusbildungsWegInterview-windows-x64\AusbildungsWegInter
 (see `publish/…-MANIFEST.txt`) or `scripts\publish.ps1 -Zip` rebuilt locally.
 
 Legend:
-- **[Auto]** — already covered by the automated suite (320 tests) on the Linux build host;
+- **[Auto]** — already covered by the automated suite (328 tests) on the Linux build host;
   listed here as context, no manual action needed.
 - **[Win]** — can only be executed on Windows (runtime, WASAPI, WPF rendering).
 - **[Manual]** — requires human judgment (readability, honesty of wording, UX feel).
@@ -13,7 +13,7 @@ Legend:
 ## 1. First launch & startup failure recovery
 - [ ] **[Win]** Double-click `AusbildungsWegInterview.exe` → window opens in < 5 s, no crash dialog, no admin prompt.
 - [ ] **[Win]** First launch with no settings → UI language defaults to English, theme to light, status "Ready"; `config.json` created under `%APPDATA%\AusbildungsWegInterview\`.
-- [ ] **[Win]** Start Listening with **no whisper CLI configured** → localized "whisper not configured" error, app stays usable (Settings reachable).
+- [ ] **[Win]** Start Listening with **no whisper CLI path** (default) → the app uses the **bundled native runtime** (whisper.dll + ggml*.dll next to the exe); with a downloaded model it transcribes, app stays usable either way.
 - [ ] **[Win]** Start Listening with an invalid whisper path → localized error; fix the path; **Start again without relaunching** → works (failed-start retry).
 - [ ] **[Auto]** Pipeline-level: failed start → Faulted → retry recovers; concurrent double-Start is a no-op (tests: `StartCaptureFailure_Faults_ThenRecovers_OnRetry`, `ConcurrentStart_SecondStartIsIgnored_NoDoubleSession`).
 
@@ -46,7 +46,10 @@ Legend:
 - [ ] **[Auto]** Stop-cancels-in-flight (measured < 70 ms kill), re-entrant Stop safety, capture restart-once logic — covered by tests.
 
 ## 7. whisper.cpp configuration & real transcription
+- [ ] **[Win]** **Default (native) mode:** published package contains `whisper.dll` + all `ggml*.dll` next to the exe; download a model (explicit **Download** button) → Start Listening → live transcription appears (no CLI path set).
+- [ ] **[Win]** **Missing-runtime error:** rename `whisper.dll` away (app closed), Start Listening → **clear localized error** pointing to `scripts\build-whisper.ps1` (no crash, no silent empty transcript); restore the DLL → works again.
 - [ ] **[Win]** Set the whisper CLI path (e.g. `main.exe` from a whisper.cpp build) + model `base` (use the in-app **Download** button — confirm it is explicit and progress is visible) → **Refresh status** shows "ready".
+- [ ] **[Auto]** Pinned ABI: struct size/offset regression guard + real native P/Invoke JFK transcription (language detection + text) — `WhisperNativeAbiTests`, `WhisperNativeSmokeTests`; version mismatch → typed localized error, never undefined behavior.
 - [ ] **[Win]** Transcribe a 10 s German + 10 s English clip → sensible transcripts in the panel (accuracy is model-dependent; judge usability, not perfect WER).
 - [ ] **[Manual]** Confirm model download never happens at startup (fresh profile, no models dir → app runs, transcription shows "not configured", nothing downloads).
 

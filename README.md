@@ -304,8 +304,27 @@ Two supported modes, selected automatically:
 
 | Mode | When used | What you provide |
 |---|---|---|
-| **CLI subprocess** (recommended) | `Whisper CLI path` is set and the file exists | `whisper-cli` executable + model `.bin` |
-| **Native library** | `Whisper CLI path` is empty | a `libwhisper` build discoverable next to the app |
+| **CLI subprocess** | `Whisper CLI path` is set and the file exists | `whisper-cli` executable + model `.bin` |
+| **Native library** (default) | `Whisper CLI path` is empty | `whisper.dll` + `ggml*.dll` — **bundled with the published package** (pinned build; see below) |
+
+### The pinned native runtime (default mode)
+
+The native adapter speaks the C API of ONE exact whisper.cpp commit —
+`0c7be696371069e0baa2515ed7aa08d5a5473aa6` (libwhisper **1.9.5**, ggml 0.26.0) —
+because the P/Invoke struct mirrors are compiled against that ABI. The app
+checks `whisper_version()` at startup and **refuses to run** a runtime whose
+major.minor differs, so an incompatible library can never silently corrupt
+results.
+
+- **Published packages bundle the runtime** (the whisper DLL — `whisper.dll`
+  or MinGW's `libwhisper.dll` — + all `ggml*.dll` + the small MinGW runtime
+  DLLs) next to the executable; `scripts\publish.ps1` copies it from
+  `native\win-x64`.
+- Build/rebuild it (Windows, needs git + CMake + MinGW-w64 x64, e.g. MSYS2
+  `mingw64`): `.\scripts\build-whisper.ps1` → stages `native\win-x64`.
+  Linux dev equivalent: `scripts/build-whisper.sh` → `native/linux-x64`.
+- If the runtime is missing, Start Listening shows a **clear localized error**
+  (which script to run) — transcription never fails silently.
 
 ### Building whisper.cpp (CLI mode)
 
@@ -348,11 +367,14 @@ token-level streaming.
 ### Running the whisper integration tests
 
 The tests auto-detect a local build (repo sibling `tools/whisper.cpp` or env
-var `AUSBILDUNGSWEG_WHISPER_CLI`). With a build + `ggml-tiny.bin` +
-`samples/jfk.wav` present, they run a **real** transcription; without one they
-report "SKIPPED" in the test output and the remaining error-path tests (missing
-executable/model, hanging executable timeout, corrupt model, WAV header) still
-run.
+vars `AUSBILDUNGSWEG_WHISPER_CLI` for CLI mode / `AUSBILDUNGSWEG_WHISPER_LIB`
+for the native shared library). With a build + `ggml-tiny.bin` +
+`samples/jfk.wav` present, they run a **real** transcription — including a
+native P/Invoke smoke test that proves the pinned ABI end-to-end (detects the
+language and transcribes the JFK sample) and an ABI size/offset regression
+guard; without a build they report "SKIPPED" in the test output and the
+remaining error-path tests (missing executable/model, hanging executable
+timeout, corrupt model, WAV header) still run.
 
 ---
 
@@ -440,8 +462,10 @@ Reproducible publishing (run on Windows, no admin rights, nothing installed):
   (+ optional `.zip`). The `win-x64` artifact was produced and file-verified in
   this milestone (cross-published from the Linux build host); **launching it on
   Windows is your verification step** (see Status above).
-- **AI models are not bundled.** After launch: set the whisper CLI path /
-  download the speech model in Settings; pull the Ollama model; download any
+- **The pinned whisper.cpp native runtime IS bundled** (whisper.dll + ggml*.dll,
+  copied from `native\win-x64` by `scripts\build-whisper.ps1`); sizes add a few
+  MB to the folder/ZIP. **AI models are not bundled.** After launch: download
+  the speech model in Settings (explicit); pull the Ollama model; download any
   external-CLI MT models — all explicitly, all local.
 - **Launch:** double-click `AusbildungsWegInterview.exe`.
 - **Remove/uninstall:** delete the publish folder (or the ZIP). Per-user data
@@ -541,7 +565,8 @@ rebuilds the speech pipeline automatically (your CV/JD context is preserved).
 | "No active audio output device found" | Connect speakers/headphones, then **Refresh**. |
 | "whisper.cpp executable not found at …" | Set the **Whisper CLI path** to the `whisper-cli(.exe)` you built. |
 | "whisper.cpp model not found at …" | Press **Download** for the model, or set **Model path** to an existing `ggml-*.bin`. |
-| "The native whisper runtime (libwhisper) is not available" | You're in native-library mode without a libwhisper build — set the CLI path instead (easier). |
+| "…whisper runtime… missing / rebuild with scripts\build-whisper.ps1" (localized) | The pinned native runtime DLLs are not next to the app — run `.\scripts\build-whisper.ps1` and re-publish, or set the **Whisper CLI path** to use CLI mode instead. |
+| "…whisper runtime version mismatch…" (localized) | A different whisper.cpp version is next to the app; the app refuses an incompatible ABI. Rebuild the runtime with `.\scripts\build-whisper.ps1` (pinned commit) and re-publish. |
 | "whisper.cpp exited with code …" | Binary/model mismatch or corrupt model — re-download the model; check `whisper-cli -h` works on its own. |
 | "whisper.cpp transcription timed out" | Model too large for the CPU — use `tiny`/`base`, or raise `OllamaRequestTimeoutSeconds`-style patience by choosing a smaller model. |
 | "Local AI (Ollama): not running" | Start Ollama; answers/LLM-translation are optional. Transcription unaffected. |

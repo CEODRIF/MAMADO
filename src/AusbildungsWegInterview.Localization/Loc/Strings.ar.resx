@@ -126,7 +126,8 @@
   <data name="ErrorDeviceReopen" xml:space="preserve"><value>تغيّر جهاز الصوت الافتراضي، لكن تعذر إعادة فتح الالتقاط.</value></data>
   <data name="ErrorWhisperExeMissing" xml:space="preserve"><value>ملف whisper.cpp غير موجود. حدد مسارًا صالحًا في الإعدادات المتقدمة.</value></data>
   <data name="ErrorWhisperModelMissing" xml:space="preserve"><value>ملف النموذج الصوتي مفقود. اضغط على «تنزيل» (إجراء صريح) أو حدد مسار نموذج صالحًا.</value></data>
-  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>مكتبة تشغيل whisper المحلية غير متاحة على هذا الجهاز. ابنِ whisper.cpp ووضِع المكتبة المشتركة بجانب التطبيق.</value></data>
+  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>لا يوجد وقت التشغيل المحلي whisper (whisper.cpp). أعد بناء الحزمة مع وقت التشغيل الأصلي (scripts\build-whisper.ps1) أو شغّل هذا النص البرمجي ثم أعد تشغيل التطبيق.</value></data>
+  <data name="ErrorWhisperVersionMismatch" xml:space="preserve"><value>إصدار وقت التشغيل whisper غير متوافق مع هذا التطبيق (الذي بُرِمج للإصدار المثبت). أعد بناء وقت التشغيل عبر scripts\build-whisper.ps1.</value></data>
   <data name="ErrorModelPrepare" xml:space="preserve"><value>تعذر تجهيز النماذج الصوتية المحلية. تحقق من إعدادات الصوت في «متقدم».</value></data>
   <data name="ErrorUnknownModel" xml:space="preserve"><value>النموذج الصوتي المُعد غير معروف. اختر tiny أو base أو small أو medium.</value></data>
   <data name="ErrorWhisperRun" xml:space="preserve"><value>فشل whisper.cpp أثناء النسخ. تحقق من الملف القابل للتنفيذ والنموذج في الإعدادات المتقدمة.</value></data>

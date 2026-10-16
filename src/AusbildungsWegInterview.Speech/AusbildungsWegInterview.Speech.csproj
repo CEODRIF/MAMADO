@@ -14,4 +14,9 @@
     <ProjectReference Include="..\AusbildungsWegInterview.Infrastructure\AusbildungsWegInterview.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- ABI/struct tests in the test project touch internal mirrors. -->
+    <InternalsVisibleTo Include="AusbildungsWegInterview.Tests" />
+  </ItemGroup>
+
 </Project>

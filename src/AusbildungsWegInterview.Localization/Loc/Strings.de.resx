@@ -126,7 +126,8 @@
   <data name="ErrorDeviceReopen" xml:space="preserve"><value>Das Standard-Audiogerät wurde geändert, aber die Aufnahme konnte nicht neu geöffnet werden.</value></data>
   <data name="ErrorWhisperExeMissing" xml:space="preserve"><value>Die whisper.cpp-Ausführbare Datei fehlt. Legen Sie in den erweiterten Einstellungen einen gültigen Pfad fest.</value></data>
   <data name="ErrorWhisperModelMissing" xml:space="preserve"><value>Die Sprachmodell-Datei fehlt. Klicken Sie auf „Herunterladen" (explizite Aktion) oder legen Sie einen gültigen Modellpfad fest.</value></data>
-  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>Die lokale whisper-Laufzeitbibliothek ist auf diesem Computer nicht verfügbar. Bauen Sie whisper.cpp und legen Sie die Shared Library neben die App.</value></data>
+  <data name="ErrorNativeLibMissing" xml:space="preserve"><value>Die lokale whisper-Laufzeit (whisper.cpp) fehlt. Erstellen Sie das Paket mit der nativen Laufzeit neu (scripts\build-whisper.ps1) oder führen Sie das Skript aus und starten Sie die App neu.</value></data>
+  <data name="ErrorWhisperVersionMismatch" xml:space="preserve"><value>Die whisper-Laufzeitversion ist mit dieser App nicht kompatibel (sie wurde für die verriegelte Version gebaut). Erstellen Sie die Laufzeit mit scripts\build-whisper.ps1 neu.</value></data>
   <data name="ErrorModelPrepare" xml:space="preserve"><value>Die lokalen Sprachmodelle konnten nicht vorbereitet werden. Prüfen Sie die Spracheinstellungen unter „Erweitert".</value></data>
   <data name="ErrorUnknownModel" xml:space="preserve"><value>Das konfigurierte Sprachmodell wird nicht erkannt. Wählen Sie tiny, base, small oder medium.</value></data>
   <data name="ErrorWhisperRun" xml:space="preserve"><value>whisper.cpp ist während der Transkription fehlgeschlagen. Prüfen Sie die ausführbare Datei und das Modell unter „Erweitert".</value></data>

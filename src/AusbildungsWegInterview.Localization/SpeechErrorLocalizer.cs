@@ -70,8 +70,10 @@ public static class SpeechErrorLocalizer
             return "ErrorDeviceLost";
         if (Contains(m, "could not be re-opened"))
             return "ErrorDeviceReopen";
-        if (Contains(m, "native whisper runtime (libwhisper)"))
+        if (Contains(m, "whisper runtime library"))
             return "ErrorNativeLibMissing";
+        if (Contains(m, "whisper runtime version mismatch"))
+            return "ErrorWhisperVersionMismatch";
         if (Contains(m, "Failed to initialize the whisper.cpp model"))
             return "ErrorModelPrepare";
         if (Contains(m, "Unknown model"))

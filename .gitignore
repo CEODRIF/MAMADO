@@ -2,6 +2,8 @@
 bin/
 obj/
 publish/
+native/
+*.dll
 *.user
 *.suo
 .vs/

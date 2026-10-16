@@ -1,20 +1,22 @@
 using System.Text;
+using System.Runtime.InteropServices;
 using AusbildungsWegInterview.Core.Audio;
 using AusbildungsWegInterview.Core.Speech;
 
 namespace AusbildungsWegInterview.Speech;
 
 /// <summary>
-/// whisper.cpp-based local real-time recognizer (no API key).
+/// whisper.cpp-based local real-time recognizer (no API key) — NATIVE path.
 ///
 /// Behavior:
-///  * Loads the native libwhisper at runtime. If the native library or the model
-///    file is missing, <see cref="IsReady"/> is false and <see cref="PrepareAsync"/>
-///    throws a clear, actionable error that the pipeline surfaces to the user.
+///  * Resolves the pinned native runtime (see WhisperNative). If it is missing,
+///    <see cref="PrepareAsync"/> throws <see cref="WhisperRuntimeMissingException"/>;
+///    if its version does not match the pinned ABI, it throws
+///    <see cref="WhisperVersionMismatchException"/>. Both surface as clear,
+///    localized UI errors — there is no silent empty-transcription path.
 ///  * Buffers incoming 16 kHz mono PCM and transcribes when enough audio has
 ///    accumulated, emitting a Final result for the segment.
-///  * Supports a model name and language; explicit language pinning via the
-///    whisper_state API is completed in the transcription milestone (Step 5).
+///  * Honors the configured language (explicit pin) or auto-detects.
 ///
 /// No audio is persisted; the in-memory buffer is cleared per segment.
 /// </summary>
@@ -29,7 +31,10 @@ public sealed class WhisperCppRecognizer : ISpeechRecognizer
 
     public bool IsReady { get; private set; }
     public string ModelName { get; }
+    /// <summary>Configured language, or — when configured as null — the language
+    /// auto-detected on the first transcription call (pinned here for later calls).</summary>
     public string? Language { get; private set; }
+    private bool _configuredLanguage;
 
     public WhisperCppRecognizer(string modelPath, int threads = 2, int minAudioMs = 1500)
     {
@@ -42,6 +47,7 @@ public sealed class WhisperCppRecognizer : ISpeechRecognizer
     public Task PrepareAsync(string model, string? language, CancellationToken ct = default)
     {
         Language = language;
+        _configuredLanguage = !string.IsNullOrEmpty(language);
         try
         {
             if (!File.Exists(_modelPath))
@@ -52,26 +58,53 @@ public sealed class WhisperCppRecognizer : ISpeechRecognizer
                     _modelPath);
             }
 
+            // Preflight: the native runtime must exist BEFORE any P/Invoke, so the
+            // user gets one clear, actionable error instead of a crash later.
+            if (WhisperNative.TryLocateLibrary() is null)
+            {
+                IsReady = false;
+                throw new WhisperRuntimeMissingException();
+            }
+
             if (_ctx != IntPtr.Zero)
             {
                 WhisperNative.whisper_free(_ctx);
                 _ctx = IntPtr.Zero;
             }
 
-            _ctx = WhisperNative.whisper_init_from_file_v2(_modelPath, _threads);
+            _ctx = WhisperNative.whisper_init_from_file_with_params(
+                _modelPath, WhisperNative.CreateContextParams());
             if (_ctx == IntPtr.Zero)
             {
                 IsReady = false;
-                throw new InvalidOperationException("Failed to initialize the whisper.cpp model (returned null context).");
+                throw new InvalidOperationException(
+                    "Failed to initialize the whisper.cpp model (the model file may be corrupt or incompatible).");
             }
+
+            // ABI guard: this P/Invoke mirror targets the pinned major.minor. A
+            // mismatched runtime would read the params struct with the wrong
+            // layout (undefined behavior) — refuse instead.
+            string found = WhisperNative.Version();
+            if (!found.StartsWith(WhisperNative.PinnedMajorMinor + ".", StringComparison.Ordinal) &&
+                found != WhisperNative.PinnedMajorMinor)
+            {
+                WhisperNative.whisper_free(_ctx);
+                _ctx = IntPtr.Zero;
+                IsReady = false;
+                throw new WhisperVersionMismatchException(WhisperNative.PinnedMajorMinor, found);
+            }
+
             IsReady = true;
         }
-        catch (System.DllNotFoundException ex)
+        catch (System.EntryPointNotFoundException)
         {
+            // A runtime exists but is too old/different for this ABI (e.g. no
+            // whisper_init_from_file_with_params export). Report it as a
+            // version mismatch, not a raw P/Invoke crash.
             IsReady = false;
-            throw new InvalidOperationException(
-                "The native whisper runtime (libwhisper) is not available on this machine. " +
-                "Build whisper.cpp and place the shared library next to the app to enable transcription.", ex);
+            throw new WhisperVersionMismatchException(
+                WhisperNative.PinnedMajorMinor,
+                "incompatible (missing pinned API exports)");
         }
         return Task.CompletedTask;
     }
@@ -85,7 +118,7 @@ public sealed class WhisperCppRecognizer : ISpeechRecognizer
 
         if (_pcm.Count >= _minSamples)
         {
-            string text = RunWhisper();
+            string text = RunWhisper(); // throws on runtime failure (no silent empty)
             _pcm.Clear();
             if (!string.IsNullOrWhiteSpace(text))
                 return Task.FromResult(TranscriptionResult.Final(text, Language));
@@ -98,7 +131,7 @@ public sealed class WhisperCppRecognizer : ISpeechRecognizer
         if (!IsReady || _pcm.Count == 0)
             return Task.FromResult(TranscriptionResult.Empty);
 
-        string text = RunWhisper();
+        string text = RunWhisper(); // throws on runtime failure (no silent empty)
         _pcm.Clear();
         return Task.FromResult(string.IsNullOrWhiteSpace(text)
             ? TranscriptionResult.Empty
@@ -107,29 +140,68 @@ public sealed class WhisperCppRecognizer : ISpeechRecognizer
 
     private string RunWhisper()
     {
-        int rc = 0;
+        var array = _pcm.ToArray();
+
+        // No configured language? The pinned API's detect_language=1 flag returns
+        // WITHOUT transcribing, so the first call only detects (rc 0, no
+        // segments), we pin the result, and re-run the SAME audio with it —
+        // the caller clears the buffer once, per RunWhisper call.
+        bool detect = !_configuredLanguage && string.IsNullOrEmpty(Language);
+
+        IntPtr langPtr = IntPtr.Zero;
         try
         {
-            var array = _pcm.ToArray();
-            var @params = WhisperNative.CreateDefaultParams(_threads);
-            rc = WhisperNative.whisper_full(_ctx, ref @params, array, array.Length);
-        }
-        catch (System.DllNotFoundException)
-        {
-            IsReady = false;
-            return string.Empty;
-        }
+            string? runLang = detect ? null : (Language ?? "auto");
+            if (!string.IsNullOrEmpty(runLang))
+                langPtr = Marshal.StringToHGlobalAnsi(runLang);
 
-        if (rc != 0 || _ctx == IntPtr.Zero)
-            return string.Empty;
+            var parameters = WhisperNative.CreateFullParams(_threads, langPtr, detect);
+            // whisper_full takes the sample COUNT (array.Length is the byte size
+            // of the float buffer — the pinned C API would otherwise read 2x).
+            int rc = WhisperNative.whisper_full(_ctx, parameters, array, array.Length / 4);
+            if (rc != 0)
+                throw new InvalidOperationException($"whisper_full failed with code {rc}.");
+            if (_ctx == IntPtr.Zero)
+                throw new InvalidOperationException("whisper context lost during transcription.");
 
-        var sb = new StringBuilder();
-        int n = WhisperNative.whisper_full_n_segments(_ctx);
-        for (int i = 0; i < n; i++)
-        {
-            sb.Append(WhisperNative.PtrToString(WhisperNative.whisper_full_get_segment_text(_ctx, i))).Append(' ');
+            if (detect)
+            {
+                string? detected = DetectedLanguage();
+                if (!string.IsNullOrEmpty(detected))
+                {
+                    Language = detected;
+                    _configuredLanguage = true; // pinned: never re-detect
+                }
+                // Transcribe the same audio now (detected language, or "auto").
+                Marshal.FreeHGlobal(langPtr);
+                langPtr = Marshal.StringToHGlobalAnsi(Language ?? "auto");
+                var second = WhisperNative.CreateFullParams(_threads, langPtr, detectLanguage: false);
+                rc = WhisperNative.whisper_full(_ctx, second, array, array.Length / 4);
+                if (rc != 0)
+                    throw new InvalidOperationException($"whisper_full failed with code {rc}.");
+            }
+
+            var sb = new StringBuilder();
+            int n = WhisperNative.whisper_full_n_segments(_ctx);
+            for (int i = 0; i < n; i++)
+                sb.Append(WhisperNative.PtrToString(WhisperNative.whisper_full_get_segment_text(_ctx, i))).Append(' ');
+            return sb.ToString().Trim();
         }
-        return sb.ToString().Trim();
+        finally
+        {
+            if (langPtr != IntPtr.Zero)
+                Marshal.FreeHGlobal(langPtr);
+        }
+    }
+
+    private string? DetectedLanguage()
+    {
+        // NOTE: whisper_lang_id("en") is 0 in the pinned C API — only negative
+        // means "unknown", so the guard must be < 0, not <= 0.
+        int id = WhisperNative.whisper_full_lang_id(_ctx);
+        if (id < 0)
+            return null;
+        return WhisperNative.PtrToString(WhisperNative.whisper_lang_str(id));
     }
 
     private void AppendPcm(AudioFrame chunk)
@@ -152,6 +224,7 @@ public sealed class WhisperCppRecognizer : ISpeechRecognizer
             catch { /* best effort */ }
             _ctx = IntPtr.Zero;
         }
+        IsReady = false;
         return ValueTask.CompletedTask;
     }
 }
