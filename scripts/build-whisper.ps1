@@ -36,6 +36,10 @@ foreach ($tool in @("git", "cmake")) {
     if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { $missing += $tool }
 }
 if (-not (Get-Command "g++" -ErrorAction SilentlyContinue)) { $missing += "g++ (MinGW-w64 x64)" }
+# The "MinGW Makefiles" generator needs a make; MSYS2's gcc package provides it.
+if (-not (Get-Command "mingw32-make" -ErrorAction SilentlyContinue) -and -not (Get-Command "make" -ErrorAction SilentlyContinue)) {
+    $missing += "mingw32-make"
+}
 if ($missing.Count -gt 0) {
     throw ("Missing tool(s) on PATH: {0}.`nInstall them first, e.g.:`n  winget install --id Git.Git`n  winget install --id Kitware.CMake`n  winget install --id MSYS2.MSYS2    # then inside MSYS2: pacman -S mingw-w64-x86_64-gcc`nThen REOPEN this PowerShell session so the new tools are on PATH, and run this script again." -f ($missing -join ", "))
 }
@@ -60,13 +64,16 @@ if ($head -ne $PinSha) { throw "Pinned SHA mismatch: got $head, expected $PinSha
 
 # ---- build: CMake Release, shared libs, portable CPU code -------------------
 $buildDir = Join-Path $SourceDir "build"
+Write-Host "==> Building the pinned runtime (libwhisper $PinVer, commit $PinSha)" -ForegroundColor Cyan
 Write-Host "==> cmake configure (MinGW Makefiles, Release, shared libs)" -ForegroundColor Cyan
 # _WIN32_WINNT=0x0601: ggml's Windows-11 thread-power-throttling block references
 # THREAD_POWER_THROTTLING_STATE, which older MinGW-w64 SDK headers lack. Pinning
 # the target to 0x0601 compiles the exact same pinned source everywhere
 # (the block is a Windows-11 perf hint only; correctness is unaffected).
 cmake -S $SourceDir -B $buildDir -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DGGML_NATIVE=OFF -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601" -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601"
-if ($LASTEXITCODE -ne 0) { throw "cmake configure failed (exit $LASTEXITCODE). Need CMake + MinGW-w64 x64 g++ in PATH (e.g. MSYS2 mingw64)." }
+if ($LASTEXITCODE -ne 0) {
+    throw ("cmake configure failed (exit {0}). Need CMake + MinGW-w64 x64 g++ in PATH (e.g. MSYS2 mingw64).`nIf the error mentions a mismatched generator, a stale build directory from another toolchain exists - delete it and re-run: {1}" -f $LASTEXITCODE, $buildDir)
+}
 
 Write-Host "==> cmake build (this can take a few minutes)" -ForegroundColor Cyan
 cmake --build $buildDir --config Release --parallel

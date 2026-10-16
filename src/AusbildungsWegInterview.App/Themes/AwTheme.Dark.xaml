@@ -84,12 +84,26 @@
         <GradientStop Color="#00000000" Offset="1"/>
     </RadialGradientBrush>
 
+    <!-- high-contrast themed focus outline (visible keyboard focus for every
+         focusable control; inherited from the Window default style below) -->
+    <Style x:Key="AwFocusVisual" TargetType="Control">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Border Margin="-3" CornerRadius="12" BorderThickness="2"
+                            BorderBrush="{StaticResource AwLumenStrongBrush}" SnapsToDevicePixels="True"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- window defaults -->
     <Style TargetType="Window">
         <Setter Property="Background" Value="{StaticResource AwBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource AwInkBrush}"/>
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
         <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource AwFocusVisual}"/>
     </Style>
 
     <!-- typography -->

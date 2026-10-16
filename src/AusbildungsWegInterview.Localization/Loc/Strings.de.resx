@@ -13,6 +13,8 @@
   <data name="SetupModelMissing" xml:space="preserve"><value>Das Sprachmodell wurde noch nicht heruntergeladen. Nutzen Sie die Schaltfläche „Herunterladen" unter „Erweitert".</value></data>
   <data name="SetupOllamaOffline" xml:space="preserve"><value>Ollama läuft nicht (optional). Starten Sie es, um KI-Antworten und KI-Übersetzung zu aktivieren.</value></data>
   <data name="SetupOllamaModelMissing" xml:space="preserve"><value>Ollama läuft, aber das Modell {0} fehlt. Ausführen: ollama pull {0}</value></data>
+  <data name="A11yModel" xml:space="preserve"><value>Whisper-Sprachmodell</value></data>
+  <data name="A11yTranslationEngine" xml:space="preserve"><value>Übersetzungsmethode</value></data>
 
   <data name="StatusReady" xml:space="preserve"><value>Bereit</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>Modelle werden geladen…</value></data>

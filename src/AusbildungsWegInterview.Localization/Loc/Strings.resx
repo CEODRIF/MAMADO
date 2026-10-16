@@ -13,6 +13,8 @@
   <data name="SetupModelMissing" xml:space="preserve"><value>The speech model has not been downloaded yet. Use the Download button in Advanced settings.</value></data>
   <data name="SetupOllamaOffline" xml:space="preserve"><value>Ollama is not running (optional). Start it to enable AI answers and AI translation.</value></data>
   <data name="SetupOllamaModelMissing" xml:space="preserve"><value>Ollama is running, but model {0} is not pulled. Run: ollama pull {0}</value></data>
+  <data name="A11yModel" xml:space="preserve"><value>Whisper speech model</value></data>
+  <data name="A11yTranslationEngine" xml:space="preserve"><value>Translation engine</value></data>
 
   <data name="StatusReady" xml:space="preserve"><value>Ready</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>Preparing models…</value></data>

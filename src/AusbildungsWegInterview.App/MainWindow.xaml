@@ -55,7 +55,8 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal">
-                    <Border Width="26" Height="26" VerticalAlignment="Center" SnapsToDevicePixels="True">
+                    <Border Width="26" Height="26" VerticalAlignment="Center" SnapsToDevicePixels="True"
+                            AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TitleApp}">
                         <Border.Clip>
                             <RectangleGeometry Rect="0,0,26,26" RadiusX="8" RadiusY="8"/>
                         </Border.Clip>
@@ -89,7 +90,7 @@
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="76"
                                   Background="Transparent" Padding="0">
                         <StackPanel>
-                            <TextBlock Text="{Binding TranscriptText}" TextWrapping="Wrap" FontSize="13.5"
+                            <TextBlock x:Name="AwSpeechText" Text="{Binding TranscriptText}" TextWrapping="Wrap" FontSize="13.5"
                                        Foreground="{DynamicResource AwInkBrush}"/>
                             <Border Background="{DynamicResource AwWarningSoftBrush}" CornerRadius="999"
                                     Padding="8,2" HorizontalAlignment="Left" Margin="0,6,0,0"
@@ -112,7 +113,7 @@
                     <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranslationLabel}"
                                Style="{StaticResource AwMiniLabel}"/>
                     <StackPanel Grid.Row="1">
-                        <TextBlock Text="{Binding TranslationText}" TextWrapping="Wrap" FontSize="13.5" MaxHeight="56"
+                        <TextBlock x:Name="AwTranslationText" Text="{Binding TranslationText}" TextWrapping="Wrap" FontSize="13.5" MaxHeight="56"
                                    Foreground="{DynamicResource AwInkSoftBrush}"/>
                         <TextBlock Text="{Binding TranslationStatusText}" TextWrapping="Wrap" FontSize="11"
                                    Foreground="{DynamicResource AwWarningBrush}" Margin="0,5,0,0"/>
@@ -141,7 +142,7 @@
                     </Grid>
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                                   Background="Transparent" Padding="0">
-                        <TextBlock Text="{Binding AnswerText}" TextWrapping="Wrap" FontSize="13.5" LineHeight="20"
+                        <TextBlock x:Name="AwAnswerText" Text="{Binding AnswerText}" TextWrapping="Wrap" FontSize="13.5" LineHeight="20"
                                    Foreground="{DynamicResource AwInkBrush}"/>
                     </ScrollViewer>
                     <TextBlock Grid.Row="2" Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerDisclaimer}"
@@ -183,7 +184,8 @@
                         </Grid.ColumnDefinitions>
 
                         <!-- brand logo (1:1, never stretched; rounded like the site's icon tiles) -->
-                        <Border Width="38" Height="38" VerticalAlignment="Center" SnapsToDevicePixels="True">
+                        <Border Width="38" Height="38" VerticalAlignment="Center" SnapsToDevicePixels="True"
+                                AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TitleApp}">
                             <Border.Clip>
                                 <RectangleGeometry Rect="0,0,38,38" RadiusX="11" RadiusY="11"/>
                             </Border.Clip>
@@ -201,19 +203,22 @@
                         <!-- UI language + theme + compact live status -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <ComboBox Style="{DynamicResource AwComboBox}" Width="86" Height="30" Margin="0,0,6,0"
+                                      AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=UiLanguageTip}"
                                       ItemsSource="{Binding UiLanguageOptions}"
                                       SelectedItem="{Binding SelectedUiLanguage}" DisplayMemberPath="Display"
                                       ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=UiLanguageTip}"/>
                             <Button Style="{DynamicResource AwButtonGhost}" Width="34" Margin="0,0,6,0" FontSize="14"
+                                    AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ThemeToggleTip}"
                                     Content="{Binding ThemeIcon}"
                                     Command="{Binding ToggleThemeCommand}"
                                     ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ThemeToggleTip}"/>
-                            <Border Style="{DynamicResource AwChip}">
+                            <Border Style="{DynamicResource AwChip}" AutomationProperties.Name="{Binding StatusText}">
                                 <StackPanel Orientation="Horizontal">
                                     <Ellipse Width="9" Height="9" Fill="{Binding StatusBrush}" VerticalAlignment="Center" Margin="0,0,7,0"/>
                                     <TextBlock Text="{Binding StatusText}" Style="{StaticResource AwChipText}"
                                                Foreground="{DynamicResource AwInkSoftBrush}"/>
                                     <Button Content="&#x21BB;" Style="{DynamicResource AwButtonGhost}" Margin="8,0,0,0"
+                                            AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=RefreshStatusTip}"
                                             Padding="6,0" FontSize="13" Command="{Binding RefreshStatusCommand}"
                                             ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=RefreshStatusTip}"/>
                                 </StackPanel>
@@ -282,6 +287,7 @@
                                     <StackPanel Grid.Row="0" Grid.Column="0">
                                         <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=InterviewLanguage}" Style="{DynamicResource AwFieldLabel}"/>
                                         <ComboBox Style="{DynamicResource AwComboBox}"
+                                                  AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=InterviewLanguage}"
                                                   ItemsSource="{Binding SourceLanguages}"
                                                   SelectedItem="{Binding SelectedSourceLanguage}"/>
                                     </StackPanel>
@@ -289,6 +295,7 @@
                                     <StackPanel Grid.Row="0" Grid.Column="2">
                                         <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranslationLanguage}" Style="{DynamicResource AwFieldLabel}"/>
                                         <ComboBox Style="{DynamicResource AwComboBox}"
+                                                  AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranslationLanguage}"
                                                   ItemsSource="{Binding TargetLanguages}"
                                                   SelectedItem="{Binding SelectedTargetLanguage}"/>
                                     </StackPanel>
@@ -296,6 +303,7 @@
                                     <StackPanel Grid.Row="2" Grid.Column="0">
                                         <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerLanguage}" Style="{DynamicResource AwFieldLabel}"/>
                                         <ComboBox Style="{DynamicResource AwComboBox}"
+                                                  AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerLanguage}"
                                                   ItemsSource="{Binding AnswerLanguages}"
                                                   SelectedItem="{Binding SelectedAnswerLanguage}"/>
                                     </StackPanel>
@@ -303,6 +311,7 @@
                                     <StackPanel Grid.Row="2" Grid.Column="2">
                                         <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerLevel}" Style="{DynamicResource AwFieldLabel}"/>
                                         <ComboBox Style="{DynamicResource AwComboBox}"
+                                                  AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AnswerLevel}"
                                                   ItemsSource="{Binding CefrLevelOptions}"
                                                   SelectedItem="{Binding SelectedCefrLevel}"/>
                                     </StackPanel>
@@ -338,7 +347,7 @@
                                 <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranscriptLabel}" Style="{DynamicResource AwMiniLabel}"/>
                                 <Border Style="{DynamicResource AwPanel}">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding TranscriptText}" TextWrapping="Wrap" FontSize="13.5"
+                                        <TextBlock x:Name="MainSpeechText" Text="{Binding TranscriptText}" TextWrapping="Wrap" FontSize="13.5"
                                                    Foreground="{DynamicResource AwInkBrush}" MinHeight="18"/>
                                         <Border Background="{DynamicResource AwWarningSoftBrush}" CornerRadius="999"
                                                 Padding="8,2" HorizontalAlignment="Left" Margin="0,6,0,0"
@@ -366,7 +375,7 @@
                                 <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranslationLabel}" Style="{DynamicResource AwMiniLabel}" Margin="0,10,0,4"/>
                                 <Border Style="{DynamicResource AwPanel}">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding TranslationText}" TextWrapping="Wrap" FontSize="13.5"
+                                        <TextBlock x:Name="MainTranslationText" Text="{Binding TranslationText}" TextWrapping="Wrap" FontSize="13.5"
                                                    Foreground="{DynamicResource AwInkSoftBrush}" MinHeight="18"/>
                                         <TextBlock Text="{Binding TranslationStatusText}" TextWrapping="Wrap" FontSize="11"
                                                    Foreground="{DynamicResource AwWarningBrush}" Margin="0,5,0,0"/>
@@ -393,7 +402,7 @@
                                         </Grid.ColumnDefinitions>
                                         <Border Grid.Column="0" Background="{DynamicResource AwGradientHeadline}" CornerRadius="2,0,0,2"/>
                                         <StackPanel Grid.Column="1" Margin="12,10">
-                                            <TextBlock Text="{Binding AnswerText}" TextWrapping="Wrap" FontSize="14"
+                                            <TextBlock x:Name="MainAnswerText" Text="{Binding AnswerText}" TextWrapping="Wrap" FontSize="14"
                                                        Foreground="{DynamicResource AwInkBrush}" LineHeight="21"/>
                                             <Border Background="{DynamicResource AwWarningSoftBrush}" CornerRadius="999"
                                                     Padding="8,2" HorizontalAlignment="Left" Margin="0,7,0,0"
@@ -429,6 +438,7 @@
                                         </Grid.RowDefinitions>
                                         <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OutputDevice}" Style="{DynamicResource AwFieldLabel}"/>
                                         <ComboBox Grid.Row="1" Grid.Column="0" Style="{DynamicResource AwComboBox}"
+                                                  AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OutputDevice}"
                                                   ItemsSource="{Binding OutputDevices}"
                                                   SelectedItem="{Binding SelectedOutputDevice}" DisplayMemberPath="Name"/>
                                         <Button Grid.Row="1" Grid.Column="1" Style="{DynamicResource AwButtonSecondary}"
@@ -443,6 +453,7 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <ComboBox Style="{DynamicResource AwComboBox}"
+                                                  AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=A11yModel}"
                                                   ItemsSource="{Binding WhisperModelOptions}"
                                                   SelectedItem="{Binding SelectedWhisperModel}"/>
                                         <Button Grid.Column="1" Style="{DynamicResource AwButtonSecondary}"
@@ -452,10 +463,12 @@
                                     <TextBlock Text="{Binding SpeechSetupStatus}" Style="{DynamicResource AwHint}" Margin="0,0,0,8"/>
                                     <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=WhisperCliPath}" Style="{DynamicResource AwFieldLabel}"/>
                                     <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,8"
+                                             AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=WhisperCliPath}"
                                              Text="{Binding WhisperExecutablePath, UpdateSourceTrigger=PropertyChanged}"
                                              ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=WhisperCliPathTip}"/>
                                     <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ModelPath}" Style="{DynamicResource AwFieldLabel}"/>
                                     <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,8"
+                                             AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ModelPath}"
                                              Text="{Binding WhisperModelPath, UpdateSourceTrigger=PropertyChanged}"
                                              ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ModelPathTip}"/>
                                     <TextBlock Style="{DynamicResource AwHint}" Margin="0,0,0,10"
@@ -463,6 +476,7 @@
 
                                     <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TranslationHeading}" Style="{DynamicResource AwSectionLabel}" Margin="0,0,0,6"/>
                                     <ComboBox Style="{DynamicResource AwComboBox}" Margin="0,0,0,8"
+                                              AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=A11yTranslationEngine}"
                                               ItemsSource="{Binding TranslationEngineOptions}"
                                               SelectedItem="{Binding SelectedTranslationEngine}" DisplayMemberPath="Display"/>
                                     <CheckBox Style="{DynamicResource AwCheckBox}" Margin="0,0,0,8" FontSize="12"
@@ -470,10 +484,12 @@
                                               IsChecked="{Binding TranslationEnabled}"/>
                                     <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliPath}" Style="{DynamicResource AwFieldLabel}"/>
                                     <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,8"
+                                             AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliPath}"
                                              Text="{Binding TranslatorCliPath, UpdateSourceTrigger=PropertyChanged}"
                                              ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliPathTip}"/>
                                     <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliArgs}" Style="{DynamicResource AwFieldLabel}"/>
                                     <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,10"
+                                             AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliArgs}"
                                              Text="{Binding TranslatorCliArgs, UpdateSourceTrigger=PropertyChanged}"
                                              ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=ExternalCliArgsTip}"/>
                                     <TextBlock Style="{DynamicResource AwHint}" Margin="0,0,0,10"
@@ -483,6 +499,7 @@
                                     <TextBlock Text="{Binding AiStatusText}" Style="{DynamicResource AwHint}" Margin="0,0,0,8"/>
                                     <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OllamaModel}" Style="{DynamicResource AwFieldLabel}"/>
                                     <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,10"
+                                             AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OllamaModel}"
                                              Text="{Binding OllamaModel, UpdateSourceTrigger=PropertyChanged}"
                                              ToolTip="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=OllamaModelTip}"/>
 
@@ -496,12 +513,14 @@
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Length}" Style="{DynamicResource AwFieldLabel}"/>
                                             <ComboBox Style="{DynamicResource AwComboBox}"
+                                                      AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Length}"
                                                       ItemsSource="{Binding AnswerLengthOptions}"
                                                       SelectedItem="{Binding SelectedAnswerLength}" DisplayMemberPath="Display"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2">
                                             <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Style}" Style="{DynamicResource AwFieldLabel}"/>
                                             <ComboBox Style="{DynamicResource AwComboBox}"
+                                                      AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=Style}"
                                                       ItemsSource="{Binding AnswerStyleOptions}"
                                                       SelectedItem="{Binding SelectedAnswerStyle}" DisplayMemberPath="Display"/>
                                         </StackPanel>
@@ -520,6 +539,7 @@
                                                 MinWidth="72" Margin="6,0,0,0" Command="{Binding ClearCvCommand}"/>
                                     </StackPanel>
                                     <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,4"
+                                             AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocCvHeading}"
                                              Text="{Binding CvText, UpdateSourceTrigger=PropertyChanged}"
                                              AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
                                              MinHeight="72" MaxHeight="140"/>
@@ -536,6 +556,7 @@
                                                 MinWidth="72" Margin="6,0,0,0" Command="{Binding ClearJdCommand}"/>
                                     </StackPanel>
                                     <TextBox Style="{DynamicResource AwTextBox}" Margin="0,0,0,4"
+                                             AutomationProperties.Name="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=DocJobHeading}"
                                              Text="{Binding JdText, UpdateSourceTrigger=PropertyChanged}"
                                              AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
                                              MinHeight="72" MaxHeight="140"/>

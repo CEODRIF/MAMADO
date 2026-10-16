@@ -13,6 +13,8 @@
   <data name="SetupModelMissing" xml:space="preserve"><value>Le modèle de parole n'a pas encore été téléchargé. Utilisez le bouton « Télécharger » dans les paramètres avancés.</value></data>
   <data name="SetupOllamaOffline" xml:space="preserve"><value>Ollama ne tourne pas (optionnel). Lancez-le pour activer les réponses IA et la traduction IA.</value></data>
   <data name="SetupOllamaModelMissing" xml:space="preserve"><value>Ollama tourne, mais le modèle {0} n'est pas installé. Exécutez : ollama pull {0}</value></data>
+  <data name="A11yModel" xml:space="preserve"><value>Modèle vocal Whisper</value></data>
+  <data name="A11yTranslationEngine" xml:space="preserve"><value>Moteur de traduction</value></data>
 
   <data name="StatusReady" xml:space="preserve"><value>Prêt</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>Chargement des modèles…</value></data>

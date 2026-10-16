@@ -13,6 +13,8 @@
   <data name="SetupModelMissing" xml:space="preserve"><value>نموذج الصوت لم يُحمَّل بعد. استخدم زر «تنزيل» في الإعدادات المتقدمة.</value></data>
   <data name="SetupOllamaOffline" xml:space="preserve"><value>Ollama غير يعمل (اختياري). شغّله لتفعيل الإجابات بالذكاء الاصطناعي والترجمة.</value></data>
   <data name="SetupOllamaModelMissing" xml:space="preserve"><value>Ollama يعمل لكن النموذج {0} غير محمّل. نفّذ: ollama pull {0}</value></data>
+  <data name="A11yModel" xml:space="preserve"><value>نموذج صوت Whisper</value></data>
+  <data name="A11yTranslationEngine" xml:space="preserve"><value>محرك الترجمة</value></data>
 
   <data name="StatusReady" xml:space="preserve"><value>جاهز</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>جارٍ تحميل النماذج…</value></data>

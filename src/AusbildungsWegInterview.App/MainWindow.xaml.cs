@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -147,6 +149,11 @@ public partial class MainWindow : Window
         string? name = e.PropertyName;
         if (name is null || !ContentProperties.Contains(name))
             return;
+
+        // Screen-reader announcement happens in BOTH modes, on every real
+        // content change (assessive tech support, not visual polish).
+        AnnounceContent(name);
+
         if (_viewModel.Overlay.Mode != OverlayMode.Interview || !_viewModel.AnimationsEnabled)
             return;
 
@@ -170,6 +177,41 @@ public partial class MainWindow : Window
             _ => AnswerPanel
         };
         AnimateContentEntrance(panel);
+    }
+
+    /// <summary>
+    /// Notifies assistive technologies that a live content area has new text.
+    /// LiveRegionChanged is WPF's built-in "content updated" automation event
+    /// (no external dependency). Only the element of the ACTIVE mode is
+    /// announced (the other mode's copy is collapsed). Accessibility must
+    /// never break the UI: all failures are silently ignored.
+    /// </summary>
+    private void AnnounceContent(string propertyName)
+    {
+        try
+        {
+            FrameworkElement target = _viewModel.Overlay.Mode == OverlayMode.Interview
+                ? propertyName switch
+                {
+                    nameof(MainViewModel.TranscriptText) => AwSpeechText,
+                    nameof(MainViewModel.TranslationText) => AwTranslationText,
+                    _ => AwAnswerText
+                }
+                : propertyName switch
+                {
+                    nameof(MainViewModel.TranscriptText) => MainSpeechText,
+                    nameof(MainViewModel.TranslationText) => MainTranslationText,
+                    _ => MainAnswerText
+                };
+
+            var peer = UIElementAutomationPeer.FromElement(target)
+                       ?? UIElementAutomationPeer.CreatePeerForElement(target);
+            peer?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+        }
+        catch
+        {
+            // Accessibility must never break the UI.
+        }
     }
 
     /// <summary>
