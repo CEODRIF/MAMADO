@@ -22,7 +22,7 @@ Verification is split into two worlds. Only the second one needs this session.
 
 | World | Where | What | Evidence already collected |
 |---|---|---|---|
-| **A — Automated (done, re-runnable anywhere)** | Linux build host (any OS with .NET 8 SDK) | Full unit + integration suite (**367 tests** as of this protocol): pinned whisper.cpp ABI (struct size/offsets, real P/Invoke JFK transcription when a local build is present), pipeline (chunking, silence gating, backpressure, stop-cancels-in-flight, restart-once), multilingual question detection, translation honesty, grounded answers, Ollama client, redacting logger, config, **localization key-set identity EN/DE/FR/AR**, **theme key parity**, **accessibility guards** (a11y names, focus visual in both themes, a11y keys in all 4 locales, live-region wiring) | `dotnet test -c Release` → 367/367; `dotnet build -c Release --no-incremental` → 0 warnings / 0 errors; `dotnet format --verify-no-changes` → clean |
+| **A — Automated (done, re-runnable anywhere)** | Linux build host (any OS with .NET 8 SDK) | Full unit + integration suite (**371 tests** as of this protocol): pinned whisper.cpp ABI (struct size/offsets, real P/Invoke JFK transcription when a local build is present), pipeline (chunking, silence gating, backpressure, stop-cancels-in-flight, restart-once), multilingual question detection, translation honesty, grounded answers, Ollama client, redacting logger, config, **localization key-set identity EN/DE/FR/AR**, **theme key parity**, **accessibility guards** (a11y names, focus visual in both themes, a11y keys in all 4 locales, live-region wiring) | `dotnet test -c Release` → 371/371; `dotnet build -c Release --no-incremental` → 0 warnings / 0 errors; `dotnet format --verify-no-changes` → clean |
 | **B — Windows execution (this session)** | Windows 10/11 x64 | WPF launch, WASAPI loopback capture, live Narrator/keyboard behavior, real device errors, real Ollama interaction, package contents | collected during this session (Phase E below) |
 
 Items marked **[A]** below need no manual action — they exist as context.
@@ -144,7 +144,7 @@ dotnet build AusbildungsWegInterview.sln -c Release --no-incremental
 dotnet format AusbildungsWegInterview.sln --verify-no-changes
 ```
 
-**Pass criterion [B B-3]:** tests — 0 failed (expect 367; with the
+**Pass criterion [B B-3]:** tests — 0 failed (expect 371; with the
 `tools\whisper.cpp` build from B.2 present, the whisper integration tests run
 for real instead of self-skipping — count the `SKIPPED` lines and record
 them); build — 0 warnings / 0 errors; format — no output.
