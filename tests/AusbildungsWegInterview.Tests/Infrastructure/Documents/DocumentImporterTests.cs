@@ -58,6 +58,18 @@ public class DocumentImporterTests : IDisposable
         var r = await _importer.ImportAsync(p);
         Assert.True(r.Success);
         Assert.Contains("Hello CV Probe", r.Text!);
+        // Real page structure is reported for the document chip; other formats
+        // never invent a page count.
+        Assert.Equal(1, r.PageCount);
+    }
+
+    [Fact]
+    public async Task Txt_HasNoPageCount()
+    {
+        var p = Write("notes.txt", "Interview notes");
+        var r = await _importer.ImportAsync(p);
+        Assert.True(r.Success);
+        Assert.Null(r.PageCount);
     }
 
     [Fact]

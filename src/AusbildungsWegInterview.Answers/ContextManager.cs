@@ -9,7 +9,7 @@ namespace AusbildungsWegInterview.Answers;
 /// bounded recent conversation, and the requested style/length.
 ///
 /// Grounding guarantees (enforced in the prompt):
-///  * Only facts explicitly present in [CV]/[Job description] may be asserted.
+///  * Only facts explicitly present in [CV]/[Job description]/[Interview notes] may be asserted.
 ///  * No invented qualifications, history, proficiency, achievements, or experiences.
 ///  * Unsupported specifics become a neutral general answer or a clarifying question.
 ///  * Prompts are bounded (truncation) to avoid unbounded context growth.
@@ -58,6 +58,11 @@ public static class ContextManager
             {
                 sb.AppendLine("[Job description]");
                 sb.AppendLine(Truncate(request.Context.JobDescription!, 3000));
+            }
+            if (!string.IsNullOrWhiteSpace(request.Context.Notes))
+            {
+                sb.AppendLine("[Interview notes]");
+                sb.AppendLine(Truncate(request.Context.Notes!, 3000));
             }
             sb.AppendLine("--- END verified material ---");
         }

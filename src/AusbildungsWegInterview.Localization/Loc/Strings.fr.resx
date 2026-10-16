@@ -13,6 +13,7 @@
   <data name="SetupModelMissing" xml:space="preserve"><value>Le modèle de parole n'a pas encore été téléchargé. Utilisez le bouton « Télécharger » dans les paramètres avancés.</value></data>
   <data name="SetupOllamaOffline" xml:space="preserve"><value>Ollama ne tourne pas (optionnel). Lancez-le pour activer les réponses IA et la traduction IA.</value></data>
   <data name="SetupOllamaModelMissing" xml:space="preserve"><value>Ollama tourne, mais le modèle {0} n'est pas installé. Exécutez : ollama pull {0}</value></data>
+  <data name="A11yCopy" xml:space="preserve"><value>Copier</value></data>
   <data name="A11yModel" xml:space="preserve"><value>Modèle vocal Whisper</value></data>
   <data name="A11yTranslationEngine" xml:space="preserve"><value>Moteur de traduction</value></data>
 
@@ -115,6 +116,7 @@
   <data name="SpeechEngineNative" xml:space="preserve"><value>Bibliothèque native whisper.cpp</value></data>
   <data name="SpeechModelReady" xml:space="preserve"><value>prêt</value></data>
   <data name="SpeechSetupLine" xml:space="preserve"><value>Voix : {0} | modèle « {1} » : {2}</value></data>
+  <data name="SpeechModel" xml:space="preserve"><value>Modèle vocal</value></data>
   <data name="SpeechModelMissing" xml:space="preserve"><value>MANQUANT - téléchargez-le ou définissez le chemin du modèle</value></data>
   <data name="SpeechStatusUnknown" xml:space="preserve"><value>Moteur vocal : état inconnu</value></data>
 
@@ -185,4 +187,55 @@
   <data name="AnswerGenerating" xml:space="preserve"><value>Génération de la réponse…</value></data>
   <data name="CopyAnswer" xml:space="preserve"><value>Copier</value></data>
   <data name="ErrorCopyFailed" xml:space="preserve"><value>La copie dans le presse-papiers a échoué.</value></data>
+  <data name="NavInterview" xml:space="preserve"><value>Entretien</value></data>
+  <data name="NavDocuments" xml:space="preserve"><value>Documents</value></data>
+  <data name="NavSettings" xml:space="preserve"><value>Réglages</value></data>
+  <data name="NavLogs" xml:space="preserve"><value>Journaux</value></data>
+  <data name="NavFeedback" xml:space="preserve"><value>Retour</value></data>
+  <data name="AppTagline" xml:space="preserve"><value>Copilote d'entretien IA</value></data>
+  <data name="StatusWhisper" xml:space="preserve"><value>Whisper (local)</value></data>
+  <data name="StatusOllama" xml:space="preserve"><value>Ollama (local)</value></data>
+  <data name="StatusTranslation" xml:space="preserve"><value>Traduction</value></data>
+  <data name="PillReady" xml:space="preserve"><value>Prêt</value></data>
+  <data name="PillUnavailable" xml:space="preserve"><value>Indisponible</value></data>
+  <data name="PillModelMissing" xml:space="preserve"><value>Modèle manquant</value></data>
+  <data name="PillUnknown" xml:space="preserve"><value>Inconnu</value></data>
+  <data name="PillOff" xml:space="preserve"><value>Désactivé</value></data>
+  <data name="ListeningHeading" xml:space="preserve"><value>Écoute…</value></data>
+  <data name="ListeningSub" xml:space="preserve"><value>Détection de la question de l'entretien</value></data>
+  <data name="IdleHeading" xml:space="preserve"><value>Arrêté</value></data>
+  <data name="IdleSub" xml:space="preserve"><value>Appuyez sur Démarrer pour écouter l'audio du système</value></data>
+  <data name="AutoDevice" xml:space="preserve"><value>Auto</value></data>
+  <data name="QOriginal" xml:space="preserve"><value>Original</value></data>
+  <data name="QTranslation" xml:space="preserve"><value>Traduction</value></data>
+  <data name="AnswerSectionHeading" xml:space="preserve"><value>Réponse suggérée par l'IA</value></data>
+  <data name="PanelPending" xml:space="preserve"><value>En attente de la réponse finale…</value></data>
+  <data name="PanelUnavailable" xml:space="preserve"><value>Non traduit — le moteur local n'a pas renvoyé de traduction.</value></data>
+  <data name="BtnShorter" xml:space="preserve"><value>Plus court</value></data>
+  <data name="BtnLonger" xml:space="preserve"><value>Plus long</value></data>
+  <data name="BtnRegenerate" xml:space="preserve"><value>Régénérer</value></data>
+  <data name="AnswerStyleLabel" xml:space="preserve"><value>Style de réponse :</value></data>
+  <data name="DocContextHint" xml:space="preserve"><value>Ajoutez votre CV, l'offre d'emploi ou des notes pour obtenir des réponses plus pertinentes.</value></data>
+  <data name="BtnAddDocument" xml:space="preserve"><value>Ajouter un document</value></data>
+  <data name="DocChipAdded" xml:space="preserve"><value>Ajouté</value></data>
+  <data name="DocChipMetaPages" xml:space="preserve"><value>{0} · {1} pages</value></data>
+  <data name="DocChipMetaChars" xml:space="preserve"><value>{0} · {1:N0} caractères</value></data>
+  <data name="DocChipRemove" xml:space="preserve"><value>Retirer</value></data>
+  <data name="DocNotesHeading" xml:space="preserve"><value>Notes d'entretien</value></data>
+  <data name="LoadNotesTitle" xml:space="preserve"><value>Sélectionner les notes d'entretien (PDF, DOCX, TXT)</value></data>
+  <data name="DocumentsHint" xml:space="preserve"><value>Les documents restent en mémoire pour cette session — vérifiez le texte, puis appuyez sur Utiliser.</value></data>
+  <data name="ContextNotesLoaded" xml:space="preserve"><value>Notes d'entretien chargées (en local uniquement).</value></data>
+  <data name="LogsHint" xml:space="preserve"><value>Journal local de l'application. Le contenu d'entretien, les transcriptions et les documents n'y sont jamais écrits.</value></data>
+  <data name="LogsRefresh" xml:space="preserve"><value>Actualiser</value></data>
+  <data name="LogsEmpty" xml:space="preserve"><value>Aucune entrée de journal pour l'instant.</value></data>
+  <data name="LogsUnavailable" xml:space="preserve"><value>Fichier journal indisponible.</value></data>
+  <data name="SettingsHint" xml:space="preserve"><value>Tous les réglages restent sur cette machine. Les changements de moteur s'appliquent après l'arrêt.</value></data>
+  <data name="FeedbackHint" xml:space="preserve"><value>Assistant local et hors ligne. Signalez les problèmes avec un instantané de diagnostic — il n'inclut jamais vos documents ni vos transcriptions.</value></data>
+  <data name="FeedbackVersion" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="FeedbackCopyDiagnostics" xml:space="preserve"><value>Copier le diagnostic</value></data>
+  <data name="FeedbackDiagnosticsCopied" xml:space="preserve"><value>Diagnostic copié dans le presse-papiers.</value></data>
+  <data name="FeedbackPrivacyTitle" xml:space="preserve"><value>Confidentialité</value></data>
+  <data name="FeedbackPrivacyBody" xml:space="preserve"><value>Uniquement l'audio système (loopback du périphérique de sortie choisi) — le microphone n'est jamais ouvert. Rien n'est envoyé : transcription, traduction et réponses restent locales. Audio, transcriptions, documents et réponses ne sont pas conservés par défaut.</value></data>
+  <data name="FeedbackProject" xml:space="preserve"><value>Page du projet</value></data>
+  <data name="WaveformIdle" xml:space="preserve"><value>Aucun audio</value></data>
 </root>

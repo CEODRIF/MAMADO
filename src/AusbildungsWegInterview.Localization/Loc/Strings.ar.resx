@@ -13,6 +13,7 @@
   <data name="SetupModelMissing" xml:space="preserve"><value>نموذج الصوت لم يُحمَّل بعد. استخدم زر «تنزيل» في الإعدادات المتقدمة.</value></data>
   <data name="SetupOllamaOffline" xml:space="preserve"><value>Ollama غير يعمل (اختياري). شغّله لتفعيل الإجابات بالذكاء الاصطناعي والترجمة.</value></data>
   <data name="SetupOllamaModelMissing" xml:space="preserve"><value>Ollama يعمل لكن النموذج {0} غير محمّل. نفّذ: ollama pull {0}</value></data>
+  <data name="A11yCopy" xml:space="preserve"><value>نسخ</value></data>
   <data name="A11yModel" xml:space="preserve"><value>نموذج صوت Whisper</value></data>
   <data name="A11yTranslationEngine" xml:space="preserve"><value>محرك الترجمة</value></data>
 
@@ -115,6 +116,7 @@
   <data name="SpeechEngineNative" xml:space="preserve"><value>مكتبة whisper.cpp الأصلية</value></data>
   <data name="SpeechModelReady" xml:space="preserve"><value>جاهز</value></data>
   <data name="SpeechSetupLine" xml:space="preserve"><value>الكلام: {0} | النموذج «{1}»: {2}</value></data>
+  <data name="SpeechModel" xml:space="preserve"><value>نموذج الكلام</value></data>
   <data name="SpeechModelMissing" xml:space="preserve"><value>مفقود - نزّله أو اضبط مسار النموذج</value></data>
   <data name="SpeechStatusUnknown" xml:space="preserve"><value>محرك الكلام: الحالة مجهولة</value></data>
 
@@ -185,4 +187,55 @@
   <data name="AnswerGenerating" xml:space="preserve"><value>جارٍ توليد الإجابة…</value></data>
   <data name="CopyAnswer" xml:space="preserve"><value>نسخ</value></data>
   <data name="ErrorCopyFailed" xml:space="preserve"><value>فشل النسخ إلى الحافظة.</value></data>
+  <data name="NavInterview" xml:space="preserve"><value>مقابلة</value></data>
+  <data name="NavDocuments" xml:space="preserve"><value>المستندات</value></data>
+  <data name="NavSettings" xml:space="preserve"><value>الإعدادات</value></data>
+  <data name="NavLogs" xml:space="preserve"><value>السجلات</value></data>
+  <data name="NavFeedback" xml:space="preserve"><value>ملاحظات</value></data>
+  <data name="AppTagline" xml:space="preserve"><value>مساعد المقابلة بالذكاء الاصطناعي</value></data>
+  <data name="StatusWhisper" xml:space="preserve"><value>Whisper (محلي)</value></data>
+  <data name="StatusOllama" xml:space="preserve"><value>Ollama (محلي)</value></data>
+  <data name="StatusTranslation" xml:space="preserve"><value>الترجمة</value></data>
+  <data name="PillReady" xml:space="preserve"><value>جاهز</value></data>
+  <data name="PillUnavailable" xml:space="preserve"><value>غير متاح</value></data>
+  <data name="PillModelMissing" xml:space="preserve"><value>النموذج مفقود</value></data>
+  <data name="PillUnknown" xml:space="preserve"><value>غير معروف</value></data>
+  <data name="PillOff" xml:space="preserve"><value>متوقف</value></data>
+  <data name="ListeningHeading" xml:space="preserve"><value>أستمع…</value></data>
+  <data name="ListeningSub" xml:space="preserve"><value>جارٍ اكتشاف سؤال المحاور</value></data>
+  <data name="IdleHeading" xml:space="preserve"><value>متوقف</value></data>
+  <data name="IdleSub" xml:space="preserve"><value>اضغط على بدء للاستماع إلى صوت النظام</value></data>
+  <data name="AutoDevice" xml:space="preserve"><value>تلقائي</value></data>
+  <data name="QOriginal" xml:space="preserve"><value>الأصل</value></data>
+  <data name="QTranslation" xml:space="preserve"><value>الترجمة</value></data>
+  <data name="AnswerSectionHeading" xml:space="preserve"><value>الإجابة المقترحة من الذكاء الاصطناعي</value></data>
+  <data name="PanelPending" xml:space="preserve"><value>في انتظار الإجابة النهائية…</value></data>
+  <data name="PanelUnavailable" xml:space="preserve"><value>لم تتم الترجمة — لم يُرجع المحرك المحلي ترجمة.</value></data>
+  <data name="BtnShorter" xml:space="preserve"><value>أقصر</value></data>
+  <data name="BtnLonger" xml:space="preserve"><value>أطول</value></data>
+  <data name="BtnRegenerate" xml:space="preserve"><value>إعادة التوليد</value></data>
+  <data name="AnswerStyleLabel" xml:space="preserve"><value>نمط الإجابة:</value></data>
+  <data name="DocContextHint" xml:space="preserve"><value>أضف سيرتك الذاتية أو وصف الوظيفة أو ملاحظاتك للحصول على إجابات أكثر ملاءمة.</value></data>
+  <data name="BtnAddDocument" xml:space="preserve"><value>إضافة مستند</value></data>
+  <data name="DocChipAdded" xml:space="preserve"><value>تمت الإضافة</value></data>
+  <data name="DocChipMetaPages" xml:space="preserve"><value>{0} · {1} صفحة</value></data>
+  <data name="DocChipMetaChars" xml:space="preserve"><value>{0} · {1:N0} حرفًا</value></data>
+  <data name="DocChipRemove" xml:space="preserve"><value>إزالة</value></data>
+  <data name="DocNotesHeading" xml:space="preserve"><value>ملاحظات المقابلة</value></data>
+  <data name="LoadNotesTitle" xml:space="preserve"><value>اختر ملاحظات المقابلة (PDF أو DOCX أو TXT)</value></data>
+  <data name="DocumentsHint" xml:space="preserve"><value>تبقى المستندات في الذاكرة لهذه الجلسة — راجع النص ثم اضغط استخدام.</value></data>
+  <data name="ContextNotesLoaded" xml:space="preserve"><value>تم تحميل ملاحظات المقابلة (محليًا فقط).</value></data>
+  <data name="LogsHint" xml:space="preserve"><value>سجل التطبيق المحلي. لا يُكتب هنا محتوى المقابلة أو النصوص أو المستندات.</value></data>
+  <data name="LogsRefresh" xml:space="preserve"><value>تحديث</value></data>
+  <data name="LogsEmpty" xml:space="preserve"><value>لا توجد سجلات بعد.</value></data>
+  <data name="LogsUnavailable" xml:space="preserve"><value>ملف السجل غير متاح.</value></data>
+  <data name="SettingsHint" xml:space="preserve"><value>تبقى جميع الإعدادات على هذا الجهاز. تُطبَّق تغييرات المحرك بعد الإيقاف.</value></data>
+  <data name="FeedbackHint" xml:space="preserve"><value>مساعد محلي يعمل دون اتصال. أبلغ عن المشكلات بلقطة تشخيصية — لا تتضمن مستنداتك أو نصوصك أبدًا.</value></data>
+  <data name="FeedbackVersion" xml:space="preserve"><value>الإصدار {0}</value></data>
+  <data name="FeedbackCopyDiagnostics" xml:space="preserve"><value>نسخ معلومات التشخيص</value></data>
+  <data name="FeedbackDiagnosticsCopied" xml:space="preserve"><value>تم نسخ معلومات التشخيص إلى الحافظة.</value></data>
+  <data name="FeedbackPrivacyTitle" xml:space="preserve"><value>الخصوصية</value></data>
+  <data name="FeedbackPrivacyBody" xml:space="preserve"><value>صوت النظام فقط (إعادة إخراج الجهاز المحدد) — لا يُفتح الميكروفون أبدًا. لا يُرسل أي شيء: النسخ والترجمة والإجابات تتم محليًا. لا يُحفظ الصوت أو النصوص أو المستندات أو الإجابات افتراضيًا.</value></data>
+  <data name="FeedbackProject" xml:space="preserve"><value>صفحة المشروع</value></data>
+  <data name="WaveformIdle" xml:space="preserve"><value>لا يوجد صوت</value></data>
 </root>

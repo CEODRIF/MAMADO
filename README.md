@@ -18,13 +18,68 @@ suggestions** grounded in your CV and the job description with a local
 
 ## Current status
 
-The automated suite currently has **371 passing tests**
-(`dotnet test -c Release` → 371/371, `dotnet build -c Release`
+The automated suite currently has **384 passing tests**
+(`dotnet test -c Release` → 384/384, `dotnet build -c Release`
 0 warnings / 0 errors, `dotnet format --verify-no-changes` clean).
-Latest recorded validation: commit `2207f28`, Linux build host,
-2026-10-16. The per-phase sections below are **historical milestone
-records** (suite size and benchmarks as of each phase) and are not
-kept updated.
+Latest recorded validation: the MAMADO-UI-redesign merge (this state),
+Linux build host, 2026-10-17. The per-phase sections below are
+**historical milestone records** (suite size and benchmarks as of each
+phase) and are not kept updated.
+
+## Status — MAMADO UI redesign (navigation shell, language panel trios, answer controls)
+
+The WPF shell was redesigned around a left navigation rail (Interview /
+Documents / Settings / Logs / Feedback) and the dark-navy glass theme with neon
+accents (light theme available). See [Interface](#interface-mamado-redesign)
+for the page-by-page description.
+
+Design note: a concurrent workstream had landed a different (Vision
+Pro-style) redesign on `main`; this merge keeps the MAMADO mockup shell as
+the implemented UI and preserves that workstream's non-UI work — the
+whisper.cpp native runtime (pinned ABI + probe + build scripts), the bounded
+app-exit teardown, first-run prerequisite diagnostics, the WPF-free interview
+overlay controller (kept for a future compact-mode pass; the compact overlay
+UI itself is not rendered by the MAMADO shell), and the accessibility
+contract (themed focus visual, localized automation names, live-region
+announcements), re-expressed on the MAMADO shell.
+
+**Implemented and verified on the build host (automated suite, now 384 tests):**
+- Real-data panel trios: the detected question (original + one panel per
+  configured question language) and the suggested answer (generated language +
+  local translations of that answer) are driven by new pipeline events with
+  honest per-panel states (`Pending` / `Ready` / `Unavailable`) and machine
+  status codes localized in all four UI languages — no simulated content.
+- Duplicate provider work is impossible by construction: the configured primary
+  translation is reused across the question panels, answer translations run
+  only for FINAL answers (provisionals mark the other panels `Pending`), and
+  in-place refinement (final == provisional) emits panels without a second LLM
+  call.
+- **Shorter / Longer / Regenerate** re-run the local model for the last
+  detected question through the same cancellation / stale-guard path as live
+  answers; a Stop cancels the regeneration and no stale result reaches the UI.
+  Regression: regeneration targets the SESSION's last answered question, so it
+  keeps working after the segment has finalized (and a fresh session cannot
+  regenerate a previous session's question).
+- Waveform bars are the real capture level (mean amplitude, throttled ~25 Hz);
+  nothing is animated artificially.
+- Document context chips show real metadata (PDF page count from the document
+  structure, imported character count otherwise); interview notes are the third
+  grounding slot (`[Interview notes]` DATA section, 3000-char cap).
+- Header health pills (Whisper / Ollama / Translation) are driven by the real
+  checks only (files present, Ollama reachable + model pulled, configured
+  provider available) — no fake "ready".
+- Logs page (last 300 lines of the local log) and Feedback page (version +
+  non-sensitive diagnostics copy) with the privacy notes.
+- Arabic UI stays fully right-to-left (window-level FlowDirection); Light/Dark
+  theme key parity and localization key parity (en/de/fr/ar) remain
+  test-enforced.
+
+**NOT verified (requires a Windows machine):**
+- The redesigned window's rendering, the navigation rail layout, the waveform
+  animation on real capture, RTL layout on screen, and every page's visual
+  fidelity on Windows 10/11. All of the above is verified here only by the
+  cross-platform automated suite, compilation, and static XAML/resource
+  consistency checks — no Windows rendering or runtime acceptance is claimed.
 
 ---
 
@@ -210,10 +265,10 @@ dotnet run --project src/AusbildungsWegInterview.App -c Release
   default supported pairs `de-en`, `en-de`, extendable) — path in *Advanced
   settings*.
 
-At startup the app shows a **Setup** card listing exactly which
-prerequisites are still missing (native runtime, speech model, Ollama) with
-the concrete next step for each line; it disappears when everything is in
-place and refreshes with the status button in the header.
+The **Settings** page shows a **Setup diagnostics** panel listing exactly
+which prerequisites are still missing (native runtime, speech model, Ollama)
+with the concrete next step for each line; it disappears when everything is
+in place and refreshes with the status refresh button.
 
 ### To run the automated tests (any OS with the .NET 8 SDK)
 - `dotnet test` runs the full cross-platform suite on Windows, macOS, or Linux.
@@ -258,38 +313,69 @@ Or publish a Windows executable:
 dotnet publish src/AusbildungsWegInterview.App -c Release -r win-x64 --self-contained false
 ```
 
-### Interface (Phase 3 UI redesign)
+### Interface (MAMADO redesign)
 
-The window is restyled to match the **ausbildungsweg.net** brand (light `#F6F6FB`
-surface, navy ink, violet/blue accent `#6D5DF6`, brand gradient buttons,
-Segoe UI, rounded cards) — see `src/AusbildungsWegInterview.App/Themes/AwTheme.xaml`
-for the token map extracted from the site's CSS.
+The window is a dark-navy glass shell (light theme available, selectable in
+Settings): neon-blue accents, rounded/glowing panels, Segoe UI, and a left
+navigation rail. Theme tokens live in
+`src/AusbildungsWegInterview.App/Themes/AwTheme.Light.xaml` /
+`AwTheme.Dark.xaml` — Light and Dark define the identical set of resource keys
+and every referenced resource is defined (verified by a WPF-free test).
 
-- **Primary screen** = the four interview choices only: *interview language*,
-  *translation language*, *suggested-answer language*, and *answer level (CEFR
-  A1–C2)*, plus one prominent **Start listening** button, a **Stop** button, and
-  a compact live status chip in the header.
-- **Live panels**: original transcript, detected question, translation (with
-  honest status), and the suggested answer (visually prominent).
-- **Advanced settings** (collapsed expander): output device + refresh, speech
-  model + download, whisper CLI/model paths, translation engine + external CLI,
-  Ollama status + model, answer length/style, CV/job-description loading.
+- **Navigation rail** (left, 94 px): Interview / Documents / Settings (top) and
+  Logs / Feedback (bottom), with the brand logo above the items.
+- **Header**: brand + tagline, three live health pills — **Whisper (Local)**,
+  **Ollama (Local)**, **Translation** — each shown as *Ready* only when the real
+  check passes (whisper: engine + model file present; Ollama: service reachable
+  + model pulled; Translation: the configured provider available, incl. the
+  external-CLI path check), plus quick buttons to Settings and Logs.
+- **Interview page**:
+  - *Listening card*: mic ring, live heading/subtitle, a waveform drawn from
+    the REAL capture level (mean amplitude of the audio pipeline — nothing is
+    simulated), output device picker + refresh, Start / Stop.
+  - *Detected question trio*: the original text plus one panel per configured
+    question language (default English + Arabic, `QuestionLanguages` setting),
+    each with a copy button and an honest status line (real translation, or a
+    localized unavailable reason — never raw provider text).
+  - *Suggested answer trio*: the generated answer in the primary answer
+    language first, then local translations of that answer
+    (`AnswerPanelLanguages`, default German + English + Arabic), a "generating…"
+    chip while the model works, a review disclaimer, and per-panel copy.
+  - *Answer controls*: **Shorter / Longer / Regenerate** (real local
+    re-generation for the last detected question — the panel is updated by the
+    same pipeline path as live answers, cancellable by Stop), a segmented
+    Short / Balanced / Long control, and the answer-style dropdown.
+  - *Document context*: chips for resume / job description / interview notes
+    showing the real file name + metadata (PDF page count, otherwise imported
+    character count); "Add document" opens the same import commands as the
+    Documents page.
+  - *Live transcript*: the raw transcription with an honest "provisional"
+    marker while the segment is still open.
+- **Documents page**: three review boxes (Import / Use / Clear) for CV, job
+  description and notes — review-before-grounding, memory-only, with the
+  privacy note.
+- **Settings page**: Setup (interview / translation / answer language, CEFR
+  level), Speech (whisper CLI + model paths, speech model + explicit download),
+  Translation (engine, external CLI path/args, on/off), Ollama (live status +
+  model name), Advanced (UI language, output device, theme, always-on-top).
+- **Logs page**: the last 300 lines of the local log file with a refresh
+  button; logs never contain interview content.
+- **Feedback page**: version + a **Copy diagnostics** action that copies a
+  non-sensitive state summary only (no document content, no transcripts) and
+  the privacy / disclosure notes.
 - The CEFR level is passed to the answer generator per request (persisted in the
   existing config); it changes vocabulary/grammar complexity, not the pipeline.
-- **UI language & theme**: the header offers an interface-language selector
-  (English, Deutsch, Français, العربية) and a light/dark toggle. Every UI string
+- **UI language & theme**: the interface language (English, Deutsch, Français,
+  العربية) and the theme are selected in *Advanced* settings. Every UI string
   comes from static resource catalogs (`AusbildungsWegInterview.Localization`,
-  one resx per language) - no runtime machine translation. The Arabic UI uses
-  right-to-left layout (WPF FlowDirection). Both preferences persist in the
-  existing config file, and the UI language stays independent of the interview /
-  translation / answer languages.
-- **Branding & dark theme**: the header shows the AusbildungsWeg logo
+  one resx per language, key parity across the four catalogs enforced by tests)
+  — no runtime machine translation. The Arabic UI uses right-to-left layout
+  (WPF FlowDirection). Both preferences persist in the existing config file,
+  and the UI language stays independent of the interview / translation / answer
+  languages.
+- **Branding**: the navigation rail shows the brand logo
   (`Assets/AwLogo.png`, committed to the repo, packaged as a WPF resource) and
-  the executable carries the multi-size `Assets/app.ico` (16-256 px). The dark
-  theme is a refined navy/slate variant of the brand palette with layered,
-  distinct surfaces (window < cards < inner panels), fully themed combo popups,
-  check boxes and the Advanced-settings expander — no white/unsurfaced areas
-  (see `Themes/AwTheme.Light.xaml` / `AwTheme.Dark.xaml`).
+  the executable carries the multi-size `Assets/app.ico` (16-256 px).
 
 ### First-run setup (in the app)
 

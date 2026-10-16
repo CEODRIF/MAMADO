@@ -385,9 +385,19 @@ public class InterviewPipelineTests
             TranscriptionResult.Partial("What is your greatest strength?"),
             TranscriptionResult.Final("What is your greatest strength?"));
         var translator = new MockTranslator();
+        // AnswerPanelLanguages = generation language only: this test is about
+        // QUESTION-translation dedup. The answer-panel translations (a separate
+        // feature) are covered by LanguagePanelTests and must not muddy the
+        // translator call count here.
         await using var pipeline = new InterviewPipeline(
             capture, speech, translator, new MockAnswerGenerator(), new QuestionDetector(),
-            new AppConfiguration { ChunkSeconds = 0.5, TargetSampleRate = 16000, MinQuestionChars = 8 });
+            new AppConfiguration
+            {
+                ChunkSeconds = 0.5,
+                TargetSampleRate = 16000,
+                MinQuestionChars = 8,
+                AnswerPanelLanguages = "de"
+            });
 
         await pipeline.StartAsync();
         pipeline.EnqueueAudio(NonSilent(3 * 16000));

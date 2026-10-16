@@ -69,6 +69,9 @@ public sealed class InterviewPipeline : IAsyncDisposable
     // where IsRunning alone does not yet cover a starting pipeline.
     private bool _starting;
 
+    // Waveform throttling (worker thread only).
+    private long _lastLevelTicks;
+
     public PipelineState State { get; private set; } = PipelineState.Idle;
     public string? LastError { get; private set; }
     public CandidateContext Context { get; set; } = CandidateContext.Empty;
@@ -94,6 +97,15 @@ public sealed class InterviewPipeline : IAsyncDisposable
     /// Not raised when a provisional is already displayed (final refines it).
     /// </summary>
     public event EventHandler? AnswerGenerating;
+
+    /// <summary>Per-language answer panels (generated answer + local translations).</summary>
+    public event EventHandler<AnswersUpdatedEventArgs>? AnswersUpdated;
+
+    /// <summary>Detected-question language panels (original + local translations).</summary>
+    public event EventHandler<QuestionSetUpdatedEventArgs>? QuestionSetUpdated;
+
+    /// <summary>Live audio level (mean amplitude) for the waveform — real capture data.</summary>
+    public event EventHandler<AudioLevelUpdatedEventArgs>? AudioLevelUpdated;
     public event EventHandler<PipelineStateChangedEventArgs>? StateChanged;
     public event EventHandler<CaptureErrorEventArgs>? Error;
 
@@ -148,6 +160,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
             _answeredInRound = false;
             _lastAnsweredText = null;
             _lastSuggestion = null;
+            _lastAnswerRequest = null;
             _lastTranslationKey = string.Empty;
             _lastTranslation = null;
             _recentTurns.Clear();
@@ -398,6 +411,15 @@ public sealed class InterviewPipeline : IAsyncDisposable
                 if (ct.IsCancellationRequested)
                     break;
 
+                // Real capture level for the UI waveform (throttled to ~25 Hz so
+                // the dispatcher never becomes the bottleneck).
+                long nowTicks = Environment.TickCount64;
+                if (nowTicks - _lastLevelTicks >= 40)
+                {
+                    _lastLevelTicks = nowTicks;
+                    AudioLevelUpdated?.Invoke(this, new AudioLevelUpdatedEventArgs(frame.MeanAmplitude()));
+                }
+
                 AudioFrame normalized;
                 try
                 {
@@ -531,6 +553,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
             var f = final.IsFinal ? final : final with { Kind = TranscriptKind.Final };
             EmitTranscript(f);
             await TranslateIncrementallyAsync(f, ct).ConfigureAwait(false);
+            await TranslateQuestionSetAsync(f, ct).ConfigureAwait(false);
             await MaybeAnswerAsync(f, ct).ConfigureAwait(false);
         }
 
@@ -576,6 +599,7 @@ public sealed class InterviewPipeline : IAsyncDisposable
                 // (pass-through / unchanged / failure are not translations).
                 if (tr.IsTranslated)
                     _lastTranslation = tr.TargetText;
+                _lastPrimaryTranslationResult = tr;
                 TranslationUpdated?.Invoke(this, new TranslationUpdatedEventArgs(tr));
             }
         }
@@ -591,6 +615,242 @@ public sealed class InterviewPipeline : IAsyncDisposable
 
     /// <summary>Latest real translation of the current segment (null unless one was produced).</summary>
     private string? _lastTranslation;
+
+    /// <summary>Last primary-target result (reused by the panel set — never translated twice).</summary>
+    private TranslationResult? _lastPrimaryTranslationResult;
+
+    /// <summary>Request of the last generated answer (panel translations + regeneration).</summary>
+    private AnswerRequest? _lastAnswerRequest;
+
+    /// <summary>
+    /// Emits ONE panel per configured question language (the mockup's Original /
+    /// English / Arabic trio). Each panel carries its own honest state: a real
+    /// provider translation, or an unavailable status with the localized reason.
+    /// The configured primary target is reused from the incremental pass, so no
+    /// language is ever translated twice.
+    /// </summary>
+    private async Task TranslateQuestionSetAsync(TranscriptionResult result, CancellationToken ct)
+    {
+        var languages = LanguageSet.Parse(_config.QuestionLanguages, _config.TranslationLanguage);
+        if (languages.Count == 0 || string.IsNullOrWhiteSpace(result.Text))
+            return;
+
+        var panels = new List<QuestionLanguagePanel>(languages.Count);
+        foreach (var lang in languages)
+        {
+            if (ct.IsCancellationRequested)
+                return;
+
+            try
+            {
+                var tr = string.Equals(lang, _config.TranslationLanguage, StringComparison.OrdinalIgnoreCase) &&
+                         _lastPrimaryTranslationResult is { } primary &&
+                         string.Equals(primary.SourceText, result.Text, StringComparison.Ordinal)
+                    ? primary
+                    : await _translator.TranslateAsync(result.Text, result.DetectedLanguage, lang, ct).ConfigureAwait(false);
+
+                if (tr is null)
+                {
+                    panels.Add(new QuestionLanguagePanel(lang, PanelState.Unavailable, string.Empty, null, null));
+                    continue;
+                }
+
+                var state = tr.IsTranslated ? PanelState.Ready
+                    : tr.HasText ? PanelState.Unavailable   // fallback text (original/pass-through)
+                    : PanelState.Unavailable;
+                panels.Add(new QuestionLanguagePanel(lang, state, tr.TargetText ?? string.Empty, tr.Status, tr.StatusMessage));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                ReportError(ex, isFatal: false);
+                panels.Add(new QuestionLanguagePanel(lang, PanelState.Unavailable, string.Empty, null, null));
+            }
+        }
+
+        QuestionSetUpdated?.Invoke(this, new QuestionSetUpdatedEventArgs(
+            result.Text, result.DetectedLanguage, result.IsProvisional, panels));
+    }
+
+    /// <summary>
+    /// Emits the per-language answer panel set. The generated answer fills the
+    /// primary panel; the remaining languages are produced by translating that
+    /// answer LOCALLY (same local provider as the question translation). A
+    /// provisional answer marks the non-primary panels as Pending — they are
+    /// filled by the final answer so no translation work is wasted.
+    /// </summary>
+    private async Task EmitAnswerPanelsAsync(
+        AnswerRequest request, AnswerSuggestion suggestion, CancellationToken ct)
+    {
+        var languages = LanguageSet.WithPrimaryFirst(
+            LanguageSet.Parse(_config.AnswerPanelLanguages, _config.AnswerLanguage), _config.AnswerLanguage);
+        if (languages.Count == 0)
+            return;
+
+        string primary = languages[0];
+        string primaryText = suggestion.HasAnswer ? suggestion.Answer : string.Empty;
+        var panels = new List<AnswerLanguagePanel>(languages.Count);
+
+        foreach (var lang in languages)
+        {
+            if (string.Equals(lang, primary, StringComparison.OrdinalIgnoreCase))
+            {
+                panels.Add(new AnswerLanguagePanel(
+                    lang,
+                    suggestion.HasAnswer ? PanelState.Ready : PanelState.Unavailable,
+                    primaryText,
+                    IsPrimary: true,
+                    Status: null,
+                    StatusMessage: null,
+                    AnswerStatus: suggestion.Status,
+                    Model: suggestion.Model));
+                continue;
+            }
+
+            if (!suggestion.HasAnswer)
+            {
+                panels.Add(new AnswerLanguagePanel(
+                    lang, PanelState.Unavailable, string.Empty, false, null, null, suggestion.Status, suggestion.Model));
+                continue;
+            }
+
+            if (suggestion.IsProvisional)
+            {
+                panels.Add(new AnswerLanguagePanel(lang, PanelState.Pending, string.Empty));
+                continue;
+            }
+
+            try
+            {
+                var tr = await _translator.TranslateAsync(
+                    primaryText, request.AnswerLanguage, lang, ct).ConfigureAwait(false);
+                panels.Add(tr is { IsTranslated: true }
+                    ? new AnswerLanguagePanel(lang, PanelState.Ready, tr.TargetText)
+                    : new AnswerLanguagePanel(lang, PanelState.Unavailable, tr?.TargetText ?? string.Empty,
+                        false, tr?.Status, tr?.StatusMessage));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                ReportError(ex, isFatal: false);
+                panels.Add(new AnswerLanguagePanel(lang, PanelState.Unavailable, string.Empty));
+            }
+        }
+
+        AnswersUpdated?.Invoke(this, new AnswersUpdatedEventArgs(
+            request.QuestionOriginal, suggestion.IsProvisional, panels));
+    }
+
+    /// <summary>
+    /// Runs ONE answer generation (cancelling any superseded one) and emits the
+    /// suggestion plus the per-language answer panel set. Shared by live
+    /// generation and the user-initiated Regenerate / Shorter / Longer actions,
+    /// so both go through identical cancellation, stale-guard and status logic.
+    /// </summary>
+    private async Task<AnswerSuggestion?> RunAnswerGenerationAsync(
+        string questionText,
+        string? questionTranslated,
+        bool isFinal,
+        CancellationToken ct,
+        AnswerLength? lengthOverride = null,
+        AnswerStyle? styleOverride = null)
+    {
+        // Cancel any in-flight answer for a now-superseded request, and release
+        // the previous token source (no unbounded CTS accumulation).
+        _answerCts?.Cancel();
+        _answerCts?.Dispose();
+        var answerCts = new CancellationTokenSource();
+        _answerCts = answerCts;
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, answerCts.Token);
+
+        var request = new AnswerRequest(
+            questionText,
+            questionTranslated,
+            Context,
+            lengthOverride ?? _config.AnswerLength,
+            _config.AnswerLanguage,
+            styleOverride ?? _config.AnswerStyle,
+            SnapshotRecentTurns(),
+            Level: _config.AnswerLevel);
+
+        // Honest "generating" state while the panel has no provisional answer for
+        // THIS question yet. A final that refines an existing provisional of the
+        // same text never reaches this method (it is finalized in place).
+        if (_lastSuggestion is null ||
+            !string.Equals(_lastAnsweredText, questionText, StringComparison.Ordinal))
+            AnswerGenerating?.Invoke(this, EventArgs.Empty);
+
+        var suggestion = await _answers.GenerateAsync(request, linked.Token).ConfigureAwait(false);
+
+        // Stale-result guard: if Stop raced a completing generation (the response
+        // arrived in the same instant the run token fired), drop the result
+        // instead of updating the UI after the session stopped.
+        if (suggestion is null || ct.IsCancellationRequested)
+            return null;
+
+        var emitted = isFinal
+            ? suggestion with { IsProvisional = false }
+            : suggestion with { IsProvisional = true };
+        AnswerUpdated?.Invoke(this, new AnswerUpdatedEventArgs(emitted));
+
+        // Remember for the in-segment refine path (final == provisional text) and
+        // for the Regenerate / Shorter / Longer controls.
+        _lastAnsweredText = questionText;
+        _lastSuggestion = emitted;
+        _lastAnswerRequest = request;
+
+        await EmitAnswerPanelsAsync(request, emitted, linked.Token).ConfigureAwait(false);
+        return emitted;
+    }
+
+    /// <summary>
+    /// User-initiated regeneration of the answer for the last detected question
+    /// (Regenerate / Shorter / Longer controls). Requires an active session —
+    /// the session token owns cancellation, so a Stop also cancels this work and
+    /// no stale result can reach the UI afterwards.
+    ///
+    /// The target is the SESSION's last answered request (not the segment-scoped
+    /// _lastAnsweredText, which is cleared when the segment finalizes): the user
+    /// presses the control while the FINAL answer is on screen, i.e. after the
+    /// segment has already been reset.
+    /// </summary>
+    public async Task<bool> RegenerateAnswerAsync(
+        AnswerLength? length = null,
+        AnswerStyle? style = null,
+        CancellationToken ct = default)
+    {
+        var lastRequest = _lastAnswerRequest;
+        if (lastRequest is null)
+            return false;
+
+        var runCts = _runCts;
+        if (runCts is null || runCts.IsCancellationRequested)
+            return false;
+
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(runCts.Token, ct);
+        try
+        {
+            var emitted = await RunAnswerGenerationAsync(
+                lastRequest.QuestionOriginal, lastRequest.QuestionTranslated, isFinal: true,
+                linked.Token, length, style).ConfigureAwait(false);
+            return emitted is not null;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+        catch (Exception ex)
+        {
+            ReportError(ex, isFatal: false);
+            return false;
+        }
+    }
 
     private async Task MaybeAnswerAsync(TranscriptionResult result, CancellationToken ct)
     {
@@ -615,6 +875,13 @@ public sealed class InterviewPipeline : IAsyncDisposable
         {
             var finalized = _lastSuggestion with { IsProvisional = false };
             AnswerUpdated?.Invoke(this, new AnswerUpdatedEventArgs(finalized));
+
+            // The answer is final now, so the translated panels can be produced
+            // (they were Pending while the answer was provisional). No second
+            // model CALL happens here — only the local translations.
+            if (finalized.HasAnswer && _lastAnswerRequest is not null && !ct.IsCancellationRequested)
+                await EmitAnswerPanelsAsync(_lastAnswerRequest, finalized, ct).ConfigureAwait(false);
+
             if (finalized.HasAnswer)
             {
                 RememberTurn(result.Text, finalized.Answer);
@@ -630,55 +897,13 @@ public sealed class InterviewPipeline : IAsyncDisposable
 
         try
         {
-            // Cancel any in-flight answer for a now-superseded question, and
-            // release the previous token source (no unbounded CTS accumulation).
-            _answerCts?.Cancel();
-            _answerCts?.Dispose();
-            var answerCts = new CancellationTokenSource();
-            _answerCts = answerCts;
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, answerCts.Token);
+            var emitted = await RunAnswerGenerationAsync(result.Text, _lastTranslation, result.IsFinal, ct)
+                .ConfigureAwait(false);
 
-            var recent = SnapshotRecentTurns();
-            var request = new AnswerRequest(
-                result.Text,
-                _lastTranslation,
-                Context,
-                _config.AnswerLength,
-                _config.AnswerLanguage,
-                _config.AnswerStyle,
-                recent,
-                Level: _config.AnswerLevel);
-
-            // Honest "generating" state while the panel has no provisional
-            // answer for THIS question yet (otherwise it keeps showing the
-            // previous question's answer and looks dead). A final that refines
-            // an existing provisional of the same text returned early in case 2,
-            // so it never reaches this raise.
-            if (_lastSuggestion is null ||
-                !string.Equals(_lastAnsweredText, result.Text, StringComparison.Ordinal))
-                AnswerGenerating?.Invoke(this, EventArgs.Empty);
-
-            var suggestion = await _answers.GenerateAsync(request, linked.Token).ConfigureAwait(false);
-
-            // Stale-result guard: if Stop raced a completing generation (the
-            // response arrived in the same instant the run token fired), drop
-            // the result instead of updating the UI after the session stopped.
-            if (suggestion is not null && !ct.IsCancellationRequested)
+            if (emitted is not null && result.IsFinal && emitted.HasAnswer)
             {
-                var emitted = result.IsFinal
-                    ? suggestion with { IsProvisional = false }
-                    : suggestion with { IsProvisional = true };
-                AnswerUpdated?.Invoke(this, new AnswerUpdatedEventArgs(emitted));
-
-                // Remember for the in-segment refine path (case  2) above.
-                _lastAnsweredText = result.Text;
-                _lastSuggestion = emitted;
-
-                if (result.IsFinal && emitted.HasAnswer)
-                {
-                    RememberTurn(result.Text, emitted.Answer);
-                    RememberAnsweredQuestion(normalized!);
-                }
+                RememberTurn(result.Text, emitted.Answer);
+                RememberAnsweredQuestion(normalized!);
             }
 
             _answeredInRound = !result.IsFinal;

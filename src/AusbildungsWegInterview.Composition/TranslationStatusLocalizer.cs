@@ -23,6 +23,16 @@ public static class TranslationStatusLocalizer
             return result.StatusMessage is null ? string.Empty : loc["TranslStatusProviderFailed"];
         }
 
+        return Localize(loc, status, result.SourceLanguage, result.TargetLanguage);
+    }
+
+    /// <summary>
+    /// Localizes a bare translation status code (used by the question/answer
+    /// language panels, which carry the machine code without a whole result).
+    /// </summary>
+    public static string Localize(
+        LocalizationManager loc, TranslationStatus status, string? sourceLanguage = null, string? targetLanguage = null)
+    {
         return status switch
         {
             TranslationStatus.PassThrough => loc["TranslStatusPassThrough"],
@@ -31,11 +41,11 @@ public static class TranslationStatusLocalizer
             TranslationStatus.ProviderFailed => loc["TranslStatusProviderFailed"],
             TranslationStatus.NoOutput => loc["TranslStatusNoOutput"],
             TranslationStatus.NeedsPinnedSource => loc["TranslStatusNeedsSource"],
-            TranslationStatus.PairNotSupported => loc.F("TranslStatusPairNotSupported", result.SourceLanguage, result.TargetLanguage),
+            TranslationStatus.PairNotSupported => loc.F("TranslStatusPairNotSupported", sourceLanguage ?? "?", targetLanguage ?? "?"),
             TranslationStatus.CliLaunchFailed => loc["TranslStatusCliLaunch"],
             TranslationStatus.CliTimeout => loc["TranslStatusCliTimeout"],
             TranslationStatus.CliError => loc["TranslStatusCliError"],
-            TranslationStatus.WhisperEnglishOnly => loc.F("TranslStatusWhisperEnglishOnly", result.TargetLanguage),
+            TranslationStatus.WhisperEnglishOnly => loc.F("TranslStatusWhisperEnglishOnly", targetLanguage ?? "?"),
             TranslationStatus.WhisperEngineUnsupported => loc["TranslStatusWhisperEngine"],
             _ => string.Empty
         };

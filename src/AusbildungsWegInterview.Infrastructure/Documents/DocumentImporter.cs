@@ -25,7 +25,8 @@ public enum DocumentImportError
 public sealed record DocumentImportResult(
     string? Text,
     DocumentImportError Error,
-    bool Truncated = false)
+    bool Truncated = false,
+    int? PageCount = null)
 {
     public bool Success => Error == DocumentImportError.None && Text is not null;
 }
@@ -118,7 +119,7 @@ public sealed class DocumentImporter
     private DocumentImportResult Fail(DocumentImportError error)
         => new(null, error);
 
-    private DocumentImportResult FinalizeText(string raw)
+    private DocumentImportResult FinalizeText(string raw, int? pageCount = null)
     {
         var text = CollapseNewlines(raw);
         if (string.IsNullOrWhiteSpace(text))
@@ -126,7 +127,7 @@ public sealed class DocumentImporter
         bool truncated = text.Length > MaxExtractedChars;
         if (truncated)
             text = text[..MaxExtractedChars];
-        return new DocumentImportResult(text, DocumentImportError.None, truncated);
+        return new DocumentImportResult(text, DocumentImportError.None, truncated, pageCount);
     }
 
     private DocumentImportResult ExtractPdf(Stream stream, CancellationToken ct)
@@ -135,14 +136,18 @@ public sealed class DocumentImporter
         {
             using var doc = PdfDocument.Open(stream);
             var sb = new StringBuilder();
+            int pages = 0;
             foreach (var page in doc.GetPages())
             {
                 if (ct.IsCancellationRequested)
                     throw new OperationCanceledException("Document import was cancelled.", ct);
+                pages++;
                 sb.Append(page.Text);
                 sb.Append('\n');
             }
-            return FinalizeText(sb.ToString());
+            // Real page count from the PDF structure (shown on the document chip);
+            // never inferred for the other formats.
+            return FinalizeText(sb.ToString(), pages);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception)

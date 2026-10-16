@@ -41,6 +41,21 @@ public sealed class AppConfiguration
     /// <summary>Language generated answers are written in.</summary>
     public string AnswerLanguage { get; set; } = "de";
 
+    /// <summary>
+    /// Languages shown in the question panels in addition to the detected
+    /// original (comma-separated codes). The panel languages are translated
+    /// locally; the configured TranslationLanguage is always included.
+    /// </summary>
+    public string QuestionLanguages { get; set; } = "en,ar";
+
+    /// <summary>
+    /// Languages shown in the answer panels (comma-separated codes). The FIRST
+    /// entry is the language the answer is GENERATED in; the others are produced
+    /// by translating that answer locally. Kept in sync with AnswerLanguage at
+    /// the front when the user picks a primary language.
+    /// </summary>
+    public string AnswerPanelLanguages { get; set; } = "de,en,ar";
+
     public AnswerLength AnswerLength { get; set; } = AnswerLength.Normal;
 
     /// <summary>Tone of generated answers.</summary>

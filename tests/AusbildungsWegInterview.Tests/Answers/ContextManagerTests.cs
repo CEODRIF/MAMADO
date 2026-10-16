@@ -102,6 +102,27 @@ public class ContextManagerTests
     }
 
     [Fact]
+    public void Prompt_IncludesInterviewNotes_Section()
+    {
+        var ctx = CandidateContext.Empty.WithNotes("Prepare a STAR example about the migration project.");
+        var prompt = ContextManager.BuildPrompt(new AnswerRequest(
+            "Tell me about a project.", null, ctx, AnswerLength.Normal, "de"));
+
+        Assert.Contains("[Interview notes]", prompt);
+        Assert.Contains("Prepare a STAR example about the migration project.", prompt);
+        Assert.Contains("--- END verified material ---", prompt);
+    }
+
+    [Fact]
+    public void NotesAlone_CountAsProvidedMaterial()
+    {
+        var ctx = CandidateContext.Empty.WithNotes("Some notes");
+        Assert.False(ctx.IsEmpty);
+        Assert.Equal("Some notes", ctx.Notes);
+        Assert.False(CandidateContext.Empty.WithNotes(null).IsEmpty == false); // null notes stay empty
+    }
+
+    [Fact]
     public void Prompt_WithOnlyJd_CvSectionOmitted_ButGroundingKept()
     {
         var p = ContextManager.BuildPrompt(new AnswerRequest("q?", null,

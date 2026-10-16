@@ -1,4 +1,7 @@
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Reflection;
+using System.Text;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -295,7 +298,12 @@ public sealed class MainViewModel : ObservableObject
     public string DetectedQuestionText
     {
         get => _detectedQuestionText;
-        private set { Set(ref _detectedQuestionText, value); OnPropertyChanged(nameof(HasDetectedQuestion)); }
+        private set
+        {
+            Set(ref _detectedQuestionText, value);
+            OnPropertyChanged(nameof(HasDetectedQuestion));
+            RaiseAnswerCommandStates();
+        }
     }
     public bool HasDetectedQuestion => !string.IsNullOrEmpty(DetectedQuestionText);
 
@@ -377,7 +385,7 @@ public sealed class MainViewModel : ObservableObject
     private string _speechSetupStatus = string.Empty;
     public string SpeechSetupStatus { get => _speechSetupStatus; private set => Set(ref _speechSetupStatus, value); }
 
-    // ---- first-run prerequisite diagnostics (Phase 2) ----
+    // ---- first-run prerequisite diagnostics (merged workstream) ----
     /// <summary>Latest raw report, kept so a UI-language change can re-render the lines.</summary>
     private RuntimeReport? _lastSetupReport;
 
@@ -405,6 +413,7 @@ public sealed class MainViewModel : ObservableObject
     // reviewed text in memory.
     private readonly ReviewableDocument _cvDoc = new();
     private readonly ReviewableDocument _jdDoc = new();
+    private readonly ReviewableDocument _notesDoc = new();
     private readonly DocumentImporter _docImporter = new();
 
     private string _cvStateText = string.Empty;
@@ -413,6 +422,9 @@ public sealed class MainViewModel : ObservableObject
     private string _jdStateText = string.Empty;
     public string JdStateText { get => _jdStateText; private set => Set(ref _jdStateText, value); }
 
+    private string _notesStateText = string.Empty;
+    public string NotesStateText { get => _notesStateText; private set => Set(ref _notesStateText, value); }
+
     /// <summary>CV review box (two-way): shows imported text for review; edits re-apply live while in use.</summary>
     public string CvText
     {
@@ -420,8 +432,8 @@ public sealed class MainViewModel : ObservableObject
         set
         {
             _cvDoc.Edit(value);
-            ApplyDocumentToContext(_cvDoc, isCv: true);
-            UpdateDocState(_cvDoc, isCv: true);
+            ApplyDocumentToContext(_cvDoc, "cv");
+            UpdateDocState(_cvDoc, "cv");
             RaiseDocCommandStates();
         }
     }
@@ -433,8 +445,21 @@ public sealed class MainViewModel : ObservableObject
         set
         {
             _jdDoc.Edit(value);
-            ApplyDocumentToContext(_jdDoc, isCv: false);
-            UpdateDocState(_jdDoc, isCv: false);
+            ApplyDocumentToContext(_jdDoc, "jd");
+            UpdateDocState(_jdDoc, "jd");
+            RaiseDocCommandStates();
+        }
+    }
+
+    /// <summary>Interview notes / preparation sheet review box (mockup: notes slot).</summary>
+    public string NotesText
+    {
+        get => _notesDoc.Text;
+        set
+        {
+            _notesDoc.Edit(value);
+            ApplyDocumentToContext(_notesDoc, "notes");
+            UpdateDocState(_notesDoc, "notes");
             RaiseDocCommandStates();
         }
     }
@@ -443,20 +468,36 @@ public sealed class MainViewModel : ObservableObject
     {
         ClearCvCommand?.RaiseCanExecuteChanged();
         ClearJdCommand?.RaiseCanExecuteChanged();
+        ClearNotesCommand?.RaiseCanExecuteChanged();
+    }
+
+    /// <summary>Chip ✕ handler: removes exactly the personal data of that slot.</summary>
+    private bool RemoveDocumentBySlot(string slot)
+    {
+        switch (slot)
+        {
+            case "cv": ClearDocument(_cvDoc, "cv"); return true;
+            case "jd": ClearDocument(_jdDoc, "jd"); return true;
+            case "notes": ClearDocument(_notesDoc, "notes"); return true;
+            default: return false;
+        }
     }
 
     /// <summary>Pushes the document's ACTIVE (reviewed) text into the answer context.</summary>
-    private void ApplyDocumentToContext(ReviewableDocument doc, bool isCv)
+    private void ApplyDocumentToContext(ReviewableDocument doc, string slot)
     {
         string? active = doc.IsInUse ? (string.IsNullOrWhiteSpace(doc.ActiveText) ? null : doc.ActiveText) : null;
-        _services.Pipeline.Context = isCv
-            ? _services.Pipeline.Context.WithCv(active)
-            : _services.Pipeline.Context.WithJobDescription(active);
+        _services.Pipeline.Context = slot switch
+        {
+            "cv" => _services.Pipeline.Context.WithCv(active),
+            "jd" => _services.Pipeline.Context.WithJobDescription(active),
+            _ => _services.Pipeline.Context.WithNotes(active)
+        };
         RecomputeContextStatus();
     }
 
     /// <summary>Localized per-document status line (not imported / review / in use).</summary>
-    private void UpdateDocState(ReviewableDocument doc, bool isCv)
+    private void UpdateDocState(ReviewableDocument doc, string slot)
     {
         string text = doc.State switch
         {
@@ -464,13 +505,22 @@ public sealed class MainViewModel : ObservableObject
             DocumentState.Review => T["DocReview"],
             _ => T["DocNotImported"]
         };
-        if (isCv) CvStateText = text; else JdStateText = text;
+        switch (slot)
+        {
+            case "cv": CvStateText = text; break;
+            case "jd": JdStateText = text; break;
+            default: NotesStateText = text; break;
+        }
     }
 
     private void UpdateAllDocStates()
     {
-        UpdateDocState(_cvDoc, isCv: true);
-        UpdateDocState(_jdDoc, isCv: false);
+        UpdateDocState(_cvDoc, "cv");
+        UpdateDocState(_jdDoc, "jd");
+        UpdateDocState(_notesDoc, "notes");
+        CvChip.ApplyLocalization(T);
+        JdChip.ApplyLocalization(T);
+        NotesChip.ApplyLocalization(T);
     }
 
     private string DocFilter
@@ -511,6 +561,95 @@ public sealed class MainViewModel : ObservableObject
     private static Brush Brush(string hex)
         => new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
 
+    // ===================== MAMADO shell (mockup layout) =====================
+
+    // ---- left navigation rail (mockup: 3 main entries, 2 at the bottom) ----
+    public ObservableCollection<NavigationItem> NavItems { get; } = new();
+    public ObservableCollection<NavigationItem> NavPrimary { get; } = new();
+    public ObservableCollection<NavigationItem> NavSecondary { get; } = new();
+
+    private bool _isGenerating;
+    public bool IsGenerating { get => _isGenerating; private set => Set(ref _isGenerating, value); }
+
+    private NavigationItem? _selectedNav;
+    public NavigationItem? SelectedNav
+    {
+        get => _selectedNav;
+        set
+        {
+            if (!Set(ref _selectedNav, value))
+                return;
+            OnPropertyChanged(nameof(IsInterviewPage));
+            OnPropertyChanged(nameof(IsDocumentsPage));
+            OnPropertyChanged(nameof(IsSettingsPage));
+            OnPropertyChanged(nameof(IsLogsPage));
+            OnPropertyChanged(nameof(IsFeedbackPage));
+            if (IsLogsPage)
+                _ = RefreshLogsAsync();
+        }
+    }
+
+    public bool IsInterviewPage => _selectedNav?.Key == "interview";
+    public bool IsDocumentsPage => _selectedNav?.Key == "documents";
+    public bool IsSettingsPage => _selectedNav?.Key == "settings";
+    public bool IsLogsPage => _selectedNav?.Key == "logs";
+    public bool IsFeedbackPage => _selectedNav?.Key == "feedback";
+
+    // ---- top status pills: driven ONLY by real health checks ----
+    private string _whisperPillState = string.Empty;
+    public string WhisperPillState { get => _whisperPillState; private set => Set(ref _whisperPillState, value); }
+
+    private bool _whisperPillReady;
+    public bool WhisperPillReady { get => _whisperPillReady; private set => Set(ref _whisperPillReady, value); }
+
+    private bool _whisperPillFaulted;
+    public bool WhisperPillFaulted { get => _whisperPillFaulted; private set => Set(ref _whisperPillFaulted, value); }
+
+    private string _ollamaPillState = string.Empty;
+    public string OllamaPillState { get => _ollamaPillState; private set => Set(ref _ollamaPillState, value); }
+
+    private bool _ollamaPillReady;
+    public bool OllamaPillReady { get => _ollamaPillReady; private set => Set(ref _ollamaPillReady, value); }
+
+    private bool _ollamaPillFaulted;
+    public bool OllamaPillFaulted { get => _ollamaPillFaulted; private set => Set(ref _ollamaPillFaulted, value); }
+
+    private string _translationPillState = string.Empty;
+    public string TranslationPillState { get => _translationPillState; private set => Set(ref _translationPillState, value); }
+
+    private bool _translationPillReady;
+    public bool TranslationPillReady { get => _translationPillReady; private set => Set(ref _translationPillReady, value); }
+
+    private bool _translationPillFaulted;
+    public bool TranslationPillFaulted { get => _translationPillFaulted; private set => Set(ref _translationPillFaulted, value); }
+
+    // ---- listening panel waveform (real capture levels) ----
+    private const int WaveformCapacity = 72;
+    public ObservableCollection<double> WaveformLevels { get; } = new();
+    public bool HasWaveform => WaveformLevels.Count > 0;
+
+    // ---- question / answer language panels (mockup trios) ----
+    public ObservableCollection<LanguagePanelViewModel> QuestionPanels { get; } = new();
+    public ObservableCollection<LanguagePanelViewModel> AnswerPanels { get; } = new();
+    private string? _questionSourceLanguage;
+
+    // ---- document context chips (real file name + real metadata) ----
+    public DocumentChipViewModel CvChip { get; }
+    public DocumentChipViewModel JdChip { get; }
+    public DocumentChipViewModel NotesChip { get; }
+
+    // ---- local log viewer (no interview content is ever written to it) ----
+    public ObservableCollection<string> LogLines { get; } = new();
+    public bool HasLogLines => LogLines.Count > 0;
+    private bool _logsUnavailable;
+    public bool LogsUnavailable { get => _logsUnavailable; private set => Set(ref _logsUnavailable, value); }
+
+    // ---- about / feedback page ----
+    public string AppVersion { get; }
+
+    private string _appVersionText = string.Empty;
+    public string AppVersionText { get => _appVersionText; private set => Set(ref _appVersionText, value); }
+
     // ---- commands ----
     public RelayCommand StartCommand { get; }
     public RelayCommand StopCommand { get; }
@@ -523,16 +662,27 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand UseJdCommand { get; }
     public RelayCommand ClearJdCommand { get; }
     public RelayCommand CopyAnswerCommand { get; }
+    public RelayCommand LoadNotesCommand { get; }
+    public RelayCommand UseNotesCommand { get; }
+    public RelayCommand ClearNotesCommand { get; }
+    public RelayCommand ShorterCommand { get; }
+    public RelayCommand LongerCommand { get; }
+    public RelayCommand RegenerateCommand { get; }
+    public RelayCommand RefreshLogsCommand { get; }
+    public RelayCommand SelectPageCommand { get; }
+    public RelayCommand SetAnswerLengthCommand { get; }
+    public RelayCommand CopyDiagnosticsCommand { get; }
     public RelayCommand ClearErrorCommand { get; }
     public RelayCommand RefreshStatusCommand { get; }
     public RelayCommand ToggleThemeCommand { get; }
 
-    // ---- compact interview overlay (Vision Pro-style floating mode) ----
+    // ---- compact interview overlay (merged workstream) ----
     /// <summary>
     /// WPF-free overlay state machine (mode transitions, corner placement,
-    /// work-area clamping, size bounds). The window code-behind applies the
-    /// targets and animates them; the view model drives the SESSION semantics
-    /// (start must have actually succeeded before the compact transition).
+    /// work-area clamping, size bounds), kept from the merged workstream for a
+    /// future compact-mode pass. The MAMADO shell does not render the overlay
+    /// UI yet; the session semantics below (start must have actually succeeded
+    /// before arming) remain honest and unit-tested.
     /// </summary>
     public InterviewOverlayController Overlay { get; }
 
@@ -545,7 +695,7 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>One-shot transitions are skipped when the OS prefers reduced motion.</summary>
     public bool AnimationsEnabled { get; }
 
-    /// <summary>Raised on the UI thread AFTER the pipeline start actually succeeded (compact mode may begin).</summary>
+    /// <summary>Raised on the UI thread AFTER the pipeline start actually succeeded.</summary>
     public event EventHandler? InterviewStarted;
 
     /// <summary>Raised when the interview session ends (stop, fault, or start failure).</summary>
@@ -556,6 +706,9 @@ public sealed class MainViewModel : ObservableObject
     private EventHandler<TranslationUpdatedEventArgs>? _hTranslation;
     private EventHandler<AnswerUpdatedEventArgs>? _hAnswer;
     private EventHandler? _hGenerating;
+    private EventHandler<QuestionSetUpdatedEventArgs>? _hQuestionSet;
+    private EventHandler<AnswersUpdatedEventArgs>? _hAnswers;
+    private EventHandler<AudioLevelUpdatedEventArgs>? _hLevel;
     private EventHandler<PipelineStateChangedEventArgs>? _hState;
     private EventHandler<CaptureErrorEventArgs>? _hError;
     private InterviewPipeline? _wiredPipeline;
@@ -589,16 +742,68 @@ public sealed class MainViewModel : ObservableObject
         StopCommand = new RelayCommand(_ => _ = StopAsync(), _ => IsListening && !IsBusy);
         RefreshDevicesCommand = new RelayCommand(_ => RefreshDevices(), _ => !IsBusy);
         DownloadModelCommand = new RelayCommand(_ => _ = DownloadModelAsync(), _ => !IsBusy);
-        LoadCvCommand = new RelayCommand(_ => _ = ImportDocumentAsync(_cvDoc, isCv: true));
-        UseCvCommand = new RelayCommand(_ => UseDocument(_cvDoc, isCv: true));
-        ClearCvCommand = new RelayCommand(_ => ClearDocument(_cvDoc, isCv: true), _ => !string.IsNullOrEmpty(_cvDoc.Text) || _cvDoc.IsInUse);
-        LoadJdCommand = new RelayCommand(_ => _ = ImportDocumentAsync(_jdDoc, isCv: false));
-        UseJdCommand = new RelayCommand(_ => UseDocument(_jdDoc, isCv: false));
-        ClearJdCommand = new RelayCommand(_ => ClearDocument(_jdDoc, isCv: false), _ => !string.IsNullOrEmpty(_jdDoc.Text) || _jdDoc.IsInUse);
+        LoadCvCommand = new RelayCommand(_ => _ = ImportDocumentAsync(_cvDoc, "cv"));
+        UseCvCommand = new RelayCommand(_ => UseDocument(_cvDoc, "cv"));
+        ClearCvCommand = new RelayCommand(_ => ClearDocument(_cvDoc, "cv"), _ => !string.IsNullOrEmpty(_cvDoc.Text) || _cvDoc.IsInUse);
+        LoadJdCommand = new RelayCommand(_ => _ = ImportDocumentAsync(_jdDoc, "jd"));
+        UseJdCommand = new RelayCommand(_ => UseDocument(_jdDoc, "jd"));
+        ClearJdCommand = new RelayCommand(_ => ClearDocument(_jdDoc, "jd"), _ => !string.IsNullOrEmpty(_jdDoc.Text) || _jdDoc.IsInUse);
         CopyAnswerCommand = new RelayCommand(_ => CopyAnswer(), _ => AnswerIsSuggestion && !IsBusy);
+        LoadNotesCommand = new RelayCommand(_ => _ = ImportDocumentAsync(_notesDoc, "notes"));
+        UseNotesCommand = new RelayCommand(_ => UseDocument(_notesDoc, "notes"));
+        ClearNotesCommand = new RelayCommand(
+            _ => ClearDocument(_notesDoc, "notes"),
+            _ => !string.IsNullOrEmpty(_notesDoc.Text) || _notesDoc.IsInUse);
+
+        // Shorter / Longer / Regenerate re-run the local model for the LAST
+        // detected question (real generation, no simulated content).
+        ShorterCommand = new RelayCommand(_ => _ = RegenerateAsync(shorter: true), _ => CanRegenerate);
+        LongerCommand = new RelayCommand(_ => _ = RegenerateAsync(shorter: false), _ => CanRegenerate);
+        RegenerateCommand = new RelayCommand(_ => _ = RegenerateAsync(length: _services.Config.AnswerLength), _ => CanRegenerate);
+
+        RefreshLogsCommand = new RelayCommand(_ => _ = RefreshLogsAsync());
+        // Shell shortcut buttons (header gear -> Settings, log icon -> Logs).
+        SelectPageCommand = new RelayCommand(p =>
+        {
+            if (p is string key)
+                SelectedNav = NavItems.FirstOrDefault(i => i.Key == key) ?? SelectedNav;
+        });
+        // Segmented length control (Short / Balanced / Long) of the answer panel.
+        SetAnswerLengthCommand = new RelayCommand(p =>
+        {
+            if (p is string value)
+                SelectedAnswerLength = AnswerLengthOptions.FirstOrDefault(o => o.Value == value) ?? SelectedAnswerLength;
+        });
+        CopyDiagnosticsCommand = new RelayCommand(_ => CopyDiagnostics());
         ClearErrorCommand = new RelayCommand(_ => ClearErrorState());
         RefreshStatusCommand = new RelayCommand(_ => _ = RefreshStatusAsync(), _ => !IsBusy);
         ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
+
+        // ---- shell: navigation rail (Segoe MDL2 glyphs) ----
+        NavItems.Add(new NavigationItem("interview", "NavInterview", "\uE720"));
+        NavItems.Add(new NavigationItem("documents", "NavDocuments", "\uE8A5"));
+        NavItems.Add(new NavigationItem("settings", "NavSettings", "\uE713"));
+        NavItems.Add(new NavigationItem("logs", "NavLogs", "\uE81C"));
+        NavItems.Add(new NavigationItem("feedback", "NavFeedback", "\uE939"));
+        foreach (var item in NavItems)
+            item.ApplyLocalization(Loc);
+        foreach (var item in NavItems.Take(3))
+            NavPrimary.Add(item);
+        foreach (var item in NavItems.Skip(3))
+            NavSecondary.Add(item);
+        _selectedNav = NavItems[0];
+
+        CvChip = new DocumentChipViewModel("cv", RemoveDocumentBySlot);
+        JdChip = new DocumentChipViewModel("jd", RemoveDocumentBySlot);
+        NotesChip = new DocumentChipViewModel("notes", RemoveDocumentBySlot);
+
+        var assembly = typeof(MainViewModel).Assembly;
+        AppVersion = assembly
+            .GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false)
+            .OfType<AssemblyInformationalVersionAttribute>()
+            .FirstOrDefault()?.InformationalVersion
+            ?? assembly.GetName().Version?.ToString()
+            ?? "unknown";
 
         SuggestedOllamaModel = SafeSuggest(AusbildungsWegInterview.Infrastructure.SystemInfo.RecommendOllamaModel);
         SuggestedWhisperModel = SafeSuggest(AusbildungsWegInterview.Infrastructure.SystemInfo.RecommendWhisperModel);
@@ -637,6 +842,21 @@ public sealed class MainViewModel : ObservableObject
         RecomputeContextStatus();
         UpdateAllDocStates();
         ReLocalizeDynamicStrings();
+        AppVersionText = T.F("FeedbackVersion", AppVersion);
+
+        // Shell strings: navigation labels + the language panels' captions and
+        // status lines must follow the new language immediately.
+        foreach (var item in NavItems)
+            item.ApplyLocalization(T);
+        foreach (var panel in QuestionPanels)
+            panel.ApplyLocalization(T);
+        foreach (var panel in AnswerPanels)
+            panel.ApplyLocalization(T);
+
+        // Health pills: re-localize the current short states, then re-probe
+        // the real provider health ONCE (the async refresh re-localizes the
+        // pill texts at the end of every check).
+        UpdateTranslationPill();
         ModelSuggestedText = T.F("ModelSuggested", SuggestedOllamaModel, SuggestedWhisperModel);
         _ = RefreshStatusAsync();
 
@@ -652,6 +872,7 @@ public sealed class MainViewModel : ObservableObject
         RecomputeContextStatus();
         UpdateAllDocStates();
         ModelSuggestedText = T.F("ModelSuggested", SuggestedOllamaModel, SuggestedWhisperModel);
+        AppVersionText = T.F("FeedbackVersion", AppVersion);
     }
 
     private void BuildThemeOptions()
@@ -684,10 +905,12 @@ public sealed class MainViewModel : ObservableObject
         var ctx = _services.Pipeline.Context;
         bool hasCv = !string.IsNullOrWhiteSpace(ctx.CvText);
         bool hasJd = !string.IsNullOrWhiteSpace(ctx.JobDescription);
-        ContextStatus = !hasCv && !hasJd ? T["ContextNone"]
+        bool hasNotes = !string.IsNullOrWhiteSpace(ctx.Notes);
+        ContextStatus = !hasCv && !hasJd && !hasNotes ? T["ContextNone"]
             : hasCv && hasJd ? T["ContextBothLoaded"]
             : hasCv ? T["ContextCvLoaded"]
-            : T["ContextJdLoaded"];
+            : hasJd ? T["ContextJdLoaded"]
+            : T["ContextNotesLoaded"];
     }
 
     private static string SafeSuggest(Func<string> suggest)
@@ -705,6 +928,9 @@ public sealed class MainViewModel : ObservableObject
             _wiredPipeline.TranslationUpdated -= _hTranslation;
             _wiredPipeline.AnswerUpdated -= _hAnswer;
             _wiredPipeline.AnswerGenerating -= _hGenerating;
+            _wiredPipeline.QuestionSetUpdated -= _hQuestionSet;
+            _wiredPipeline.AnswersUpdated -= _hAnswers;
+            _wiredPipeline.AudioLevelUpdated -= _hLevel;
             _wiredPipeline.StateChanged -= _hState;
             _wiredPipeline.Error -= _hError;
             _wiredPipeline = null;
@@ -750,11 +976,51 @@ public sealed class MainViewModel : ObservableObject
         _hGenerating = (_, _) => Post(() =>
         {
             _lastAnswerSuggestion = null;
+            IsGenerating = true;
             AnswerText = T["AnswerGenerating"];
             IsAnswerProvisional = false;
             AnswerIsSuggestion = false;
             CopyAnswerCommand?.RaiseCanExecuteChanged();
         });
+        // Detected-question panel trio: original + one panel per configured
+        // language. Every panel keeps its RAW status code so it can be
+        // re-localized on a language switch.
+        _hQuestionSet = (_, e) => Post(() =>
+        {
+            _questionSourceLanguage = e.SourceLanguage;
+            QuestionPanels.Clear();
+            QuestionPanels.Add(CreatePanel("original", "QOriginal", isPrimary: true,
+                e.Original, PanelState.Ready, null, null, null, null, e.SourceLanguage));
+            foreach (var panel in e.Translations)
+            {
+                QuestionPanels.Add(CreatePanel(panel.Language, "QTranslation", isPrimary: false,
+                    panel.Text, panel.State, panel.Status, panel.StatusMessage, null, null, e.SourceLanguage));
+            }
+        });
+
+        // Answer panel trio: generated answer (primary language) + local
+        // translations, each with an honest pending/unavailable state.
+        _hAnswers = (_, e) => Post(() =>
+        {
+            IsGenerating = false;
+            AnswerPanels.Clear();
+            foreach (var panel in e.Panels)
+            {
+                AnswerPanels.Add(CreatePanel(panel.Language, "AnswerLabel", panel.IsPrimary,
+                    panel.Text, panel.State, panel.Status, panel.StatusMessage, panel.AnswerStatus, panel.Model,
+                    _services.Config.AnswerLanguage));
+            }
+        });
+
+        // Real capture level -> waveform (bounded history, newest last).
+        _hLevel = (_, e) => Post(() =>
+        {
+            WaveformLevels.Add(e.Level);
+            while (WaveformLevels.Count > WaveformCapacity)
+                WaveformLevels.RemoveAt(0);
+            OnPropertyChanged(nameof(HasWaveform));
+        });
+
         _hState = (_, e) => Post(() => UpdateStatus(e.State));
         // Runtime errors are category-localized (all four UI languages); raw
         // exception text (which may contain local paths) is never shown.
@@ -764,6 +1030,9 @@ public sealed class MainViewModel : ObservableObject
         p.TranslationUpdated += _hTranslation;
         p.AnswerUpdated += _hAnswer;
         p.AnswerGenerating += _hGenerating;
+        p.QuestionSetUpdated += _hQuestionSet;
+        p.AnswersUpdated += _hAnswers;
+        p.AudioLevelUpdated += _hLevel;
         p.StateChanged += _hState;
         p.Error += _hError;
         _wiredPipeline = p;
@@ -793,6 +1062,181 @@ public sealed class MainViewModel : ObservableObject
         DownloadModelCommand.RaiseCanExecuteChanged();
         RefreshStatusCommand.RaiseCanExecuteChanged();
         CopyAnswerCommand.RaiseCanExecuteChanged();
+        RaiseAnswerCommandStates();
+    }
+
+    private void RaiseAnswerCommandStates()
+    {
+        ShorterCommand?.RaiseCanExecuteChanged();
+        LongerCommand?.RaiseCanExecuteChanged();
+        RegenerateCommand?.RaiseCanExecuteChanged();
+    }
+
+    /// <summary>Builds one language panel with the pipeline's RAW data (re-localizable).</summary>
+    private LanguagePanelViewModel CreatePanel(
+        string language,
+        string captionKey,
+        bool isPrimary,
+        string? text,
+        PanelState state,
+        TranslationStatus? translationStatus,
+        string? statusMessage,
+        AnswerStatus? answerStatus,
+        string? model,
+        string? sourceLanguage)
+    {
+        var panel = new LanguagePanelViewModel(language, captionKey, isPrimary) { SourceLanguage = sourceLanguage };
+        panel.CopyFailed += (_, _) => ShowKeyedError("ErrorCopyFailed");
+        panel.SetContent(text, state, translationStatus, statusMessage, answerStatus, model);
+        panel.ApplyLocalization(T);
+        return panel;
+    }
+
+    // ---- Shorter / Longer / Regenerate (real local re-generation) ----
+    private bool _isRegenerating;
+    public bool IsRegenerating { get => _isRegenerating; private set { Set(ref _isRegenerating, value); RaiseAnswerCommandStates(); } }
+
+    /// <summary>Regeneration needs an active session (it reuses the session token for Stop).</summary>
+    private bool CanRegenerate => IsListening && !IsRegenerating && HasDetectedQuestion;
+
+    private async Task RegenerateAsync(bool? shorter = null, AnswerLength? length = null)
+    {
+        if (!CanRegenerate)
+            return;
+
+        var current = _services.Config.AnswerLength;
+        AnswerLength target = shorter switch
+        {
+            true => current == AnswerLength.Detailed ? AnswerLength.Normal : AnswerLength.Concise,
+            false => current == AnswerLength.Concise ? AnswerLength.Normal : AnswerLength.Detailed,
+            _ => length ?? current
+        };
+
+        IsRegenerating = true;
+        try
+        {
+            // Runs on the pipeline worker path (same cancellation + stale guard);
+            // Stop cancels it, so no stale answer can appear afterwards.
+            await _services.Pipeline.RegenerateAnswerAsync(target);
+        }
+        catch (Exception ex)
+        {
+            ShowRuntimeError(ex);
+        }
+        finally
+        {
+            IsRegenerating = false;
+        }
+    }
+
+    // ---- local log viewer ----
+    private async Task RefreshLogsAsync()
+    {
+        try
+        {
+            string path = AusbildungsWegInterview.Infrastructure.Logging.AppLogging.DefaultLogFile;
+            if (!File.Exists(path))
+            {
+                LogLines.Clear();
+                LogsUnavailable = true;
+                return;
+            }
+
+            // The writer keeps the file open: read with shared access.
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream);
+            var tail = new Queue<string>(300);
+            string? line;
+            while ((line = await reader.ReadLineAsync()) is not null)
+            {
+                tail.Enqueue(line);
+                if (tail.Count > 300)
+                    tail.Dequeue();
+            }
+
+            LogLines.Clear();
+            foreach (var l in tail)
+                LogLines.Add(l);
+            LogsUnavailable = false;
+        }
+        catch
+        {
+            LogsUnavailable = true;
+        }
+        finally
+        {
+            OnPropertyChanged(nameof(HasLogLines));
+        }
+    }
+
+    /// <summary>
+    /// Copies a NON-SENSITIVE diagnostics summary (version, settings, health,
+    /// whether documents are loaded — never their content, never transcripts).
+    /// </summary>
+    private void CopyDiagnostics()
+    {
+        try
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("MAMADO - AusbildungsWeg Interview");
+            sb.AppendLine("version: " + AppVersion);
+            sb.AppendLine("ui language: " + _services.Config.UiLanguage + " | theme: " + _services.Config.Theme);
+            sb.AppendLine("speech: " + SpeechSetupStatus);
+            sb.AppendLine("ai: " + AiStatusText);
+            sb.AppendLine("translation engine: " + _services.Config.TranslationProvider + " | " + TranslationPillState);
+            sb.AppendLine("capture device: " + (_services.Config.OutputDeviceId ?? "(system default output)"));
+            sb.AppendLine("listening: " + IsListening);
+            sb.AppendLine("documents in use: cv=" + _cvDoc.IsInUse + ", jd=" + _jdDoc.IsInUse + ", notes=" + _notesDoc.IsInUse);
+            Clipboard.SetText(sb.ToString());
+        }
+        catch
+        {
+            ShowKeyedError("ErrorCopyFailed");
+        }
+    }
+
+    /// <summary>Translation pill: mirrors the REAL provider that is configured.</summary>
+    private void UpdateTranslationPill()
+    {
+        var c = _services.Config;
+        if (!c.TranslationEnabled || c.TranslationProvider == TranslationProvider.Off)
+        {
+            TranslationPillReady = false;
+            TranslationPillFaulted = false;
+            TranslationPillState = T["PillOff"];
+            return;
+        }
+
+        switch (c.TranslationProvider)
+        {
+            case TranslationProvider.WhisperTranslate:
+                TranslationPillReady = WhisperPillReady;
+                TranslationPillFaulted = WhisperPillFaulted;
+                TranslationPillState = WhisperPillReady ? T["PillReady"]
+                    : WhisperPillFaulted ? T["PillUnavailable"] : T["PillUnknown"];
+                break;
+
+            case TranslationProvider.ExternalCli:
+                bool cliOk = !string.IsNullOrWhiteSpace(c.TranslatorCliPath) &&
+                             System.IO.File.Exists(c.TranslatorCliPath!);
+                TranslationPillReady = cliOk;
+                TranslationPillFaulted = !cliOk;
+                TranslationPillState = cliOk ? T["PillReady"] : T["PillUnavailable"];
+                break;
+
+            case TranslationProvider.Ollama:
+                TranslationPillReady = OllamaPillReady;
+                TranslationPillFaulted = OllamaPillFaulted;
+                TranslationPillState = OllamaPillReady ? T["PillReady"]
+                    : OllamaPillFaulted ? T["PillUnavailable"] : T["PillUnknown"];
+                break;
+
+            default:
+                TranslationPillReady = true;
+                TranslationPillFaulted = false;
+                TranslationPillState = T["PillReady"];
+                break;
+        }
     }
 
     /// <summary>Copies the current REAL suggestion to the clipboard (status lines are not copyable).</summary>
@@ -817,8 +1261,7 @@ public sealed class MainViewModel : ObservableObject
         bool nowListening = state is PipelineState.Listening or PipelineState.Processing;
         IsListening = nowListening;
         // A session that leaves the listening/processing states (stopped,
-        // faulted, stopping) ends the interview overlay: the user must get
-        // back to the main window (where any error is fully visible).
+        // faulted, stopping) ends the interview session semantics.
         if (wasListening && !nowListening)
         {
             Overlay.DisarmSession();
@@ -857,15 +1300,20 @@ public sealed class MainViewModel : ObservableObject
         AnswerText = string.Empty;
         IsAnswerProvisional = false;
         AnswerIsSuggestion = false;
-        _lastAnswerSuggestion = null;
         CopyAnswerCommand?.RaiseCanExecuteChanged();
         DetectedQuestionText = string.Empty;
+        // Fresh session: the panel trios and the waveform start empty (no stale
+        // content from the previous session is ever shown as if it were live).
+        QuestionPanels.Clear();
+        AnswerPanels.Clear();
+        WaveformLevels.Clear();
+        OnPropertyChanged(nameof(HasWaveform));
         try
         {
             SaveConfig();
             await _services.Pipeline.StartAsync();
-            // The compact interview transition is only allowed for a start
-            // that ACTUALLY succeeded — the window listens for this event.
+            // Session semantics: only a start that ACTUALLY succeeded arms the
+            // interview session (the merged workstream's overlay contract).
             Overlay.ArmSession();
             InterviewStarted?.Invoke(this, EventArgs.Empty);
         }
@@ -953,11 +1401,24 @@ public sealed class MainViewModel : ObservableObject
             bool modelOk = System.IO.File.Exists(modelPath);
 
             SpeechSetupStatus = T.F("SpeechSetupLine", engine, c.WhisperModel, modelOk ? T["SpeechModelReady"] : T["SpeechModelMissing"]);
+
+            // Pill: "ready" ONLY when the engine resolves AND the model file exists.
+            bool engineOk = string.IsNullOrWhiteSpace(c.WhisperExecutablePath) ||
+                            System.IO.File.Exists(c.WhisperExecutablePath!);
+            WhisperPillReady = engineOk && modelOk;
+            WhisperPillFaulted = !WhisperPillReady;
+            WhisperPillState = WhisperPillReady
+                ? T["PillReady"]
+                : engineOk ? T["PillModelMissing"] : T["PillUnavailable"];
         }
         catch
         {
             SpeechSetupStatus = T["SpeechStatusUnknown"];
+            WhisperPillReady = false;
+            WhisperPillFaulted = true;
+            WhisperPillState = T["PillUnknown"];
         }
+        UpdateTranslationPill();
     }
 
     /// <summary>
@@ -1051,6 +1512,9 @@ public sealed class MainViewModel : ObservableObject
             if (!available)
             {
                 AiStatusText = T["AiUnavailable"];
+                OllamaPillReady = false;
+                OllamaPillFaulted = true;
+                OllamaPillState = T["PillUnavailable"];
             }
             else
             {
@@ -1058,6 +1522,9 @@ public sealed class MainViewModel : ObservableObject
                 AiStatusText = modelOk
                     ? T.F("AiModelReady", _services.Config.OllamaModel)
                     : T.F("AiModelMissing", _services.Config.OllamaModel);
+                OllamaPillReady = modelOk;
+                OllamaPillFaulted = !modelOk;
+                OllamaPillState = modelOk ? T["PillReady"] : T["PillModelMissing"];
                 _lastOllamaModelOk = modelOk;
             }
             _lastOllamaAvailable = available;
@@ -1065,6 +1532,9 @@ public sealed class MainViewModel : ObservableObject
         catch
         {
             AiStatusText = T["AiStatusUnknown"];
+            OllamaPillReady = false;
+            OllamaPillFaulted = false;
+            OllamaPillState = T["PillUnknown"];
             _lastOllamaAvailable = false;
             _lastOllamaModelOk = false;
         }
@@ -1072,6 +1542,8 @@ public sealed class MainViewModel : ObservableObject
         {
             IsBusy = false;
         }
+        // The translation pill mirrors the real provider health (Ollama / whisper / CLI).
+        UpdateTranslationPill();
         UpdateWhisperModelStatus();
         UpdateSetupDiagnostics();
     }
@@ -1106,11 +1578,16 @@ public sealed class MainViewModel : ObservableObject
 
     // ---- CV / job description: import (PDF/DOCX/TXT, content-sniffed) -> review box -> Use ----
 
-    private async Task ImportDocumentAsync(ReviewableDocument doc, bool isCv)
+    private async Task ImportDocumentAsync(ReviewableDocument doc, string slot)
     {
         var dlg = new OpenFileDialog
         {
-            Title = isCv ? T["LoadCvTitle"] : T["LoadJdTitle"],
+            Title = slot switch
+            {
+                "cv" => T["LoadCvTitle"],
+                "jd" => T["LoadJdTitle"],
+                _ => T["LoadNotesTitle"]
+            },
             Filter = DocFilter
         };
         if (dlg.ShowDialog() != true)
@@ -1126,7 +1603,10 @@ public sealed class MainViewModel : ObservableObject
             {
                 ClearErrorState();
                 doc.SetImported(result.Text!); // goes to REVIEW; old grounding text stays active
-                UpdateDocState(doc, isCv);
+                ChipFor(slot)?.SetImported(
+                    System.IO.Path.GetFileName(dlg.FileName), result.PageCount, result.Text!.Length);
+                ApplyDocumentToContextIfInUse(doc, slot);
+                UpdateDocState(doc, slot);
                 if (result.Truncated)
                     ShowKeyedError("ErrorDocTruncated", _docImporter.MaxExtractedChars);
             }
@@ -1146,26 +1626,47 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private void UseDocument(ReviewableDocument doc, bool isCv)
+    /// <summary>
+    /// A replacement import keeps the OLD grounding text active until the user
+    /// accepts the new one — re-applying here would silently swap the context.
+    /// </summary>
+    private void ApplyDocumentToContextIfInUse(ReviewableDocument doc, string slot)
+    {
+        if (doc.State == DocumentState.InUse)
+            ApplyDocumentToContext(doc, slot);
+        else
+            RecomputeContextStatus();
+    }
+
+    private DocumentChipViewModel? ChipFor(string slot) => slot switch
+    {
+        "cv" => CvChip,
+        "jd" => JdChip,
+        "notes" => NotesChip,
+        _ => null
+    };
+
+    private void UseDocument(ReviewableDocument doc, string slot)
     {
         if (doc.TryApply(out string errorKey))
         {
             ClearErrorState();
-            ApplyDocumentToContext(doc, isCv);
+            ApplyDocumentToContext(doc, slot);
         }
         else
         {
             ShowKeyedError(errorKey);
         }
-        UpdateDocState(doc, isCv);
+        UpdateDocState(doc, slot);
     }
 
-    private void ClearDocument(ReviewableDocument doc, bool isCv)
+    private void ClearDocument(ReviewableDocument doc, string slot)
     {
         doc.Clear(); // removes box text AND stops grounding with it
+        ChipFor(slot)?.Clear();
         ClearErrorState();
-        ApplyDocumentToContext(doc, isCv);
-        UpdateDocState(doc, isCv);
+        ApplyDocumentToContext(doc, slot);
+        UpdateDocState(doc, slot);
         RaiseDocCommandStates();
     }
 
