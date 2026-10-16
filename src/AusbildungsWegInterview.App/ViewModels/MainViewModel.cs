@@ -1178,7 +1178,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             var sb = new StringBuilder();
-            sb.AppendLine("MAMADO - AusbildungsWeg Interview");
+            sb.AppendLine("AusbildungsWeg Interview");
             sb.AppendLine("version: " + AppVersion);
             sb.AppendLine("ui language: " + _services.Config.UiLanguage + " | theme: " + _services.Config.Theme);
             sb.AppendLine("speech: " + SpeechSetupStatus);

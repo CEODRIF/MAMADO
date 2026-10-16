@@ -92,7 +92,10 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock Text="MAMADO" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource AwInkBrush}"/>
+                        <!-- Brand name = same localized source as the window title bar (TitleApp),
+                             so the header and the title can never drift apart. -->
+                        <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=TitleApp}"
+                                   FontSize="22" FontWeight="Bold" Foreground="{DynamicResource AwInkBrush}"/>
                         <TextBlock Text="{Binding T, Converter={StaticResource LocKey}, ConverterParameter=AppTagline}"
                                    FontSize="11.5" Foreground="{DynamicResource AwMutedBrush}"/>
                     </StackPanel>

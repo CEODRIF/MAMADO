@@ -192,7 +192,7 @@
   <data name="NavSettings" xml:space="preserve"><value>Einstellungen</value></data>
   <data name="NavLogs" xml:space="preserve"><value>Protokolle</value></data>
   <data name="NavFeedback" xml:space="preserve"><value>Feedback</value></data>
-  <data name="AppTagline" xml:space="preserve"><value>KI-Interview-Copilot</value></data>
+  <data name="AppTagline" xml:space="preserve"><value>KI-Interview-Assistent</value></data>
   <data name="StatusWhisper" xml:space="preserve"><value>Whisper (lokal)</value></data>
   <data name="StatusOllama" xml:space="preserve"><value>Ollama (lokal)</value></data>
   <data name="StatusTranslation" xml:space="preserve"><value>Übersetzung</value></data>
